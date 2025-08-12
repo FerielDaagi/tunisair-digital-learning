@@ -6,6 +6,7 @@ import Login from './pages/auth/Login';
 import Dashboard from './pages/dashboard/Dashboard';
 import Courses from './pages/courses/Courses';
 import CourseDetail from './pages/courses/CourseDetail';
+import Profile from './pages/user/Profile';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import Signup from './pages/auth/Signup';
 function App() {
@@ -29,6 +30,11 @@ function App() {
             <Route path="/courses/:id" element={
               <ProtectedRoute>
                 <CourseDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             } />
             <Route path="/signup" element={<Signup />} />

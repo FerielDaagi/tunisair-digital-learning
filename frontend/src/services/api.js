@@ -63,6 +63,7 @@ export const coursesAPI = {
 export const userAPI = {
   getProfile: () => api.get('/user/profile'),
   updateProfile: (data) => api.put('/user/profile', data),
+  updateAvatar: (formData) => api.put('/user/avatar', formData),
   getProgress: () => api.get('/user/progress'),
 };
 

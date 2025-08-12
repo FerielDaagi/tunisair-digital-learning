@@ -21,6 +21,7 @@ const Navbar = () => {
           <ul className="nav-links">
             <li><Link to="/">Dashboard</Link></li>
             <li><Link to="/courses">Courses</Link></li>
+            <li><Link to="/profile">Profile</Link></li>
             <li><button onClick={handleLogout} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>Logout</button></li>
           </ul>
         ) : (
