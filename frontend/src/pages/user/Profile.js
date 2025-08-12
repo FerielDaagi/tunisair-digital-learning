@@ -385,33 +385,93 @@ const Profile = () => {
             {/* Historique des avatars */}
             {avatarHistory.length > 0 && (
               <div style={{ marginBottom: '2rem' }}>
-                <h3 style={{ marginBottom: '1rem', color: '#495057' }}>Anciennes photos</h3>
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <h3 style={{ 
+                  marginBottom: '1.5rem', 
+                  color: '#495057',
+                  fontSize: '1.25rem',
+                  fontWeight: '600',
+                  borderBottom: '2px solid #e9ecef',
+                  paddingBottom: '0.5rem'
+                }}>
+                  📸 Anciennes photos
+                </h3>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+                  gap: '16px',
+                  padding: '1rem',
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: '8px',
+                  border: '1px solid #e9ecef'
+                }}>
                   {avatarHistory.map((p, idx) => (
-                    <div key={idx} style={{ textAlign: 'center' }}>
-                      <img
-                        src={`http://localhost:5000${p}?t=${Date.now()}`}
-                        alt={`Ancien avatar ${idx+1}`}
-                        style={{
-                          width: '72px',
-                          height: '72px',
+                    <div key={idx} style={{ 
+                      textAlign: 'center',
+                      padding: '8px',
+                      backgroundColor: 'white',
+                      borderRadius: '8px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      transition: 'all 0.3s ease',
+                      border: '1px solid #dee2e6'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                    }}
+                    >
+                      <div style={{ position: 'relative', marginBottom: '8px' }}>
+                        <img
+                          src={`http://localhost:5000${p}?t=${Date.now()}`}
+                          alt={`Ancien avatar ${idx+1}`}
+                          style={{
+                            width: '80px',
+                            height: '80px',
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: '3px solid #fff',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                            display: 'block',
+                            margin: '0 auto'
+                          }}
+                        />
+                        <div style={{
+                          position: 'absolute',
+                          top: '-4px',
+                          right: '-4px',
+                          background: '#6c757d',
+                          color: 'white',
                           borderRadius: '50%',
-                          objectFit: 'cover',
-                          border: '2px solid #dee2e6',
-                          display: 'block'
-                        }}
-                      />
+                          width: '24px',
+                          height: '24px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.7rem',
+                          fontWeight: 'bold'
+                        }}>
+                          {idx + 1}
+                        </div>
+                      </div>
                       <button
                         type="button"
                         onClick={async () => {
                           try {
                             setLoading(true);
+                            setError('');
                             await userAPI.restoreAvatar(p);
                             // Mettre à jour l'aperçu courant
-                            setAvatarPreview(`http://localhost:5000${p}`);
+                            setAvatarPreview(`http://localhost:5000${p}?t=${Date.now()}`);
                             // Recharger le profil
                             const refreshed = await userAPI.getProfile();
                             login(refreshed.data.user, localStorage.getItem('token'));
+                            // Rafraîchir l'historique
+                            const hist = await userAPI.getAvatarHistory();
+                            setAvatarHistory(hist.data.previousAvatars || []);
+                            setSuccess('Avatar restauré avec succès !');
                           } catch (e) {
                             setError('Impossible de restaurer cet avatar');
                           } finally {
@@ -419,19 +479,40 @@ const Profile = () => {
                           }
                         }}
                         style={{
-                          marginTop: '6px',
-                          background: '#f8f9fa',
-                          border: '1px solid #ced4da',
-                          borderRadius: '4px',
-                          padding: '4px 8px',
+                          background: 'linear-gradient(135deg, #007bff, #0056b3)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '20px',
+                          padding: '6px 12px',
                           fontSize: '0.75rem',
-                          cursor: 'pointer'
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease',
+                          boxShadow: '0 2px 4px rgba(0,123,255,0.3)',
+                          width: '100%'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = 'linear-gradient(135deg, #0056b3, #004085)';
+                          e.target.style.transform = 'scale(1.05)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'linear-gradient(135deg, #007bff, #0056b3)';
+                          e.target.style.transform = 'scale(1)';
                         }}
                       >
-                        Restaurer
+                        🔄 Restaurer
                       </button>
                     </div>
                   ))}
+                </div>
+                <div style={{ 
+                  marginTop: '0.5rem',
+                  textAlign: 'center',
+                  fontSize: '0.85rem',
+                  color: '#6c757d',
+                  fontStyle: 'italic'
+                }}>
+                  Cliquez sur "Restaurer" pour remettre une ancienne photo comme photo de profil actuelle
                 </div>
               </div>
             )}

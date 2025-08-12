@@ -179,11 +179,13 @@ const updateAvatar = async (req, res) => {
         // Préparer le nouveau chemin d'avatar
         const avatarPath = `/uploads/avatars/${req.file.filename}`;
         
-        // Conserver l'ancien avatar dans l'historique
-        const previousAvatars = Array.isArray(user.profile?.previousAvatars)
+        // Conserver l'ancien avatar dans l'historique (sans doublons)
+        let previousAvatars = Array.isArray(user.profile?.previousAvatars)
           ? user.profile.previousAvatars
           : [];
-        if (user.profile?.avatar) {
+        
+        // Ajouter l'ancien avatar seulement s'il existe et n'est pas déjà dans l'historique
+        if (user.profile?.avatar && !previousAvatars.includes(user.profile.avatar)) {
           previousAvatars.unshift(user.profile.avatar);
         }
         
@@ -238,9 +240,16 @@ const listPreviousAvatars = async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
     }
+    
+    // Filtrer pour exclure l'avatar actuel de l'historique
+    const currentAvatar = user.profile?.avatar;
+    const previousAvatars = Array.isArray(user.profile?.previousAvatars)
+      ? user.profile.previousAvatars.filter(avatar => avatar !== currentAvatar)
+      : [];
+    
     res.json({
       success: true,
-      previousAvatars: user.profile?.previousAvatars || []
+      previousAvatars: previousAvatars
     });
   } catch (error) {
     console.error('Erreur listPreviousAvatars:', error);
@@ -265,18 +274,21 @@ const restoreAvatar = async (req, res) => {
       ? user.profile.previousAvatars
       : [];
 
-    // Si l'avatar courant existe, l'ajouter à l'historique
-    if (user.profile?.avatar) {
+    // Si l'avatar courant existe et n'est pas déjà dans l'historique, l'ajouter
+    if (user.profile?.avatar && !previous.includes(user.profile.avatar)) {
       previous.unshift(user.profile.avatar);
     }
 
+    // Retirer l'avatar restauré de l'historique pour éviter les doublons
+    const filteredPrevious = previous.filter(avatar => avatar !== avatarPath);
+    
     // Mettre à jour l'avatar courant avec celui demandé
     const updated = await User.findByIdAndUpdate(
       req.user.id,
       {
         $set: {
           'profile.avatar': avatarPath,
-          'profile.previousAvatars': previous
+          'profile.previousAvatars': filteredPrevious
         }
       },
       { new: true }
