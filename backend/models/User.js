@@ -91,12 +91,6 @@ const UserSchema = new mongoose.Schema({
     phone: String,
     dateOfBirth: Date,
     previousAvatars: [String],
-    address: {
-      street: String,
-      city: String,
-      country: String,
-      zipCode: String
-    }
   }
 }, {
   timestamps: true
