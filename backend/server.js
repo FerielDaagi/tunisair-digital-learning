@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 require('dotenv').config();
 
 // 🆕 AJOUTE CETTE LIGNE - Importer la connexion MongoDB
@@ -40,6 +41,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// 🆕 NOUVEAU - Servir les fichiers statiques (avatars uploadés)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Logging middleware
 app.use(morgan('combined'));
 
@@ -52,7 +56,7 @@ app.use('/api/dashboard', dashboardRoutes);
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ 
-    status: 'OK', 
+    status: 'OK',
     message: 'E-Learning API is running',
     timestamp: new Date().toISOString()
   });

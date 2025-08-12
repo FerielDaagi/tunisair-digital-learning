@@ -8,7 +8,7 @@ const Signup = () => {
     email: '',
     password: '',
     role: 'apprenti',
-    avatar: '',
+    avatar: null,
     bio: '',
     phone: '',
     dateOfBirth: '',
@@ -19,6 +19,7 @@ const Signup = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [avatarPreview, setAvatarPreview] = useState(null);
   
   const navigate = useNavigate();
 
@@ -29,19 +30,69 @@ const Signup = () => {
     });
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Vérifier le type de fichier
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      if (!validTypes.includes(file.type)) {
+        setError('Veuillez sélectionner une image valide (JPG, PNG, GIF)');
+        return;
+      }
+
+      // Vérifier la taille du fichier (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        setError('La taille de l\'image ne doit pas dépasser 5MB');
+        return;
+      }
+
+      setFormData({
+        ...formData,
+        avatar: file
+      });
+
+      // Créer un aperçu de l'image
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setAvatarPreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+      
+      // Effacer les erreurs précédentes
+      setError('');
+    }
+  };
+
+  const removeAvatar = () => {
+    setFormData({
+      ...formData,
+      avatar: null
+    });
+    setAvatarPreview(null);
+    // Réinitialiser l'input file
+    const fileInput = document.getElementById('avatar');
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     
     try {
+      // Créer un FormData pour envoyer le fichier
+      const formDataToSend = new FormData();
+      
+      // Ajouter les données utilisateur
       const userPayload = {
         name: formData.name,
         email: formData.email,
         password: formData.password,
         role: formData.role,
         profile: {
-          avatar: formData.avatar,
           bio: formData.bio,
           phone: formData.phone,
           dateOfBirth: formData.dateOfBirth,
@@ -53,8 +104,16 @@ const Signup = () => {
           },
         },
       };
+
+      // Ajouter les données JSON
+      formDataToSend.append('userData', JSON.stringify(userPayload));
       
-      const response = await authAPI.register(userPayload);
+      // Ajouter le fichier avatar s'il existe
+      if (formData.avatar) {
+        formDataToSend.append('avatar', formData.avatar);
+      }
+      
+      const response = await authAPI.register(formDataToSend);
       navigate('/login');
     } catch (err) {
       setError(err.response?.data?.message || 'Inscription échouée. Veuillez réessayer.');
@@ -145,16 +204,53 @@ const Signup = () => {
             </div>
             
             <div className="form-group">
-              <label htmlFor="avatar" className="form-label">Avatar (URL)</label>
+              <label htmlFor="avatar" className="form-label">Photo de profil</label>
+              
+              {/* Aperçu de l'image */}
+              {avatarPreview && (
+                <div style={{ marginBottom: '10px', textAlign: 'center' }}>
+                  <img 
+                    src={avatarPreview} 
+                    alt="Aperçu avatar" 
+                    style={{ 
+                      width: '100px', 
+                      height: '100px', 
+                      borderRadius: '50%', 
+                      objectFit: 'cover',
+                      border: '2px solid #dee2e6'
+                    }} 
+                  />
+                  <div style={{ marginTop: '5px' }}>
+                    <button 
+                      type="button" 
+                      onClick={removeAvatar}
+                      style={{
+                        background: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+              )}
+              
               <input
-                type="text"
+                type="file"
                 id="avatar"
                 name="avatar"
                 className="form-control"
-                value={formData.avatar}
-                onChange={handleChange}
-                placeholder="Lien vers votre avatar"
+                accept="image/*"
+                onChange={handleFileChange}
               />
+              <small style={{ color: '#6c757d', fontSize: '0.8rem' }}>
+                Formats acceptés : JPG, PNG, GIF (max 5MB)
+              </small>
             </div>
 
             <div className="form-group">
@@ -166,6 +262,7 @@ const Signup = () => {
                 value={formData.bio}
                 onChange={handleChange}
                 placeholder="Décrivez-vous en quelques mots"
+                rows="3"
               />
             </div>
 

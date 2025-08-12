@@ -1,13 +1,53 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User'); // 🆕 Import du modèle User
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const User = require('../models/User');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Configuration Multer pour l'upload d'images
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = 'uploads/avatars/';
+    // Créer le dossier s'il n'existe pas
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    // Générer un nom unique pour le fichier
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+// Filtrage des fichiers (seulement les images)
+const fileFilter = (req, file, cb) => {
+  const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+  
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Type de fichier non autorisé. Utilisez JPG, PNG ou GIF.'), false);
+  }
+};
+
+// Configuration Multer
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB max
+  }
+});
 
 // Générer JWT token
 const generateToken = (user) => {
   return jwt.sign(
     { 
-      id: user._id, // 🆕 Utilise _id (MongoDB) au lieu de id
+      id: user._id,
       email: user.email, 
       role: user.role 
     },
@@ -16,73 +56,146 @@ const generateToken = (user) => {
   );
 };
 
-// 🆕 NOUVELLE fonction Register (avec MongoDB)
+// Middleware pour gérer l'upload d'avatar
+const uploadAvatar = upload.single('avatar');
+
+// Fonction register modifiée pour gérer FormData
 const register = async (req, res) => {
   try {
-    const { name, email, password, role, profile } = req.body;
+    // Gérer l'upload avec multer
+    uploadAvatar(req, res, async (err) => {
+      if (err) {
+        if (err instanceof multer.MulterError) {
+          if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({
+              success: false,
+              message: 'Le fichier est trop volumineux. Taille maximum : 5MB'
+            });
+          }
+        }
+        return res.status(400).json({
+          success: false,
+          message: err.message || 'Erreur lors de l\'upload du fichier'
+        });
+      }
 
-    // Validation
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Nom, email et mot de passe sont obligatoires'
-      });
-    }
+      try {
+        // Récupérer les données utilisateur depuis FormData
+        let userData;
+        try {
+          userData = req.body.userData ? JSON.parse(req.body.userData) : req.body;
+        } catch (parseError) {
+          return res.status(400).json({
+            success: false,
+            message: 'Données utilisateur invalides'
+          });
+        }
 
-    // Vérifier si l'utilisateur existe déjà
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'Un utilisateur avec cet email existe déjà'
-      });
-    }
+        const { name, email, password, role, profile } = userData;
 
-    // Créer nouvel utilisateur
-    const userData = {
-      name,
-      email,
-      password, // Le mot de passe sera hashé automatiquement (pre-save hook)
-      role: role || 'apprenti'
-    };
+        // Validation
+        if (!name || !email || !password) {
+          // Supprimer le fichier uploadé en cas d'erreur
+          if (req.file) {
+            fs.unlink(req.file.path, (unlinkErr) => {
+              if (unlinkErr) console.error('Erreur suppression fichier:', unlinkErr);
+            });
+          }
+          
+          return res.status(400).json({
+            success: false,
+            message: 'Nom, email et mot de passe sont obligatoires'
+          });
+        }
 
-    // Ajouter le profil s'il existe
-    if (profile) {
-      userData.profile = profile;
-    }
+        // Vérifier si l'utilisateur existe déjà
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+          // Supprimer le fichier uploadé en cas d'erreur
+          if (req.file) {
+            fs.unlink(req.file.path, (unlinkErr) => {
+              if (unlinkErr) console.error('Erreur suppression fichier:', unlinkErr);
+            });
+          }
+          
+          return res.status(400).json({
+            success: false,
+            message: 'Un utilisateur avec cet email existe déjà'
+          });
+        }
 
-    const newUser = await User.create(userData);
+        // Préparer les données utilisateur
+        const newUserData = {
+          name,
+          email,
+          password,
+          role: role || 'apprenti'
+        };
 
-    // Générer token
-    const token = generateToken(newUser);
+        // Ajouter le profil s'il existe
+        if (profile) {
+          newUserData.profile = profile;
+          
+          // Ajouter l'avatar s'il a été uploadé
+          if (req.file) {
+            newUserData.profile.avatar = `/uploads/avatars/${req.file.filename}`;
+          }
+        } else if (req.file) {
+          // Si pas de profil mais avatar uploadé
+          newUserData.profile = {
+            avatar: `/uploads/avatars/${req.file.filename}`
+          };
+        }
 
-    res.status(201).json({
-      success: true,
-      message: 'Inscription réussie',
-      user: newUser.toJSON(), // Utilise la méthode toJSON pour exclure le mot de passe
-      token
+        // Créer nouvel utilisateur
+        const newUser = await User.create(newUserData);
+
+        // Générer token
+        const token = generateToken(newUser);
+
+        res.status(201).json({
+          success: true,
+          message: 'Inscription réussie',
+          user: newUser.toJSON(),
+          token
+        });
+
+      } catch (error) {
+        console.error('Erreur register:', error);
+        
+        // Supprimer le fichier uploadé en cas d'erreur
+        if (req.file) {
+          fs.unlink(req.file.path, (unlinkErr) => {
+            if (unlinkErr) console.error('Erreur suppression fichier:', unlinkErr);
+          });
+        }
+
+        // Gestion des erreurs de validation MongoDB
+        if (error.name === 'ValidationError') {
+          const messages = Object.values(error.errors).map(err => err.message);
+          return res.status(400).json({
+            success: false,
+            message: messages.join(', ')
+          });
+        }
+
+        // Erreur de duplication (email unique)
+        if (error.code === 11000) {
+          return res.status(400).json({
+            success: false,
+            message: 'Cet email est déjà utilisé'
+          });
+        }
+
+        res.status(500).json({
+          success: false,
+          message: 'Erreur interne du serveur'
+        });
+      }
     });
 
   } catch (error) {
-    console.error('Erreur register:', error);
-    
-    // Gestion des erreurs de validation MongoDB
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({
-        success: false,
-        message: messages.join(', ')
-      });
-    }
-
-    // Erreur de duplication (email unique)
-    if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cet email est déjà utilisé'
-      });
-    }
-
+    console.error('Erreur register externe:', error);
     res.status(500).json({
       success: false,
       message: 'Erreur interne du serveur'
@@ -90,7 +203,7 @@ const register = async (req, res) => {
   }
 };
 
-// 🆕 NOUVELLE fonction Login (avec MongoDB)
+// Fonction login (reste identique)
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -135,7 +248,7 @@ const login = async (req, res) => {
     res.json({
       success: true,
       message: 'Connexion réussie',
-      user: user.toJSON(), // Exclut automatiquement le mot de passe
+      user: user.toJSON(),
       token
     });
 
@@ -156,10 +269,9 @@ const logout = (req, res) => {
   });
 };
 
-// 🆕 NOUVELLE fonction getCurrentUser (avec MongoDB)
+// getCurrentUser (reste identique)
 const getCurrentUser = async (req, res) => {
   try {
-    // req.user.id vient du middleware JWT
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({
@@ -182,9 +294,113 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
+// Fonction utilitaire pour supprimer un ancien avatar
+const deleteOldAvatar = (avatarPath) => {
+  if (avatarPath && avatarPath !== '') {
+    const fullPath = path.join(__dirname, '..', avatarPath);
+    fs.unlink(fullPath, (err) => {
+      if (err && err.code !== 'ENOENT') {
+        console.error('Erreur suppression ancien avatar:', err);
+      }
+    });
+  }
+};
+
+// Nouvelle fonction pour mettre à jour l'avatar
+const updateAvatar = async (req, res) => {
+  try {
+    uploadAvatar(req, res, async (err) => {
+      if (err) {
+        if (err instanceof multer.MulterError) {
+          if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({
+              success: false,
+              message: 'Le fichier est trop volumineux. Taille maximum : 5MB'
+            });
+          }
+        }
+        return res.status(400).json({
+          success: false,
+          message: err.message || 'Erreur lors de l\'upload du fichier'
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'Aucun fichier sélectionné'
+        });
+      }
+
+      try {
+        const user = await User.findById(req.user.id);
+        if (!user) {
+          // Supprimer le fichier uploadé
+          fs.unlink(req.file.path, (unlinkErr) => {
+            if (unlinkErr) console.error('Erreur suppression fichier:', unlinkErr);
+          });
+          
+          return res.status(404).json({
+            success: false,
+            message: 'Utilisateur introuvable'
+          });
+        }
+
+        // Supprimer l'ancien avatar s'il existe
+        if (user.profile && user.profile.avatar) {
+          deleteOldAvatar(user.profile.avatar);
+        }
+
+        // Mettre à jour l'avatar
+        const avatarPath = `/uploads/avatars/${req.file.filename}`;
+        
+        await User.findByIdAndUpdate(
+          req.user.id,
+          {
+            $set: {
+              'profile.avatar': avatarPath
+            }
+          },
+          { new: true }
+        );
+
+        res.json({
+          success: true,
+          message: 'Avatar mis à jour avec succès',
+          avatar: avatarPath
+        });
+
+      } catch (error) {
+        console.error('Erreur updateAvatar:', error);
+        
+        // Supprimer le fichier uploadé en cas d'erreur
+        if (req.file) {
+          fs.unlink(req.file.path, (unlinkErr) => {
+            if (unlinkErr) console.error('Erreur suppression fichier:', unlinkErr);
+          });
+        }
+
+        res.status(500).json({
+          success: false,
+          message: 'Erreur interne du serveur'
+        });
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur updateAvatar externe:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur interne du serveur'
+    });
+  }
+};
+
 module.exports = {
-  register, // 🆕 Changé de "register" au lieu de l'ancien nom
+  register,
   login,
   logout,
-  getCurrentUser
+  getCurrentUser,
+  updateAvatar, // Nouvelle fonction exportée
+  uploadAvatar  // Middleware exporté pour utilisation dans les routes
 };

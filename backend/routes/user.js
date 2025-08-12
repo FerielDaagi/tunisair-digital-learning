@@ -4,7 +4,8 @@ const {
   getProfile, 
   updateProfile, 
   getProgress, 
-  updateLessonProgress 
+  updateLessonProgress,
+  updateAvatar
 } = require('../controllers/userController');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -14,6 +15,8 @@ router.use(authenticateToken);
 // Profile routes
 router.get('/profile', getProfile);
 router.put('/profile', updateProfile);
+//avatar
+router.put('/avatar', updateAvatar);
 
 // Progress routes
 router.get('/progress', getProgress);
