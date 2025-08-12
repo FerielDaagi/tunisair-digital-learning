@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { authAPI } from '../../services/api';
+import { Link } from 'react-router-dom';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -102,12 +103,12 @@ const Login = () => {
           </form>
           
           <div className="text-center mt-3">
-            <p style={{ color: '#6c757d', fontSize: '0.9rem' }}>
-              Don't have an account?{' '}
-              <a href="#" style={{ color: '#dc3545', textDecoration: 'none' }}>
-                Sign up here
-              </a>
-            </p>
+        <p style={{ color: '#6c757d', fontSize: '0.9rem' }}>
+  Don't have an account?{' '}
+  <Link to="/signup" style={{ color: '#dc3545', textDecoration: 'none' }}>
+    Sign up here
+  </Link>
+</p>
           </div>
         </div>
         

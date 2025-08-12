@@ -105,13 +105,7 @@ e-learning/
    ```
    The frontend will run on `http://localhost:3000`
 
-## 🔐 Authentication
-
-The application uses JWT tokens for authentication. Demo credentials:
-
-- **Email**: `admin@example.com`
-- **Password**: `password123`
-
+ 
 ## 📚 API Endpoints
 
 ### Authentication
@@ -202,16 +196,4 @@ The application is fully responsive and works on:
 
 This project is created for educational purposes as part of a 6-week internship.
 
-## 🆘 Support
-
-For support or questions, please contact the development team.
-
----
-
-**Note**: This is a demo project with mock data. In a production environment, you would need to:
-- Implement a real database (MongoDB, PostgreSQL, etc.)
-- Add proper error handling and logging
-- Implement file upload functionality
-- Add comprehensive testing
-- Set up CI/CD pipelines
-- Configure production environment variables 
+ 

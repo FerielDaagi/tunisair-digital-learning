@@ -7,7 +7,7 @@ import Dashboard from './pages/dashboard/Dashboard';
 import Courses from './pages/courses/Courses';
 import CourseDetail from './pages/courses/CourseDetail';
 import ProtectedRoute from './components/common/ProtectedRoute';
-
+import Signup from './pages/auth/Signup';
 function App() {
   return (
     <Router>
@@ -31,6 +31,7 @@ function App() {
                 <CourseDetail />
               </ProtectedRoute>
             } />
+            <Route path="/signup" element={<Signup />} />
           </Routes>
         </main>
       </div>

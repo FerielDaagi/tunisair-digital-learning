@@ -5,6 +5,9 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
+// 🆕 AJOUTE CETTE LIGNE - Importer la connexion MongoDB
+const connectDB = require('./config/database');
+
 const authRoutes = require('./routes/auth');
 const courseRoutes = require('./routes/courses');
 const userRoutes = require('./routes/user');
@@ -13,6 +16,9 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// 🆕 AJOUTE CETTE LIGNE - Connexion à MongoDB
+connectDB();
 
 // Security middleware
 app.use(helmet());
@@ -70,4 +76,4 @@ app.listen(PORT, () => {
   console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
 });
 
-module.exports = app; 
+module.exports = app;
