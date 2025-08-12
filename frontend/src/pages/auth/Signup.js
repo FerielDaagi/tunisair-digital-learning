@@ -7,7 +7,6 @@ const Signup = () => {
     name: '',
     email: '',
     password: '',
-    role: 'apprenti',
     avatar: null,
     bio: '',
     phone: '',
@@ -96,7 +95,7 @@ const Signup = () => {
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        role: formData.role,
+        role: 'apprenti', // Rôle par défaut
         profile: {
           bio: formData.bio,
           phone: formData.phone,
@@ -386,21 +385,7 @@ const Signup = () => {
                 />
               </div>
 
-              <div className="form-group">
-                <label htmlFor="role" className="form-label">Rôle *</label>
-                <select
-                  id="role"
-                  name="role"
-                  className="form-control"
-                  value={formData.role}
-                  onChange={handleChange}
-                  style={{ padding: '0.75rem' }}
-                >
-                  <option value="apprenti">🎓 Apprenti - Je veux apprendre</option>
-                  <option value="tuteur">👨‍🏫 Tuteur - Je veux enseigner</option>
-                  <option value="admin">⚙️ Administrateur</option>
-                </select>
-              </div>
+
             </div>
 
             {/* Informations personnelles */}

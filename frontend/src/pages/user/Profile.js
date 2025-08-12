@@ -517,6 +517,154 @@ const Profile = () => {
               </div>
             )}
 
+            {/* Options avancées */}
+            <div style={{ marginBottom: '2rem' }}>
+              <h3 style={{ 
+                marginBottom: '1.5rem', 
+                color: '#495057',
+                fontSize: '1.25rem',
+                fontWeight: '600',
+                borderBottom: '2px solid #e9ecef',
+                paddingBottom: '0.5rem'
+              }}>
+                ⚙️ Options avancées
+              </h3>
+              
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                gap: '16px'
+              }}>
+                {/* Devenir tuteur */}
+                <div style={{ 
+                  padding: '1.5rem',
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: '8px',
+                  border: '1px solid #e9ecef',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ 
+                    fontSize: '2rem', 
+                    marginBottom: '1rem',
+                    color: '#28a745'
+                  }}>
+                    👨‍🏫
+                  </div>
+                  <h4 style={{ 
+                    marginBottom: '0.5rem',
+                    color: '#495057',
+                    fontSize: '1.1rem'
+                  }}>
+                    Devenir un tuteur
+                  </h4>
+                  <p style={{ 
+                    marginBottom: '1rem',
+                    color: '#6c757d',
+                    fontSize: '0.9rem',
+                    lineHeight: '1.4'
+                  }}>
+                    Partagez vos connaissances et aidez d'autres apprenants à progresser
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // TODO: Implémenter la logique pour devenir tuteur
+                      setSuccess('Fonctionnalité en cours de développement !');
+                    }}
+                    style={{
+                      background: 'linear-gradient(135deg, #28a745, #1e7e34)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '25px',
+                      padding: '10px 20px',
+                      fontSize: '0.9rem',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      boxShadow: '0 2px 4px rgba(40,167,69,0.3)',
+                      width: '100%'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = 'linear-gradient(135deg, #1e7e34, #155724)';
+                      e.target.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = 'linear-gradient(135deg, #28a745, #1e7e34)';
+                      e.target.style.transform = 'translateY(0)';
+                    }}
+                  >
+                    🚀 Demander à devenir tuteur
+                  </button>
+                </div>
+
+                {/* Supprimer le compte */}
+                <div style={{ 
+                  padding: '1.5rem',
+                  backgroundColor: '#fff5f5',
+                  borderRadius: '8px',
+                  border: '1px solid #fed7d7',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ 
+                    fontSize: '2rem', 
+                    marginBottom: '1rem',
+                    color: '#dc3545'
+                  }}>
+                    ⚠️
+                  </div>
+                  <h4 style={{ 
+                    marginBottom: '0.5rem',
+                    color: '#495057',
+                    fontSize: '1.1rem'
+                  }}>
+                    Supprimer mon compte
+                  </h4>
+                  <p style={{ 
+                    marginBottom: '1rem',
+                    color: '#6c757d',
+                    fontSize: '0.9rem',
+                    lineHeight: '1.4'
+                  }}>
+                    Cette action est irréversible. Toutes vos données seront définitivement supprimées.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.')) {
+                        if (window.confirm('Dernière confirmation : Voulez-vous vraiment supprimer votre compte ?')) {
+                          // TODO: Implémenter la suppression du compte
+                          setError('Fonctionnalité en cours de développement !');
+                        }
+                      }
+                    }}
+                    style={{
+                      background: 'linear-gradient(135deg, #dc3545, #c82333)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '25px',
+                      padding: '10px 20px',
+                      fontSize: '0.9rem',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      boxShadow: '0 2px 4px rgba(220,53,69,0.3)',
+                      width: '100%'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = 'linear-gradient(135deg, #c82333, #a71e2a)';
+                      e.target.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = 'linear-gradient(135deg, #dc3545, #c82333)';
+                      e.target.style.transform = 'translateY(0)';
+                    }}
+                  >
+                    🗑️ Supprimer mon compte
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <button
               type="submit"
               className="btn btn-primary"
