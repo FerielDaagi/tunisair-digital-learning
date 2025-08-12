@@ -21,8 +21,11 @@ const PORT = process.env.PORT || 5000;
 // 🆕 AJOUTE CETTE LIGNE - Connexion à MongoDB
 connectDB();
 
-// Security middleware
-app.use(helmet());
+// Security middleware (allow cross-origin images for uploads)
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  crossOriginEmbedderPolicy: false,
+}));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -34,15 +37,24 @@ app.use(limiter);
 // CORS
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
+  credentials: true,
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Preflight for uploads/static
+app.options('*', cors());
 
 // Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // 🆕 NOUVEAU - Servir les fichiers statiques (avatars uploadés)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', (req, res, next) => {
+  // Ensure images are loadable from the frontend origin
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(path.join(__dirname, 'uploads')));
 
 // Logging middleware
 app.use(morgan('combined'));

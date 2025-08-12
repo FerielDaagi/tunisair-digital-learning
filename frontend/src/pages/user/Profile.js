@@ -9,13 +9,13 @@ const Profile = () => {
     bio: '',
     phone: '',
     dateOfBirth: '',
-    
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
+  const [avatarHistory, setAvatarHistory] = useState([]);
 
   useEffect(() => {
     if (user) {
@@ -24,11 +24,16 @@ const Profile = () => {
         bio: user.profile?.bio || '',
         phone: user.profile?.phone || '',
         dateOfBirth: user.profile?.dateOfBirth ? user.profile.dateOfBirth.split('T')[0] : '',
-         
       });
       if (user.profile?.avatar) {
-        setAvatarPreview(`http://localhost:5000${user.profile.avatar}`);
+        const url = `http://localhost:5000${user.profile.avatar}`;
+        // Bust cache by appending timestamp
+        setAvatarPreview(`${url}?t=${Date.now()}`);
       }
+      // Charger l'historique des avatars
+      userAPI.getAvatarHistory()
+        .then(res => setAvatarHistory(res.data.previousAvatars || []))
+        .catch(() => {});
     }
   }, [user]);
 
@@ -43,9 +48,9 @@ const Profile = () => {
     const file = e.target.files[0];
     if (file) {
       // Vérifier le type de fichier
-      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
       if (!validTypes.includes(file.type)) {
-        setError('Veuillez sélectionner une image valide (JPG, PNG, GIF)');
+        setError('Veuillez sélectionner une image valide (JPG, PNG, GIF, WebP)');
         return;
       }
 
@@ -80,6 +85,13 @@ const Profile = () => {
     }
   };
 
+  const triggerFileInput = () => {
+    const fileInput = document.getElementById('avatar');
+    if (fileInput) {
+      fileInput.click();
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -93,21 +105,34 @@ const Profile = () => {
         bio: formData.bio,
         phone: formData.phone,
         dateOfBirth: formData.dateOfBirth,
-        
       };
 
       const response = await userAPI.updateProfile(updateData);
-      
+
       // Mettre à jour l'avatar si un nouveau fichier a été sélectionné
       if (avatarFile) {
-        const formData = new FormData();
-        formData.append('avatar', avatarFile);
+        const formDataAvatar = new FormData();
+        formDataAvatar.append('avatar', avatarFile);
         
-        await userAPI.updateAvatar(formData);
+        await userAPI.updateAvatar(formDataAvatar);
       }
 
-      // Mettre à jour le contexte utilisateur
-      login(response.data.user, localStorage.getItem('token'));
+      // Recharger le profil à jour (inclut le nouvel avatar)
+      const refreshed = await userAPI.getProfile();
+      const updatedUser = refreshed.data.user;
+      login(updatedUser, localStorage.getItem('token'));
+
+      // Mettre à jour l'aperçu avec l'avatar courant (serveur)
+      if (updatedUser?.profile?.avatar) {
+        const url = `http://localhost:5000${updatedUser.profile.avatar}`;
+        setAvatarPreview(`${url}?t=${Date.now()}`);
+      }
+
+      // Rafraîchir l'historique des avatars
+      try {
+        const hist = await userAPI.getAvatarHistory();
+        setAvatarHistory(hist.data.previousAvatars || []);
+      } catch {}
       
       setSuccess('Profil mis à jour avec succès !');
       setAvatarFile(null);
@@ -137,7 +162,8 @@ const Profile = () => {
                 color: '#721c24', 
                 padding: '0.75rem', 
                 borderRadius: '4px', 
-                marginBottom: '1rem' 
+                marginBottom: '1rem',
+                border: '1px solid #f5c6cb'
               }}>
                 {error}
               </div>
@@ -149,7 +175,8 @@ const Profile = () => {
                 color: '#155724', 
                 padding: '0.75rem', 
                 borderRadius: '4px', 
-                marginBottom: '1rem' 
+                marginBottom: '1rem',
+                border: '1px solid #c3e6cb'
               }}>
                 {success}
               </div>
@@ -157,60 +184,149 @@ const Profile = () => {
 
             {/* Section Avatar */}
             <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
-              <h3 style={{ marginBottom: '1rem' }}>Photo de profil</h3>
+              <h3 style={{ marginBottom: '1.5rem', color: '#495057' }}>Photo de profil</h3>
               
-              {/* Aperçu de l'avatar */}
-              {avatarPreview && (
-                <div style={{ marginBottom: '1rem' }}>
-                  <img 
-                    src={avatarPreview} 
-                    alt="Avatar" 
-                    style={{ 
-                      width: '120px', 
-                      height: '120px', 
-                      borderRadius: '50%', 
-                      objectFit: 'cover',
-                      border: '3px solid #dee2e6'
-                    }} 
-                  />
+              {/* Zone d'affichage et de téléchargement de l'avatar */}
+              <div style={{ 
+                position: 'relative', 
+                display: 'inline-block', 
+                marginBottom: '1rem' 
+              }}>
+                <div 
+                  onClick={triggerFileInput}
+                  style={{ 
+                    width: '150px', 
+                    height: '150px', 
+                    borderRadius: '50%', 
+                    border: '3px dashed #dee2e6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    backgroundColor: '#f8f9fa',
+                    transition: 'all 0.3s ease',
+                    backgroundImage: avatarPreview ? `url(${avatarPreview})` : 'none',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!avatarPreview) {
+                      e.target.style.borderColor = '#007bff';
+                      e.target.style.backgroundColor = '#e3f2fd';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!avatarPreview) {
+                      e.target.style.borderColor = '#dee2e6';
+                      e.target.style.backgroundColor = '#f8f9fa';
+                    }
+                  }}
+                >
+                  {!avatarPreview && (
+                    <div style={{ textAlign: 'center', color: '#6c757d' }}>
+                      <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📸</div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>
+                        Cliquez pour choisir une photo
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Overlay pour l'image existante */}
+                  {avatarPreview && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: 0,
+                      transition: 'opacity 0.3s ease',
+                      borderRadius: '50%',
+                      color: 'white',
+                      fontSize: '0.9rem',
+                      fontWeight: '500'
+                    }}
+                    onMouseEnter={(e) => e.target.style.opacity = 1}
+                    onMouseLeave={(e) => e.target.style.opacity = 0}
+                    >
+                      Changer la photo
+                    </div>
+                  )}
                 </div>
-              )}
-              
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                <input
-                  type="file"
-                  id="avatar"
-                  name="avatar"
-                  className="form-control"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  style={{ maxWidth: '300px' }}
-                />
+
+                {/* Bouton de suppression */}
                 {avatarPreview && (
                   <button 
                     type="button" 
-                    onClick={removeAvatar}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeAvatar();
+                    }}
                     style={{
+                      position: 'absolute',
+                      top: '10px',
+                      right: '10px',
                       background: '#dc3545',
                       color: 'white',
                       border: 'none',
-                      padding: '8px 16px',
-                      borderRadius: '4px',
-                      cursor: 'pointer'
+                      borderRadius: '50%',
+                      width: '30px',
+                      height: '30px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.2rem',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
                     }}
+                    title="Supprimer la photo"
                   >
-                    Supprimer
+                    ×
                   </button>
                 )}
               </div>
-              <small style={{ color: '#6c757d', fontSize: '0.8rem' }}>
-                Formats acceptés : JPG, PNG, GIF (max 5MB)
-              </small>
+
+              {/* Input file caché */}
+              <input
+                type="file"
+                id="avatar"
+                name="avatar"
+                accept="image/*"
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
+              />
+              
+              <div style={{ marginBottom: '1rem' }}>
+                <small style={{ color: '#6c757d', fontSize: '0.85rem' }}>
+                  Formats acceptés : JPG, PNG, GIF, WebP (max 5MB)
+                </small>
+              </div>
+
+              {/* Informations sur le fichier sélectionné */}
+              {avatarFile && (
+                <div style={{ 
+                  backgroundColor: '#e9ecef', 
+                  padding: '0.5rem', 
+                  borderRadius: '4px', 
+                  marginBottom: '1rem',
+                  fontSize: '0.85rem',
+                  color: '#495057'
+                }}>
+                  <strong>Fichier sélectionné :</strong> {avatarFile.name} 
+                  ({(avatarFile.size / 1024 / 1024).toFixed(2)} MB)
+                </div>
+              )}
             </div>
 
             {/* Informations personnelles */}
             <div style={{ marginBottom: '2rem' }}>
-              <h3 style={{ marginBottom: '1rem' }}>Informations personnelles</h3>
+              <h3 style={{ marginBottom: '1.5rem', color: '#495057' }}>Informations personnelles</h3>
               
               <div className="form-group">
                 <label htmlFor="name" className="form-label">Nom complet</label>
@@ -234,21 +350,22 @@ const Profile = () => {
                   className="form-control"
                   value={formData.bio}
                   onChange={handleChange}
-                  placeholder="Décrivez-vous en quelques mots"
+                  placeholder="Décrivez-vous en quelques mots..."
                   rows="3"
+                  style={{ resize: 'vertical' }}
                 />
               </div>
 
               <div className="form-group">
                 <label htmlFor="phone" className="form-label">Téléphone</label>
                 <input
-                  type="text"
+                  type="tel"
                   id="phone"
                   name="phone"
                   className="form-control"
                   value={formData.phone}
                   onChange={handleChange}
-                  placeholder="Votre numéro de téléphone"
+                  placeholder="+33 1 23 45 67 89"
                 />
               </div>
 
@@ -265,20 +382,79 @@ const Profile = () => {
               </div>
             </div>
 
-          
-
-            
-
-           
-          
+            {/* Historique des avatars */}
+            {avatarHistory.length > 0 && (
+              <div style={{ marginBottom: '2rem' }}>
+                <h3 style={{ marginBottom: '1rem', color: '#495057' }}>Anciennes photos</h3>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  {avatarHistory.map((p, idx) => (
+                    <div key={idx} style={{ textAlign: 'center' }}>
+                      <img
+                        src={`http://localhost:5000${p}?t=${Date.now()}`}
+                        alt={`Ancien avatar ${idx+1}`}
+                        style={{
+                          width: '72px',
+                          height: '72px',
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '2px solid #dee2e6',
+                          display: 'block'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            setLoading(true);
+                            await userAPI.restoreAvatar(p);
+                            // Mettre à jour l'aperçu courant
+                            setAvatarPreview(`http://localhost:5000${p}`);
+                            // Recharger le profil
+                            const refreshed = await userAPI.getProfile();
+                            login(refreshed.data.user, localStorage.getItem('token'));
+                          } catch (e) {
+                            setError('Impossible de restaurer cet avatar');
+                          } finally {
+                            setLoading(false);
+                          }
+                        }}
+                        style={{
+                          marginTop: '6px',
+                          background: '#f8f9fa',
+                          border: '1px solid #ced4da',
+                          borderRadius: '4px',
+                          padding: '4px 8px',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Restaurer
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <button
               type="submit"
               className="btn btn-primary"
-              style={{ width: '100%' }}
+              style={{ 
+                width: '100%',
+                padding: '12px',
+                fontSize: '1rem',
+                fontWeight: '500'
+              }}
               disabled={loading}
             >
-              {loading ? 'Mise à jour en cours...' : 'Mettre à jour le profil'}
+              {loading ? (
+                <span>
+                  <span style={{ marginRight: '8px' }}>⏳</span>
+                  Mise à jour en cours...
+                </span>
+              ) : (
+                'Mettre à jour le profil'
+              )}
             </button>
           </form>
         </div>

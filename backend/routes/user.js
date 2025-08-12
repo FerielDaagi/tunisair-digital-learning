@@ -5,7 +5,9 @@ const {
   updateProfile, 
   getProgress, 
   updateLessonProgress,
-  updateAvatar
+  updateAvatar,
+  listPreviousAvatars,
+  restoreAvatar
 } = require('../controllers/userController');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -17,6 +19,8 @@ router.get('/profile', getProfile);
 router.put('/profile', updateProfile);
 //avatar
 router.put('/avatar', updateAvatar);
+router.get('/avatar/history', listPreviousAvatars);
+router.post('/avatar/restore', restoreAvatar);
 
 // Progress routes
 router.get('/progress', getProgress);

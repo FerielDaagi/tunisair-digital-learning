@@ -64,6 +64,8 @@ export const userAPI = {
   getProfile: () => api.get('/user/profile'),
   updateProfile: (data) => api.put('/user/profile', data),
   updateAvatar: (formData) => api.put('/user/avatar', formData),
+  getAvatarHistory: () => api.get('/user/avatar/history'),
+  restoreAvatar: (avatarPath) => api.post('/user/avatar/restore', { avatarPath }),
   getProgress: () => api.get('/user/progress'),
 };
 

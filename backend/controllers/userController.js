@@ -176,19 +176,23 @@ const updateAvatar = async (req, res) => {
           });
         }
 
-        // Supprimer l'ancien avatar s'il existe
-        if (user.profile && user.profile.avatar) {
-          deleteOldAvatar(user.profile.avatar);
-        }
-
-        // Mettre à jour l'avatar
+        // Préparer le nouveau chemin d'avatar
         const avatarPath = `/uploads/avatars/${req.file.filename}`;
+        
+        // Conserver l'ancien avatar dans l'historique
+        const previousAvatars = Array.isArray(user.profile?.previousAvatars)
+          ? user.profile.previousAvatars
+          : [];
+        if (user.profile?.avatar) {
+          previousAvatars.unshift(user.profile.avatar);
+        }
         
         const updatedUser = await User.findByIdAndUpdate(
           req.user.id,
           {
             $set: {
-              'profile.avatar': avatarPath
+              'profile.avatar': avatarPath,
+              'profile.previousAvatars': previousAvatars
             }
           },
           { new: true }
@@ -224,6 +228,64 @@ const updateAvatar = async (req, res) => {
       success: false,
       message: 'Erreur interne du serveur'
     });
+  }
+};
+
+// Lister les anciens avatars
+const listPreviousAvatars = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
+    }
+    res.json({
+      success: true,
+      previousAvatars: user.profile?.previousAvatars || []
+    });
+  } catch (error) {
+    console.error('Erreur listPreviousAvatars:', error);
+    res.status(500).json({ success: false, message: 'Erreur interne du serveur' });
+  }
+};
+
+// Restaurer un ancien avatar
+const restoreAvatar = async (req, res) => {
+  try {
+    const { avatarPath } = req.body;
+    if (!avatarPath) {
+      return res.status(400).json({ success: false, message: 'avatarPath requis' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
+    }
+
+    const previous = Array.isArray(user.profile?.previousAvatars)
+      ? user.profile.previousAvatars
+      : [];
+
+    // Si l'avatar courant existe, l'ajouter à l'historique
+    if (user.profile?.avatar) {
+      previous.unshift(user.profile.avatar);
+    }
+
+    // Mettre à jour l'avatar courant avec celui demandé
+    const updated = await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        $set: {
+          'profile.avatar': avatarPath,
+          'profile.previousAvatars': previous
+        }
+      },
+      { new: true }
+    );
+
+    res.json({ success: true, message: 'Avatar restauré', user: updated.toJSON() });
+  } catch (error) {
+    console.error('Erreur restoreAvatar:', error);
+    res.status(500).json({ success: false, message: 'Erreur interne du serveur' });
   }
 };
 
@@ -267,6 +329,8 @@ module.exports = {
   getProfile,
   updateProfile,
   updateAvatar,
+  listPreviousAvatars,
+  restoreAvatar,
   getProgress,
   updateLessonProgress
 };
