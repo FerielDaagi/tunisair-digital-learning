@@ -48,7 +48,7 @@ export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
   register: (userData) => api.post('/auth/register', userData),
   logout: () => api.post('/auth/logout'),
-  
+  deleteAccount: () => api.delete('/auth/delete'),
 };
 
 // Courses API
@@ -67,6 +67,7 @@ export const userAPI = {
   getAvatarHistory: () => api.get('/user/avatar/history'),
   restoreAvatar: (avatarPath) => api.post('/user/avatar/restore', { avatarPath }),
   getProgress: () => api.get('/user/progress'),
+  becomeTutor: () => api.post('/user/become-tutor'),
 };
 
 // Dashboard API

@@ -337,6 +337,43 @@ const updateLessonProgress = async (req, res) => {
   }
 };
 
+// Devenir tuteur
+const becomeTutor = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
+    }
+
+    // Vérifier que l'utilisateur est actuellement un apprenti
+    if (user.role !== 'apprenti') {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Vous ne pouvez devenir tuteur que si vous êtes actuellement un apprenti' 
+      });
+    }
+
+    // Mettre à jour le rôle vers tuteur
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      { role: 'tuteur' },
+      { new: true }
+    );
+
+    res.json({
+      success: true,
+      message: 'Félicitations ! Vous êtes maintenant tuteur.',
+      user: updatedUser.toJSON()
+    });
+  } catch (error) {
+    console.error('Erreur becomeTutor:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur interne du serveur'
+    });
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
@@ -344,5 +381,6 @@ module.exports = {
   listPreviousAvatars,
   restoreAvatar,
   getProgress,
-  updateLessonProgress
+  updateLessonProgress,
+  becomeTutor
 };

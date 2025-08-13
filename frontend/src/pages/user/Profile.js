@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { userAPI } from '../../services/api';
+import { userAPI, authAPI } from '../../services/api';
 
 const Profile = () => {
-  const { user, login } = useAuth();
+  const { user, login, logout } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     bio: '',
@@ -15,7 +15,8 @@ const Profile = () => {
   const [success, setSuccess] = useState('');
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
-  const [avatarHistory, setAvatarHistory] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -25,15 +26,17 @@ const Profile = () => {
         phone: user.profile?.phone || '',
         dateOfBirth: user.profile?.dateOfBirth ? user.profile.dateOfBirth.split('T')[0] : '',
       });
+      
+      // Charger l'avatar existant depuis le serveur
       if (user.profile?.avatar) {
-        const url = `http://localhost:5000${user.profile.avatar}`;
-        // Bust cache by appending timestamp
-        setAvatarPreview(`${url}?t=${Date.now()}`);
+        const avatarUrl = user.profile.avatar.startsWith('http') 
+          ? user.profile.avatar 
+          : `http://localhost:5000${user.profile.avatar}`;
+        setAvatarPreview(avatarUrl);
+      } else {
+        // S'assurer qu'il n'y a pas d'ancien aperçu si pas d'avatar
+        setAvatarPreview(null);
       }
-      // Charger l'historique des avatars
-      userAPI.getAvatarHistory()
-        .then(res => setAvatarHistory(res.data.previousAvatars || []))
-        .catch(() => {});
     }
   }, [user]);
 
@@ -108,7 +111,7 @@ const Profile = () => {
       };
 
       const response = await userAPI.updateProfile(updateData);
-
+      
       // Mettre à jour l'avatar si un nouveau fichier a été sélectionné
       if (avatarFile) {
         const formDataAvatar = new FormData();
@@ -117,22 +120,8 @@ const Profile = () => {
         await userAPI.updateAvatar(formDataAvatar);
       }
 
-      // Recharger le profil à jour (inclut le nouvel avatar)
-      const refreshed = await userAPI.getProfile();
-      const updatedUser = refreshed.data.user;
-      login(updatedUser, localStorage.getItem('token'));
-
-      // Mettre à jour l'aperçu avec l'avatar courant (serveur)
-      if (updatedUser?.profile?.avatar) {
-        const url = `http://localhost:5000${updatedUser.profile.avatar}`;
-        setAvatarPreview(`${url}?t=${Date.now()}`);
-      }
-
-      // Rafraîchir l'historique des avatars
-      try {
-        const hist = await userAPI.getAvatarHistory();
-        setAvatarHistory(hist.data.previousAvatars || []);
-      } catch {}
+      // Mettre à jour le contexte utilisateur
+      login(response.data.user, localStorage.getItem('token'));
       
       setSuccess('Profil mis à jour avec succès !');
       setAvatarFile(null);
@@ -140,6 +129,66 @@ const Profile = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Erreur lors de la mise à jour du profil');
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBecomeTutor = async () => {
+    if (!window.confirm('Êtes-vous sûr de vouloir devenir tuteur ? Cette action vous donnera accès à des fonctionnalités supplémentaires.')) {
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    
+    try {
+      const response = await userAPI.becomeTutor();
+      
+      // Mettre à jour le contexte utilisateur avec le nouveau rôle
+      login(response.data.user, localStorage.getItem('token'));
+      
+      setSuccess('Félicitations ! Vous êtes maintenant tuteur. Vous avez accès à de nouvelles fonctionnalités.');
+      
+    } catch (err) {
+      setError(err.response?.data?.message || 'Erreur lors de la demande pour devenir tuteur');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'SUPPRIMER MON COMPTE') {
+      setError('Veuillez taper exactement "SUPPRIMER MON COMPTE" pour confirmer');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    
+    try {
+      const response = await authAPI.deleteAccount();
+      
+      if (response.data.success) {
+        // Nettoyer le localStorage
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        
+        // Déconnexion après suppression
+        logout();
+        
+        // Afficher un message de confirmation avant redirection
+        alert('Votre compte a été supprimé définitivement. Vous allez être redirigé vers la page d\'accueil.');
+        
+        // Redirection vers la page d'accueil
+        window.location.href = '/';
+      } else {
+        setError('Erreur lors de la suppression du compte');
+        setLoading(false);
+      }
+      
+    } catch (err) {
+      console.error('Erreur suppression compte:', err);
+      setError(err.response?.data?.message || 'Erreur lors de la suppression du compte');
       setLoading(false);
     }
   };
@@ -210,6 +259,7 @@ const Profile = () => {
                     backgroundImage: avatarPreview ? `url(${avatarPreview})` : 'none',
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
+                    border: avatarPreview ? '3px solid #007bff' : '3px dashed #dee2e6',
                   }}
                   onMouseEnter={(e) => {
                     if (!avatarPreview) {
@@ -231,6 +281,23 @@ const Profile = () => {
                         Cliquez pour choisir une photo
                       </div>
                     </div>
+                  )}
+                  
+                  {/* Image existante */}
+                  {avatarPreview && (
+                    <img 
+                      src={avatarPreview} 
+                      alt="Avatar" 
+                      style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        borderRadius: '50%', 
+                        objectFit: 'cover',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0
+                      }} 
+                    />
                   )}
                   
                   {/* Overlay pour l'image existante */}
@@ -382,289 +449,6 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Historique des avatars */}
-            {avatarHistory.length > 0 && (
-              <div style={{ marginBottom: '2rem' }}>
-                <h3 style={{ 
-                  marginBottom: '1.5rem', 
-                  color: '#495057',
-                  fontSize: '1.25rem',
-                  fontWeight: '600',
-                  borderBottom: '2px solid #e9ecef',
-                  paddingBottom: '0.5rem'
-                }}>
-                  📸 Anciennes photos
-                </h3>
-                <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
-                  gap: '16px',
-                  padding: '1rem',
-                  backgroundColor: '#f8f9fa',
-                  borderRadius: '8px',
-                  border: '1px solid #e9ecef'
-                }}>
-                  {avatarHistory.map((p, idx) => (
-                    <div key={idx} style={{ 
-                      textAlign: 'center',
-                      padding: '8px',
-                      backgroundColor: 'white',
-                      borderRadius: '8px',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                      transition: 'all 0.3s ease',
-                      border: '1px solid #dee2e6'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-                    }}
-                    >
-                      <div style={{ position: 'relative', marginBottom: '8px' }}>
-                        <img
-                          src={`http://localhost:5000${p}?t=${Date.now()}`}
-                          alt={`Ancien avatar ${idx+1}`}
-                          style={{
-                            width: '80px',
-                            height: '80px',
-                            borderRadius: '50%',
-                            objectFit: 'cover',
-                            border: '3px solid #fff',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                            display: 'block',
-                            margin: '0 auto'
-                          }}
-                        />
-                        <div style={{
-                          position: 'absolute',
-                          top: '-4px',
-                          right: '-4px',
-                          background: '#6c757d',
-                          color: 'white',
-                          borderRadius: '50%',
-                          width: '24px',
-                          height: '24px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '0.7rem',
-                          fontWeight: 'bold'
-                        }}>
-                          {idx + 1}
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          try {
-                            setLoading(true);
-                            setError('');
-                            await userAPI.restoreAvatar(p);
-                            // Mettre à jour l'aperçu courant
-                            setAvatarPreview(`http://localhost:5000${p}?t=${Date.now()}`);
-                            // Recharger le profil
-                            const refreshed = await userAPI.getProfile();
-                            login(refreshed.data.user, localStorage.getItem('token'));
-                            // Rafraîchir l'historique
-                            const hist = await userAPI.getAvatarHistory();
-                            setAvatarHistory(hist.data.previousAvatars || []);
-                            setSuccess('Avatar restauré avec succès !');
-                          } catch (e) {
-                            setError('Impossible de restaurer cet avatar');
-                          } finally {
-                            setLoading(false);
-                          }
-                        }}
-                        style={{
-                          background: 'linear-gradient(135deg, #007bff, #0056b3)',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '20px',
-                          padding: '6px 12px',
-                          fontSize: '0.75rem',
-                          fontWeight: '500',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease',
-                          boxShadow: '0 2px 4px rgba(0,123,255,0.3)',
-                          width: '100%'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.background = 'linear-gradient(135deg, #0056b3, #004085)';
-                          e.target.style.transform = 'scale(1.05)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.background = 'linear-gradient(135deg, #007bff, #0056b3)';
-                          e.target.style.transform = 'scale(1)';
-                        }}
-                      >
-                        🔄 Restaurer
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ 
-                  marginTop: '0.5rem',
-                  textAlign: 'center',
-                  fontSize: '0.85rem',
-                  color: '#6c757d',
-                  fontStyle: 'italic'
-                }}>
-                  Cliquez sur "Restaurer" pour remettre une ancienne photo comme photo de profil actuelle
-                </div>
-              </div>
-            )}
-
-            {/* Options avancées */}
-            <div style={{ marginBottom: '2rem' }}>
-              <h3 style={{ 
-                marginBottom: '1.5rem', 
-                color: '#495057',
-                fontSize: '1.25rem',
-                fontWeight: '600',
-                borderBottom: '2px solid #e9ecef',
-                paddingBottom: '0.5rem'
-              }}>
-                ⚙️ Options avancées
-              </h3>
-              
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                gap: '16px'
-              }}>
-                {/* Devenir tuteur */}
-                <div style={{ 
-                  padding: '1.5rem',
-                  backgroundColor: '#f8f9fa',
-                  borderRadius: '8px',
-                  border: '1px solid #e9ecef',
-                  textAlign: 'center'
-                }}>
-                  <div style={{ 
-                    fontSize: '2rem', 
-                    marginBottom: '1rem',
-                    color: '#28a745'
-                  }}>
-                    👨‍🏫
-                  </div>
-                  <h4 style={{ 
-                    marginBottom: '0.5rem',
-                    color: '#495057',
-                    fontSize: '1.1rem'
-                  }}>
-                    Devenir un tuteur
-                  </h4>
-                  <p style={{ 
-                    marginBottom: '1rem',
-                    color: '#6c757d',
-                    fontSize: '0.9rem',
-                    lineHeight: '1.4'
-                  }}>
-                    Partagez vos connaissances et aidez d'autres apprenants à progresser
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // TODO: Implémenter la logique pour devenir tuteur
-                      setSuccess('Fonctionnalité en cours de développement !');
-                    }}
-                    style={{
-                      background: 'linear-gradient(135deg, #28a745, #1e7e34)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '25px',
-                      padding: '10px 20px',
-                      fontSize: '0.9rem',
-                      fontWeight: '500',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      boxShadow: '0 2px 4px rgba(40,167,69,0.3)',
-                      width: '100%'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.background = 'linear-gradient(135deg, #1e7e34, #155724)';
-                      e.target.style.transform = 'translateY(-1px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.background = 'linear-gradient(135deg, #28a745, #1e7e34)';
-                      e.target.style.transform = 'translateY(0)';
-                    }}
-                  >
-                    🚀 Demander à devenir tuteur
-                  </button>
-                </div>
-
-                {/* Supprimer le compte */}
-                <div style={{ 
-                  padding: '1.5rem',
-                  backgroundColor: '#fff5f5',
-                  borderRadius: '8px',
-                  border: '1px solid #fed7d7',
-                  textAlign: 'center'
-                }}>
-                  <div style={{ 
-                    fontSize: '2rem', 
-                    marginBottom: '1rem',
-                    color: '#dc3545'
-                  }}>
-                    ⚠️
-                  </div>
-                  <h4 style={{ 
-                    marginBottom: '0.5rem',
-                    color: '#495057',
-                    fontSize: '1.1rem'
-                  }}>
-                    Supprimer mon compte
-                  </h4>
-                  <p style={{ 
-                    marginBottom: '1rem',
-                    color: '#6c757d',
-                    fontSize: '0.9rem',
-                    lineHeight: '1.4'
-                  }}>
-                    Cette action est irréversible. Toutes vos données seront définitivement supprimées.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.confirm('Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.')) {
-                        if (window.confirm('Dernière confirmation : Voulez-vous vraiment supprimer votre compte ?')) {
-                          // TODO: Implémenter la suppression du compte
-                          setError('Fonctionnalité en cours de développement !');
-                        }
-                      }
-                    }}
-                    style={{
-                      background: 'linear-gradient(135deg, #dc3545, #c82333)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '25px',
-                      padding: '10px 20px',
-                      fontSize: '0.9rem',
-                      fontWeight: '500',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      boxShadow: '0 2px 4px rgba(220,53,69,0.3)',
-                      width: '100%'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.background = 'linear-gradient(135deg, #c82333, #a71e2a)';
-                      e.target.style.transform = 'translateY(-1px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.background = 'linear-gradient(135deg, #dc3545, #c82333)';
-                      e.target.style.transform = 'translateY(0)';
-                    }}
-                  >
-                    🗑️ Supprimer mon compte
-                  </button>
-                </div>
-              </div>
-            </div>
-
             <button
               type="submit"
               className="btn btn-primary"
@@ -686,6 +470,320 @@ const Profile = () => {
               )}
             </button>
           </form>
+
+          {/* Section Actions importantes */}
+          <div style={{ 
+            marginTop: '2rem', 
+            paddingTop: '2rem', 
+            borderTop: '1px solid #dee2e6' 
+          }}>
+            <h3 style={{ marginBottom: '1.5rem', color: '#495057' }}>Actions importantes</h3>
+            
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              {/* Bouton Devenir tuteur */}
+              {user?.role === 'apprenti' && (
+                <button
+                  type="button"
+                  onClick={handleBecomeTutor}
+                  disabled={loading}
+                  style={{
+                    background: 'linear-gradient(135deg, #28a745, #20c997)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '12px 24px',
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 2px 4px rgba(40,167,69,0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 4px 8px rgba(40,167,69,0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 2px 4px rgba(40,167,69,0.3)';
+                  }}
+                >
+                  <span>👨‍🏫</span>
+                  Devenir tuteur
+                </button>
+              )}
+
+              {/* Bouton Supprimer le compte */}
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(true)}
+                style={{
+                  background: 'linear-gradient(135deg, #dc3545, #c82333)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '12px 24px',
+                  fontSize: '0.9rem',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 2px 4px rgba(220,53,69,0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 4px 8px rgba(220,53,69,0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 2px 4px rgba(220,53,69,0.3)';
+                }}
+              >
+                <span>🗑️</span>
+                Supprimer mon compte
+              </button>
+            </div>
+
+            {/* Message d'information */}
+            <div style={{ 
+              marginTop: '1rem',
+              padding: '1rem',
+              backgroundColor: '#f8f9fa',
+              borderRadius: '8px',
+              border: '1px solid #dee2e6'
+            }}>
+              <p style={{ 
+                margin: 0, 
+                fontSize: '0.9rem', 
+                color: '#6c757d',
+                lineHeight: '1.5'
+              }}>
+                <strong>💡 Note :</strong> Ces actions sont importantes et peuvent avoir des conséquences permanentes. 
+                Prenez le temps de bien réfléchir avant de les effectuer.
+              </p>
+            </div>
+          </div>
+
+          {/* Modal de suppression de compte */}
+          {showDeleteModal && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000
+            }}>
+              <div style={{
+                backgroundColor: 'white',
+                borderRadius: '12px',
+                padding: '2rem',
+                maxWidth: '500px',
+                width: '90%',
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
+                position: 'relative'
+              }}>
+                {/* En-tête du modal */}
+                <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                  <div style={{ 
+                    fontSize: '3rem', 
+                    marginBottom: '1rem',
+                    color: '#dc3545'
+                  }}>
+                    ⚠️
+                  </div>
+                  <h3 style={{ 
+                    color: '#dc3545', 
+                    marginBottom: '0.5rem',
+                    fontSize: '1.5rem',
+                    fontWeight: '700'
+                  }}>
+                    Supprimer définitivement votre compte
+                  </h3>
+                  <p style={{ color: '#6c757d', fontSize: '1rem' }}>
+                    Cette action est <strong>irréversible</strong>
+                  </p>
+                </div>
+
+                {/* Liste des conséquences */}
+                <div style={{ 
+                  backgroundColor: '#fff5f5', 
+                  border: '1px solid #fed7d7',
+                  borderRadius: '8px', 
+                  padding: '1rem', 
+                  marginBottom: '1.5rem'
+                }}>
+                  <h4 style={{ 
+                    color: '#dc3545', 
+                    marginBottom: '0.75rem',
+                    fontSize: '1rem',
+                    fontWeight: '600'
+                  }}>
+                    ⚡ Conséquences de la suppression :
+                  </h4>
+                  <ul style={{ 
+                    margin: 0, 
+                    paddingLeft: '1.5rem',
+                    color: '#721c24',
+                    lineHeight: '1.6'
+                  }}>
+                    <li>Toutes vos données personnelles seront supprimées</li>
+                    <li>Votre historique d'apprentissage sera perdu</li>
+                    <li>Vous ne pourrez plus accéder à vos cours</li>
+                    <li>Cette action ne peut pas être annulée</li>
+                  </ul>
+                </div>
+
+                {/* Confirmation par saisie */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ 
+                    display: 'block', 
+                    marginBottom: '0.5rem',
+                    fontWeight: '600',
+                    color: '#495057'
+                  }}>
+                    Pour confirmer, tapez exactement : <code style={{
+                      backgroundColor: '#e9ecef',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      color: '#dc3545',
+                      fontWeight: 'bold'
+                    }}>SUPPRIMER MON COMPTE</code>
+                  </label>
+                  <input
+                    type="text"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    placeholder="Tapez la confirmation ici..."
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: `2px solid ${deleteConfirmText === 'SUPPRIMER MON COMPTE' ? '#28a745' : '#dc3545'}`,
+                      borderRadius: '6px',
+                      fontSize: '1rem',
+                      fontFamily: 'monospace',
+                      backgroundColor: deleteConfirmText === 'SUPPRIMER MON COMPTE' ? '#f8fff9' : '#fff5f5'
+                    }}
+                    autoFocus
+                  />
+                  {deleteConfirmText && deleteConfirmText !== 'SUPPRIMER MON COMPTE' && (
+                    <small style={{ color: '#dc3545', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
+                      ❌ Le texte ne correspond pas exactement
+                    </small>
+                  )}
+                  {deleteConfirmText === 'SUPPRIMER MON COMPTE' && (
+                    <small style={{ color: '#28a745', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
+                      ✅ Confirmation correcte
+                    </small>
+                  )}
+                </div>
+
+                {/* Boutons d'action */}
+                <div style={{ 
+                  display: 'flex', 
+                  gap: '12px',
+                  justifyContent: 'flex-end'
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowDeleteModal(false);
+                      setDeleteConfirmText('');
+                      setError('');
+                    }}
+                    disabled={loading}
+                    style={{
+                      background: '#6c757d',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '10px 20px',
+                      fontSize: '0.9rem',
+                      fontWeight: '500',
+                      cursor: loading ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.3s ease',
+                      opacity: loading ? 0.6 : 1
+                    }}
+                  >
+                    🔙 Annuler
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={handleDeleteAccount}
+                    disabled={loading || deleteConfirmText !== 'SUPPRIMER MON COMPTE'}
+                    style={{
+                      background: deleteConfirmText === 'SUPPRIMER MON COMPTE' 
+                        ? 'linear-gradient(135deg, #dc3545, #c82333)'
+                        : '#6c757d',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '10px 20px',
+                      fontSize: '0.9rem',
+                      fontWeight: '500',
+                      cursor: (loading || deleteConfirmText !== 'SUPPRIMER MON COMPTE') ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.3s ease',
+                      opacity: (loading || deleteConfirmText !== 'SUPPRIMER MON COMPTE') ? 0.6 : 1,
+                      boxShadow: deleteConfirmText === 'SUPPRIMER MON COMPTE' 
+                        ? '0 2px 4px rgba(220,53,69,0.4)' 
+                        : 'none'
+                    }}
+                  >
+                    {loading ? (
+                      <span>⏳ Suppression...</span>
+                    ) : (
+                      <span>🗑️ Supprimer définitivement</span>
+                    )}
+                  </button>
+                </div>
+
+                {/* Bouton de fermeture */}
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeleteConfirmText('');
+                    setError('');
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: '10px',
+                    right: '10px',
+                    background: 'transparent',
+                    border: 'none',
+                    fontSize: '1.5rem',
+                    cursor: 'pointer',
+                    color: '#6c757d',
+                    padding: '5px',
+                    borderRadius: '50%',
+                    width: '35px',
+                    height: '35px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#f8f9fa';
+                    e.target.style.color = '#dc3545';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = 'transparent';
+                    e.target.style.color = '#6c757d';
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

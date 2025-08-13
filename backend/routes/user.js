@@ -7,7 +7,8 @@ const {
   updateLessonProgress,
   updateAvatar,
   listPreviousAvatars,
-  restoreAvatar
+  restoreAvatar,
+  becomeTutor
 } = require('../controllers/userController');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -25,5 +26,8 @@ router.post('/avatar/restore', restoreAvatar);
 // Progress routes
 router.get('/progress', getProgress);
 router.post('/progress', updateLessonProgress);
+
+// Tutor routes
+router.post('/become-tutor', becomeTutor);
 
 module.exports = router; 
