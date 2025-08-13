@@ -47,6 +47,7 @@ api.interceptors.response.use(
 export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
   register: (userData) => api.post('/auth/register', userData),
+  signup: (userData) => api.post('/auth/register', userData), // Alias pour signup
   logout: () => api.post('/auth/logout'),
   deleteAccount: () => api.delete('/auth/delete'),
 };

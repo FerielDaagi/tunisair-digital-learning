@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { authAPI } from '../../services/api';
 
 const Signup = () => {
@@ -97,13 +97,15 @@ const Signup = () => {
         }
       };
 
-      formDataToSend.append('user', JSON.stringify(userPayload));
+      formDataToSend.append('userData', JSON.stringify(userPayload));
       
       if (formData.avatar) {
         formDataToSend.append('avatar', formData.avatar);
       }
 
+      console.log('Envoi des données:', { userPayload, hasAvatar: !!formData.avatar });
       const response = await authAPI.signup(formDataToSend);
+      console.log('Réponse signup:', response);
       
       if (response.data.success) {
         setSuccess('Compte créé avec succès ! Redirection en cours...');
@@ -112,18 +114,38 @@ const Signup = () => {
         }, 2000);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de la création du compte');
+      console.error('Erreur signup:', err);
+      console.error('Détails de l\'erreur:', {
+        message: err.message,
+        response: err.response,
+        status: err.response?.status,
+        data: err.response?.data
+      });
+      
+      let errorMessage = 'Erreur lors de la création du compte. Veuillez réessayer.';
+      
+      if (err.response?.status === 400) {
+        errorMessage = err.response.data.message || 'Données invalides.';
+      } else if (err.response?.status === 409) {
+        errorMessage = 'Un utilisateur avec cet email existe déjà.';
+      } else if (err.response?.status === 500) {
+        errorMessage = 'Erreur serveur. Veuillez réessayer plus tard.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="auth-container">
-      <div className="card">
+    <div className="login-page">
+      <div className="login-card">
         <div className="card-header">
           <h2 className="card-title">Créer un compte</h2>
-          <p style={{ color: '#6c757d', margin: 0 }}>
+          <p style={{ color: '#6c757d', margin: 0, fontSize: '1.1rem' }}>
             Inscrivez-vous pour accéder à Tunisair Academy
           </p>
         </div>
@@ -134,9 +156,10 @@ const Signup = () => {
               backgroundColor: '#f8d7da', 
               color: '#721c24', 
               padding: '0.75rem', 
-              borderRadius: '4px', 
-              marginBottom: '1rem',
-              border: '1px solid #f5c6cb'
+              borderRadius: '8px', 
+              marginBottom: '1.5rem',
+              border: '1px solid #f5c6cb',
+              fontSize: '0.9rem'
             }}>
               {error}
             </div>
@@ -147,9 +170,10 @@ const Signup = () => {
               backgroundColor: '#d4edda', 
               color: '#155724', 
               padding: '0.75rem', 
-              borderRadius: '4px', 
-              marginBottom: '1rem',
-              border: '1px solid #c3e6cb'
+              borderRadius: '8px', 
+              marginBottom: '1.5rem',
+              border: '1px solid #c3e6cb',
+              fontSize: '0.9rem'
             }}>
               {success}
             </div>
@@ -376,7 +400,7 @@ const Signup = () => {
                 <div style={{ 
                   backgroundColor: '#e9ecef', 
                   padding: '0.5rem', 
-                  borderRadius: '4px', 
+                  borderRadius: '8px', 
                   marginBottom: '1rem',
                   fontSize: '0.85rem',
                   color: '#495057'
@@ -443,42 +467,25 @@ const Signup = () => {
           <button
             type="submit"
             className="btn btn-primary"
-            style={{ 
-              width: '100%',
-              padding: '12px',
-              fontSize: '1rem',
-              fontWeight: '500',
-              marginBottom: '1rem'
-            }}
             disabled={loading}
           >
-            {loading ? (
-              <span>
-                Création du compte...
-              </span>
-            ) : (
-              <span>
-                Créer mon compte
-              </span>
-            )}
+            {loading ? 'Création du compte...' : 'Créer mon compte'}
           </button>
         </form>
         
         <div className="text-center" style={{ paddingTop: '1rem', borderTop: '1px solid #dee2e6' }}>
           <p style={{ color: '#6c757d', fontSize: '0.9rem', margin: 0 }}>
             Déjà un compte ?{' '}
-            <a 
-              href="/login" 
+            <Link 
+              to="/login" 
               style={{ 
                 color: 'var(--primary-blue)', 
                 textDecoration: 'none',
                 fontWeight: '500'
               }}
-              onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
-              onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
             >
               Connectez-vous ici
-            </a>
+            </Link>
           </p>
         </div>
       </div>

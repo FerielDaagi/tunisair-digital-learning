@@ -28,24 +28,51 @@ const Login = () => {
     setError('');
 
     try {
+      console.log('Tentative de connexion avec:', { email: formData.email });
       const response = await authAPI.login(formData);
+      console.log('Réponse de connexion:', response);
+      
       const { user, token } = response.data;
+      
+      if (!user || !token) {
+        throw new Error('Réponse invalide du serveur');
+      }
       
       login(user, token);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Échec de la connexion. Veuillez réessayer.');
+      console.error('Erreur de connexion:', err);
+      console.error('Détails de l\'erreur:', {
+        message: err.message,
+        response: err.response,
+        status: err.response?.status,
+        data: err.response?.data
+      });
+      
+      let errorMessage = 'Échec de la connexion. Veuillez réessayer.';
+      
+      if (err.response?.status === 401) {
+        errorMessage = 'Email ou mot de passe incorrect.';
+      } else if (err.response?.status === 404) {
+        errorMessage = 'Utilisateur non trouvé.';
+      } else if (err.response?.status === 500) {
+        errorMessage = 'Erreur serveur. Veuillez réessayer plus tard.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="auth-container">
-      <div className="card">
+    <div className="login-page">
+      <div className="login-card">
         <div className="card-header">
           <h2 className="card-title">Bienvenue</h2>
-          <p className="text-center" style={{ color: '#6c757d' }}>
+          <p style={{ color: '#6c757d', margin: 0, fontSize: '1.1rem' }}>
             Connectez-vous à votre compte Tunisair Academy
           </p>
         </div>
@@ -56,8 +83,10 @@ const Login = () => {
               backgroundColor: '#f8d7da', 
               color: '#721c24', 
               padding: '0.75rem', 
-              borderRadius: '4px', 
-              marginBottom: '1rem' 
+              borderRadius: '8px', 
+              marginBottom: '1.5rem',
+              border: '1px solid #f5c6cb',
+              fontSize: '0.9rem'
             }}>
               {error}
             </div>
@@ -101,19 +130,19 @@ const Login = () => {
         </form>
         
         <div className="text-center mt-3">
-          <p style={{ color: '#6c757d', fontSize: '0.9rem' }}>
+          <p style={{ color: '#6c757d', fontSize: '0.95rem', margin: '1.5rem 0 0 0' }}>
             Vous n'avez pas de compte ?{' '}
-            <Link to="/signup" style={{ color: 'var(--primary-blue)', textDecoration: 'none' }}>
+            <Link to="/signup" style={{ color: 'var(--primary-blue)', textDecoration: 'none', fontWeight: '600' }}>
               Inscrivez-vous ici
             </Link>
           </p>
         </div>
-      </div>
-      
-      <div className="text-center mt-3">
-        <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.85rem' }}>
-          Identifiants de démonstration : admin@example.com / password123
-        </p>
+        
+        <div className="text-center mt-3">
+          <p style={{ color: '#6c757d', fontSize: '0.85rem', margin: '1rem 0 0 0', opacity: 0.8 }}>
+            Identifiants de démonstration : admin@example.com / password123
+          </p>
+        </div>
       </div>
     </div>
   );
