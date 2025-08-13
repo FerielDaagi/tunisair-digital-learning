@@ -18,11 +18,44 @@ const AdminDashboard = () => {
 
   const loadUsers = async () => {
     try {
+      setLoading(true);
+      setError('');
+      console.log('Tentative de chargement des utilisateurs...');
+      
       const response = await userAPI.getAllUsers();
-      setUsers(response.data.users || []);
+      console.log('Réponse getAllUsers:', response);
+      
+      if (response.data && response.data.users) {
+        setUsers(response.data.users);
+        console.log('Utilisateurs chargés:', response.data.users.length);
+      } else {
+        console.warn('Réponse invalide:', response);
+        setError('Format de réponse invalide du serveur');
+      }
     } catch (err) {
-      setError('Erreur lors du chargement des utilisateurs');
       console.error('Erreur loadUsers:', err);
+      console.error('Détails de l\'erreur:', {
+        message: err.message,
+        response: err.response,
+        status: err.response?.status,
+        data: err.response?.data
+      });
+      
+      let errorMessage = 'Erreur lors du chargement des utilisateurs';
+      
+      if (err.response?.status === 403) {
+        errorMessage = 'Accès refusé. Rôle administrateur requis.';
+      } else if (err.response?.status === 401) {
+        errorMessage = 'Session expirée. Veuillez vous reconnecter.';
+      } else if (err.response?.status === 500) {
+        errorMessage = 'Erreur serveur. Veuillez réessayer plus tard.';
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

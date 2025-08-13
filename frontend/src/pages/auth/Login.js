@@ -139,9 +139,7 @@ const Login = () => {
         </div>
         
         <div className="text-center mt-3">
-          <p style={{ color: '#6c757d', fontSize: '0.85rem', margin: '1rem 0 0 0', opacity: 0.8 }}>
-            Identifiants de démonstration : admin@example.com / password123
-          </p>
+       
         </div>
       </div>
     </div>
