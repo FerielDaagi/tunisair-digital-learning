@@ -21,6 +21,31 @@ const Navbar = () => {
           <ul className="nav-links">
             <li><Link to="/">Dashboard</Link></li>
             <li><Link to="/courses">Courses</Link></li>
+            {user?.role === 'admin' && (
+              <li>
+                <Link to="/admin" style={{
+                  background: 'linear-gradient(135deg, #dc3545, #c82333)',
+                  color: 'white',
+                  padding: '8px 16px',
+                  borderRadius: '20px',
+                  textDecoration: 'none',
+                  fontSize: '0.9rem',
+                  fontWeight: '500',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.transform = 'scale(1.05)';
+                  e.target.style.boxShadow = '0 2px 8px rgba(220,53,69,0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'scale(1)';
+                  e.target.style.boxShadow = 'none';
+                }}
+                >
+                  👑 Admin
+                </Link>
+              </li>
+            )}
             <li>
               <Link to="/profile" style={{ 
                 display: 'flex', 

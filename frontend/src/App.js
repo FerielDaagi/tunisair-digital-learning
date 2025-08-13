@@ -7,6 +7,7 @@ import Dashboard from './pages/dashboard/Dashboard';
 import Courses from './pages/courses/Courses';
 import CourseDetail from './pages/courses/CourseDetail';
 import Profile from './pages/user/Profile';
+import AdminDashboard from './pages/admin/AdminDashboard';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import Signup from './pages/auth/Signup';
 function App() {
@@ -35,6 +36,11 @@ function App() {
             <Route path="/profile" element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <AdminDashboard />
               </ProtectedRoute>
             } />
             <Route path="/signup" element={<Signup />} />

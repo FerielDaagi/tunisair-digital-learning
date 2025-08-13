@@ -9,7 +9,12 @@ const {
   listPreviousAvatars,
   restoreAvatar,
   becomeTutor,
-  deleteAvatarFromHistory
+  deleteAvatarFromHistory,
+  // Admin functions
+  getAllUsers,
+  toggleUserStatus,
+  promoteToTutor,
+  deleteUser
 } = require('../controllers/userController');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -33,5 +38,12 @@ router.post('/become-tutor', becomeTutor);
 
 // Avatar history routes
 router.delete('/avatar/history', deleteAvatarFromHistory);
+
+// ===== ROUTES ADMIN =====
+// Toutes les routes admin nécessitent le rôle admin
+router.get('/admin/all', getAllUsers);
+router.put('/admin/:userId/status', toggleUserStatus);
+router.put('/admin/:userId/promote', promoteToTutor);
+router.delete('/admin/:userId', deleteUser);
 
 module.exports = router; 

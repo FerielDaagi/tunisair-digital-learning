@@ -439,6 +439,204 @@ const deleteAvatarFromHistory = async (req, res) => {
   }
 };
 
+// ===== FONCTIONS ADMIN =====
+
+// Récupérer tous les utilisateurs (admin seulement)
+const getAllUsers = async (req, res) => {
+  try {
+    // Vérifier que l'utilisateur est admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès refusé. Rôle administrateur requis.'
+      });
+    }
+
+    const users = await User.find({}).select('-password');
+    
+    res.json({
+      success: true,
+      users: users
+    });
+  } catch (error) {
+    console.error('Erreur getAllUsers:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur interne du serveur'
+    });
+  }
+};
+
+// Activer/Désactiver un utilisateur (admin seulement)
+const toggleUserStatus = async (req, res) => {
+  try {
+    // Vérifier que l'utilisateur est admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès refusé. Rôle administrateur requis.'
+      });
+    }
+
+    const { userId } = req.params;
+    const { isActive } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur introuvable'
+      });
+    }
+
+    // Empêcher l'admin de se désactiver lui-même
+    if (userId === req.user.id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vous ne pouvez pas modifier votre propre statut'
+      });
+    }
+
+    user.isActive = isActive;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: `Utilisateur ${isActive ? 'activé' : 'désactivé'} avec succès`,
+      user: user.toJSON()
+    });
+  } catch (error) {
+    console.error('Erreur toggleUserStatus:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur interne du serveur'
+    });
+  }
+};
+
+// Promouvoir un utilisateur au rôle de tuteur (admin seulement)
+const promoteToTutor = async (req, res) => {
+  try {
+    // Vérifier que l'utilisateur est admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès refusé. Rôle administrateur requis.'
+      });
+    }
+
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur introuvable'
+      });
+    }
+
+    // Vérifier que l'utilisateur est un apprenti
+    if (user.role !== 'apprenti') {
+      return res.status(400).json({
+        success: false,
+        message: 'Seuls les apprentis peuvent être promus tuteurs'
+      });
+    }
+
+    user.role = 'tuteur';
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Utilisateur promu tuteur avec succès',
+      user: user.toJSON()
+    });
+  } catch (error) {
+    console.error('Erreur promoteToTutor:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur interne du serveur'
+    });
+  }
+};
+
+// Supprimer un utilisateur (admin seulement)
+const deleteUser = async (req, res) => {
+  try {
+    // Vérifier que l'utilisateur est admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès refusé. Rôle administrateur requis.'
+      });
+    }
+
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur introuvable'
+      });
+    }
+
+    // Empêcher l'admin de se supprimer lui-même
+    if (userId === req.user.id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vous ne pouvez pas supprimer votre propre compte'
+      });
+    }
+
+    // Supprimer l'avatar du serveur s'il existe
+    if (user.profile?.avatar) {
+      const fs = require('fs');
+      const path = require('path');
+      const avatarPath = path.join(__dirname, '..', user.profile.avatar);
+      try {
+        if (fs.existsSync(avatarPath)) {
+          fs.unlinkSync(avatarPath);
+          console.log('Avatar supprimé:', user.profile.avatar);
+        }
+      } catch (err) {
+        console.error('Erreur suppression avatar:', err);
+      }
+    }
+
+    // Supprimer tous les avatars de l'historique
+    if (user.profile?.previousAvatars && Array.isArray(user.profile.previousAvatars)) {
+      const fs = require('fs');
+      const path = require('path');
+      user.profile.previousAvatars.forEach(avatarPath => {
+        const fullPath = path.join(__dirname, '..', avatarPath);
+        try {
+          if (fs.existsSync(fullPath)) {
+            fs.unlinkSync(fullPath);
+            console.log('Avatar historique supprimé:', avatarPath);
+          }
+        } catch (err) {
+          console.error('Erreur suppression avatar historique:', err);
+        }
+      });
+    }
+
+    // Supprimer l'utilisateur de la base de données
+    await User.findByIdAndDelete(userId);
+
+    res.json({
+      success: true,
+      message: 'Utilisateur supprimé avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur deleteUser:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur interne du serveur'
+    });
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
@@ -448,5 +646,10 @@ module.exports = {
   getProgress,
   updateLessonProgress,
   becomeTutor,
-  deleteAvatarFromHistory
+  deleteAvatarFromHistory,
+  // Admin functions
+  getAllUsers,
+  toggleUserStatus,
+  promoteToTutor,
+  deleteUser
 };

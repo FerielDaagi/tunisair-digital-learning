@@ -7,6 +7,7 @@ const Signup = () => {
     name: '',
     email: '',
     password: '',
+    role: 'apprenti', // Rôle par défaut
     avatar: null,
     bio: '',
     phone: '',
@@ -95,7 +96,7 @@ const Signup = () => {
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        role: 'apprenti', // Rôle par défaut
+        role: formData.role, // Rôle sélectionné par l'utilisateur
         profile: {
           bio: formData.bio,
           phone: formData.phone,
@@ -383,6 +384,32 @@ const Signup = () => {
                   placeholder="Minimum 8 caractères"
                   minLength="8"
                 />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="role" className="form-label">Rôle *</label>
+                <select
+                  id="role"
+                  name="role"
+                  className="form-control"
+                  value={formData.role}
+                  onChange={handleChange}
+                  required
+                  style={{
+                    padding: '0.75rem',
+                    border: '1px solid #ced4da',
+                    borderRadius: '4px',
+                    fontSize: '1rem',
+                    backgroundColor: 'white'
+                  }}
+                >
+                  <option value="apprenti">👨‍🎓 Apprenti</option>
+                  <option value="tuteur">👨‍🏫 Tuteur</option>
+                  <option value="admin">👑 Administrateur</option>
+                </select>
+                <small style={{ color: '#6c757d', fontSize: '0.8rem', marginTop: '0.25rem', display: 'block' }}>
+                  💡 Pour les tests uniquement - choisissez le rôle souhaité
+                </small>
               </div>
 
 

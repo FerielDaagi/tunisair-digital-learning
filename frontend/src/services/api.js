@@ -72,6 +72,11 @@ export const userAPI = {
   }),
   getProgress: () => api.get('/user/progress'),
   becomeTutor: () => api.post('/user/become-tutor'),
+  // Admin functions
+  getAllUsers: () => api.get('/user/admin/all'),
+  toggleUserStatus: (userId, isActive) => api.put(`/user/admin/${userId}/status`, { isActive }),
+  promoteToTutor: (userId) => api.put(`/user/admin/${userId}/promote`),
+  deleteUser: (userId) => api.delete(`/user/admin/${userId}`),
 };
 
 // Dashboard API
