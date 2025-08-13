@@ -76,6 +76,24 @@ body {
   min-height: 100vh;
 }
 
+.app-container.auth-pages {
+  flex-direction: column;
+}
+
+.app-container.auth-pages .sidebar {
+  display: none;
+}
+
+.app-container.auth-pages .main-content {
+  margin-left: 0;
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-gradient-1);
+}
+
 /* Sidebar latérale */
 .sidebar {
   width: var(--sidebar-width);
@@ -247,6 +265,49 @@ body {
     width: 100%;
     max-width: 320px;
   }
+}
+
+/* Styles pour les pages d'authentification */
+.auth-container {
+  background: white;
+  border-radius: 20px;
+  padding: 3rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 450px;
+  margin: 0 auto;
+}
+
+.auth-container .card {
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.auth-container .card-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.auth-container .card-title {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.auth-container .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.auth-container .btn {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
 /* Styles existants pour les composants */
