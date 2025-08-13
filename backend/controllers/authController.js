@@ -1,51 +1,3 @@
-// Suppression du compte utilisateur
-const deleteAccount = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    
-    // Récupérer l'utilisateur avant suppression pour accéder à ses données
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'Utilisateur introuvable.' });
-    }
-
-    // Supprimer l'avatar du serveur s'il existe
-    if (user.profile?.avatar) {
-      const avatarPath = path.join(__dirname, '..', user.profile.avatar);
-      fs.unlink(avatarPath, (err) => {
-        if (err && err.code !== 'ENOENT') {
-          console.error('Erreur suppression avatar:', err);
-        }
-      });
-    }
-
-    // Supprimer tous les avatars de l'historique
-    if (user.profile?.previousAvatars && Array.isArray(user.profile.previousAvatars)) {
-      user.profile.previousAvatars.forEach(avatarPath => {
-        const fullPath = path.join(__dirname, '..', avatarPath);
-        fs.unlink(fullPath, (err) => {
-          if (err && err.code !== 'ENOENT') {
-            console.error('Erreur suppression avatar historique:', err);
-          }
-        });
-      });
-    }
-
-    // Supprimer l'utilisateur de la base de données
-    await User.findByIdAndDelete(userId);
-    
-    res.status(200).json({ 
-      success: true,
-      message: 'Compte supprimé définitivement avec succès.' 
-    });
-  } catch (error) {
-    console.error('Erreur suppression compte:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Erreur lors de la suppression du compte.' 
-    });
-  }
-};
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
@@ -440,6 +392,61 @@ const updateAvatar = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Erreur interne du serveur'
+    });
+  }
+};
+
+// Suppression du compte utilisateur
+const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Récupérer l'utilisateur avant suppression pour accéder à ses données
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur introuvable.' });
+    }
+
+    // Supprimer l'avatar du serveur s'il existe
+    if (user.profile?.avatar) {
+      const avatarPath = path.join(__dirname, '..', user.profile.avatar);
+      try {
+        if (fs.existsSync(avatarPath)) {
+          fs.unlinkSync(avatarPath);
+          console.log('Avatar principal supprimé:', user.profile.avatar);
+        }
+      } catch (err) {
+        console.error('Erreur suppression avatar principal:', err);
+      }
+    }
+
+    // Supprimer tous les avatars de l'historique
+    if (user.profile?.previousAvatars && Array.isArray(user.profile.previousAvatars)) {
+      user.profile.previousAvatars.forEach(avatarPath => {
+        const fullPath = path.join(__dirname, '..', avatarPath);
+        try {
+          if (fs.existsSync(fullPath)) {
+            fs.unlinkSync(fullPath);
+            console.log('Avatar historique supprimé:', avatarPath);
+          }
+        } catch (err) {
+          console.error('Erreur suppression avatar historique:', err);
+        }
+      });
+    }
+
+    // Supprimer l'utilisateur de la base de données
+    await User.findByIdAndDelete(userId);
+    
+    res.status(200).json({ 
+      success: true,
+      message: 'Compte supprimé définitivement avec succès.' 
+    });
+  } catch (error) {
+    console.error('Erreur suppression compte:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Erreur lors de la suppression du compte.' 
     });
   }
 };

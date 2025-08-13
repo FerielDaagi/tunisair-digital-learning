@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Navbar = () => {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -21,7 +21,61 @@ const Navbar = () => {
           <ul className="nav-links">
             <li><Link to="/">Dashboard</Link></li>
             <li><Link to="/courses">Courses</Link></li>
-            <li><Link to="/profile">Profile</Link></li>
+            <li>
+              <Link to="/profile" style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px',
+                textDecoration: 'none',
+                color: 'white',
+                padding: '8px 12px',
+                borderRadius: '20px',
+                transition: 'all 0.3s ease',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+                e.target.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                e.target.style.transform = 'scale(1)';
+              }}
+              >
+                {user?.profile?.avatar ? (
+                  <img 
+                    src={user.profile.avatar.startsWith('http') 
+                      ? user.profile.avatar 
+                      : `http://localhost:5000${user.profile.avatar}`}
+                    alt="Avatar"
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '2px solid rgba(255, 255, 255, 0.3)'
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '16px',
+                    color: 'white'
+                  }}>
+                    👤
+                  </div>
+                )}
+                <span style={{ fontSize: '14px', fontWeight: '500' }}>
+                  {user?.name || 'Profile'}
+                </span>
+              </Link>
+            </li>
             <li><button onClick={handleLogout} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>Logout</button></li>
           </ul>
         ) : (
