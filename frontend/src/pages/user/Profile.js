@@ -354,7 +354,7 @@ const Profile = () => {
                 >
                   {!avatarPreview && (
                     <div style={{ textAlign: 'center', color: '#6c757d' }}>
-                      <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📸</div>
+                      <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📷</div>
                       <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>
                         Cliquez pour choisir une photo
                       </div>
@@ -461,7 +461,7 @@ const Profile = () => {
                    loadAvatarHistory();
                  }}
                  style={{
-                   background: 'linear-gradient(135deg, #6c757d, #5a6268)',
+                   background: 'linear-gradient(135deg, var(--primary-blue), var(--primary-blue-dark))',
                    color: 'white',
                    border: 'none',
                    borderRadius: '6px',
@@ -484,7 +484,6 @@ const Profile = () => {
                    e.target.style.boxShadow = 'none';
                  }}
                >
-                 <span>📚</span>
                  Voir l'historique des avatars
                </button>
 
@@ -575,7 +574,6 @@ const Profile = () => {
             >
               {loading ? (
                 <span>
-                  <span style={{ marginRight: '8px' }}>⏳</span>
                   Mise à jour en cours...
                 </span>
               ) : (
@@ -600,7 +598,7 @@ const Profile = () => {
                   onClick={handleBecomeTutor}
                   disabled={loading}
                   style={{
-                    background: 'linear-gradient(135deg, #28a745, #20c997)',
+                    background: 'linear-gradient(135deg, var(--success), var(--secondary-emerald-dark))',
                     color: 'white',
                     border: 'none',
                     borderRadius: '8px',
@@ -609,21 +607,20 @@ const Profile = () => {
                     fontWeight: '500',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
-                    boxShadow: '0 2px 4px rgba(40,167,69,0.3)',
+                    boxShadow: '0 2px 4px rgba(76,175,80,0.3)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px'
                   }}
                   onMouseEnter={(e) => {
                     e.target.style.transform = 'translateY(-2px)';
-                    e.target.style.boxShadow = '0 4px 8px rgba(40,167,69,0.4)';
+                    e.target.style.boxShadow = '0 4px 8px rgba(76,175,80,0.4)';
                   }}
                   onMouseLeave={(e) => {
                     e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = '0 2px 4px rgba(40,167,69,0.3)';
+                    e.target.style.boxShadow = '0 2px 4px rgba(76,175,80,0.3)';
                   }}
                 >
-                  <span>👨‍🏫</span>
                   Devenir tuteur
                 </button>
               )}
@@ -633,7 +630,7 @@ const Profile = () => {
                 type="button"
                 onClick={() => setShowDeleteModal(true)}
                 style={{
-                  background: 'linear-gradient(135deg, #dc3545, #c82333)',
+                  background: 'linear-gradient(135deg, var(--danger), #C10510)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '8px',
@@ -642,21 +639,20 @@ const Profile = () => {
                   fontWeight: '500',
                   cursor: 'pointer',
                   transition: 'all 0.3s ease',
-                  boxShadow: '0 2px 4px rgba(220,53,69,0.3)',
+                  boxShadow: '0 2px 4px rgba(227,6,19,0.3)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px'
                 }}
                 onMouseEnter={(e) => {
                   e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 4px 8px rgba(220,53,69,0.4)';
+                  e.target.style.boxShadow = '0 4px 8px rgba(227,6,19,0.4)';
                 }}
                 onMouseLeave={(e) => {
                   e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = '0 2px 4px rgba(220,53,69,0.3)';
+                  e.target.style.boxShadow = '0 2px 4px rgba(227,6,19,0.3)';
                 }}
               >
-                <span>🗑️</span>
                 Supprimer mon compte
               </button>
             </div>
@@ -675,7 +671,7 @@ const Profile = () => {
                 color: '#6c757d',
                 lineHeight: '1.5'
               }}>
-                <strong>💡 Note :</strong> Ces actions sont importantes et peuvent avoir des conséquences permanentes. 
+                <strong>Note :</strong> Ces actions sont importantes et peuvent avoir des conséquences permanentes. 
                 Prenez le temps de bien réfléchir avant de les effectuer.
               </p>
             </div>
@@ -711,7 +707,7 @@ const Profile = () => {
                    <div style={{ 
                      fontSize: '2.5rem', 
                      marginBottom: '0.5rem',
-                     color: '#007bff'
+                     color: 'var(--primary-blue)'
                    }}>
                      📚
                    </div>
@@ -807,7 +803,7 @@ const Profile = () => {
                                 position: 'absolute',
                                 top: '5px',
                                 right: '5px',
-                                background: 'rgba(220, 53, 69, 0.9)',
+                                background: 'rgba(227, 6, 19, 0.9)',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '50%',
@@ -861,7 +857,7 @@ const Profile = () => {
                        transition: 'all 0.3s ease'
                      }}
                    >
-                     🔙 Fermer
+                     Fermer
                    </button>
                  </div>
 
@@ -928,7 +924,7 @@ const Profile = () => {
                     <div style={{ 
                       fontSize: '2.5rem', 
                       marginBottom: '1rem',
-                      color: '#ffc107'
+                      color: 'var(--warning)'
                     }}>
                       ⚠️
                     </div>
@@ -970,14 +966,14 @@ const Profile = () => {
                         transition: 'all 0.3s ease'
                       }}
                     >
-                      🔙 Annuler
+                      Annuler
                     </button>
                     
                     <button
                       type="button"
                       onClick={handleConfirmAction}
                       style={{
-                        background: 'linear-gradient(135deg, #007bff, #0056b3)',
+                        background: 'linear-gradient(135deg, var(--primary-blue), var(--primary-blue-dark))',
                         color: 'white',
                         border: 'none',
                         borderRadius: '6px',
@@ -986,10 +982,10 @@ const Profile = () => {
                         fontWeight: '500',
                         cursor: 'pointer',
                         transition: 'all 0.3s ease',
-                        boxShadow: '0 2px 4px rgba(0,123,255,0.3)'
+                        boxShadow: '0 2px 4px rgba(0,46,93,0.3)'
                       }}
                     >
-                      ✅ Confirmer
+                      Confirmer
                     </button>
                   </div>
 
@@ -1060,12 +1056,12 @@ const Profile = () => {
                   <div style={{ 
                     fontSize: '3rem', 
                     marginBottom: '1rem',
-                    color: '#dc3545'
+                    color: 'var(--danger)'
                   }}>
                     ⚠️
                   </div>
                   <h3 style={{ 
-                    color: '#dc3545', 
+                    color: 'var(--danger)', 
                     marginBottom: '0.5rem',
                     fontSize: '1.5rem',
                     fontWeight: '700'
@@ -1086,12 +1082,12 @@ const Profile = () => {
                   marginBottom: '1.5rem'
                 }}>
                   <h4 style={{ 
-                    color: '#dc3545', 
+                    color: 'var(--danger)', 
                     marginBottom: '0.75rem',
                     fontSize: '1rem',
                     fontWeight: '600'
                   }}>
-                    ⚡ Conséquences de la suppression :
+                    Conséquences de la suppression :
                   </h4>
                   <ul style={{ 
                     margin: 0, 
@@ -1118,7 +1114,7 @@ const Profile = () => {
                       backgroundColor: '#e9ecef',
                       padding: '2px 6px',
                       borderRadius: '4px',
-                      color: '#dc3545',
+                      color: 'var(--danger)',
                       fontWeight: 'bold'
                     }}>SUPPRIMER MON COMPTE</code>
                   </label>
@@ -1139,13 +1135,13 @@ const Profile = () => {
                     autoFocus
                   />
                   {deleteConfirmText && deleteConfirmText !== 'SUPPRIMER MON COMPTE' && (
-                    <small style={{ color: '#dc3545', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
-                      ❌ Le texte ne correspond pas exactement
+                    <small style={{ color: 'var(--danger)', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
+                      Le texte ne correspond pas exactement
                     </small>
                   )}
                   {deleteConfirmText === 'SUPPRIMER MON COMPTE' && (
-                    <small style={{ color: '#28a745', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
-                      ✅ Confirmation correcte
+                    <small style={{ color: 'var(--success)', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
+                      Confirmation correcte
                     </small>
                   )}
                 </div>
@@ -1186,7 +1182,7 @@ const Profile = () => {
                     disabled={loading || deleteConfirmText !== 'SUPPRIMER MON COMPTE'}
                     style={{
                       background: deleteConfirmText === 'SUPPRIMER MON COMPTE' 
-                        ? 'linear-gradient(135deg, #dc3545, #c82333)'
+                        ? 'linear-gradient(135deg, var(--danger), #C10510)'
                         : '#6c757d',
                       color: 'white',
                       border: 'none',
@@ -1198,7 +1194,7 @@ const Profile = () => {
                       transition: 'all 0.3s ease',
                       opacity: (loading || deleteConfirmText !== 'SUPPRIMER MON COMPTE') ? 0.6 : 1,
                       boxShadow: deleteConfirmText === 'SUPPRIMER MON COMPTE' 
-                        ? '0 2px 4px rgba(220,53,69,0.4)' 
+                        ? '0 2px 4px rgba(227,6,19,0.4)' 
                         : 'none'
                     }}
                   >

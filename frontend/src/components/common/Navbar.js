@@ -1,115 +1,212 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Navbar = () => {
   const { isAuthenticated, logout, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
+  const toggleSidebar = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
+  const toggleMobileSidebar = () => {
+    setIsMobileOpen(!isMobileOpen);
+  };
+
+  const isActive = (path) => {
+    return location.pathname === path;
+  };
+
+  const sidebarClass = `sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'open' : ''}`;
+  const mainContentClass = `main-content ${isCollapsed ? 'sidebar-collapsed' : ''}`;
+
   return (
-    <nav className="navbar">
-      <div className="navbar-container">
-        <Link to="/" className="logo">
-          E-Learning Platform
-        </Link>
-        {isAuthenticated ? (
-          <ul className="nav-links">
-            <li><Link to="/">Dashboard</Link></li>
-            <li><Link to="/courses">Courses</Link></li>
-            {user?.role === 'admin' && (
-              <li>
-                <Link to="/admin" style={{
-                  background: 'linear-gradient(135deg, #dc3545, #c82333)',
-                  color: 'white',
-                  padding: '8px 16px',
-                  borderRadius: '20px',
-                  textDecoration: 'none',
-                  fontSize: '0.9rem',
-                  fontWeight: '500',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.transform = 'scale(1.05)';
-                  e.target.style.boxShadow = '0 2px 8px rgba(220,53,69,0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.transform = 'scale(1)';
-                  e.target.style.boxShadow = 'none';
-                }}
-                >
-                  👑 Admin
-                </Link>
-              </li>
-            )}
-            <li>
-              <Link to="/profile" style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '8px',
-                textDecoration: 'none',
-                color: 'white',
-                padding: '8px 12px',
-                borderRadius: '20px',
-                transition: 'all 0.3s ease',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-                e.target.style.transform = 'scale(1.05)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                e.target.style.transform = 'scale(1)';
-              }}
-              >
-                {user?.profile?.avatar ? (
-                  <img 
-                    src={user.profile.avatar.startsWith('http') 
-                      ? user.profile.avatar 
-                      : `http://localhost:5000${user.profile.avatar}`}
-                    alt="Avatar"
+    <>
+      {/* Bouton toggle pour mobile */}
+      <button className="sidebar-toggle" onClick={toggleMobileSidebar}>
+        ☰
+      </button>
+
+      {/* Sidebar */}
+      <nav className={sidebarClass}>
+        <div className="sidebar-header">
+          <Link to="/" className="logo">
+            {!isCollapsed && "Tunisair Academy"}
+            {isCollapsed && "TA"}
+          </Link>
+        </div>
+
+        <div className="sidebar-nav">
+          {isAuthenticated ? (
+            <>
+              {/* Section Navigation principale */}
+              <div className="nav-section">
+                <h3 className="nav-section-title">
+                  {!isCollapsed && "Navigation"}
+                </h3>
+                <ul className="nav-links">
+                  <li>
+                    <Link 
+                      to="/" 
+                      className={isActive('/') ? 'active' : ''}
+                    >
+                      <span className="nav-icon">🏠</span>
+                      {!isCollapsed && "Tableau de bord"}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      to="/courses" 
+                      className={isActive('/courses') ? 'active' : ''}
+                    >
+                      <span className="nav-icon">📚</span>
+                      {!isCollapsed && "Cours"}
+                    </Link>
+                  </li>
+                  {user?.role === 'admin' && (
+                    <li>
+                      <Link 
+                        to="/admin" 
+                        className={isActive('/admin') ? 'active' : ''}
+                        style={{
+                          background: 'var(--accent-gradient-2)',
+                          color: 'white',
+                          margin: '0 1rem',
+                          borderRadius: '12px',
+                          padding: '12px 1rem'
+                        }}
+                      >
+                        <span className="nav-icon">👑</span>
+                        {!isCollapsed && "Administration"}
+                      </Link>
+                    </li>
+                  )}
+                </ul>
+              </div>
+
+              {/* Section Profil utilisateur */}
+              <div className="nav-section">
+                <h3 className="nav-section-title">
+                  {!isCollapsed && "Mon Compte"}
+                </h3>
+                <ul className="nav-links">
+                  <li>
+                    <Link 
+                      to="/profile" 
+                      className={isActive('/profile') ? 'active' : ''}
+                    >
+                      <span className="nav-icon">
+                        {user?.profile?.avatar ? (
+                          <img
+                            src={user.profile.avatar.startsWith('http')
+                              ? user.profile.avatar
+                              : `http://localhost:5000${user.profile.avatar}`}
+                            alt="Avatar"
+                            style={{
+                              width: '20px',
+                              height: '20px',
+                              borderRadius: '50%',
+                              objectFit: 'cover'
+                            }}
+                          />
+                        ) : (
+                          '👤'
+                        )}
+                      </span>
+                      {!isCollapsed && (user?.name || 'Profil')}
+                    </Link>
+                  </li>
+                  <li>
+                    <button 
+                      onClick={handleLogout}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        color: 'white',
+                        margin: '0 1rem',
+                        borderRadius: '12px',
+                        padding: '12px 1rem'
+                      }}
+                    >
+                      <span className="nav-icon">🚪</span>
+                      {!isCollapsed && "Déconnexion"}
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            </>
+          ) : (
+            <div className="nav-section">
+              <h3 className="nav-section-title">
+                {!isCollapsed && "Connexion"}
+              </h3>
+              <ul className="nav-links">
+                <li>
+                  <Link 
+                    to="/login"
                     style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '50%',
-                      objectFit: 'cover',
-                      border: '2px solid rgba(255, 255, 255, 0.3)'
+                      background: 'rgba(255, 255, 255, 0.15)',
+                      color: 'white',
+                      margin: '0 1rem',
+                      borderRadius: '12px',
+                      padding: '12px 1rem',
+                      border: '1px solid rgba(255, 255, 255, 0.2)'
                     }}
-                  />
-                ) : (
-                  <div style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '16px',
-                    color: 'white'
-                  }}>
-                    👤
-                  </div>
-                )}
-                <span style={{ fontSize: '14px', fontWeight: '500' }}>
-                  {user?.name || 'Profile'}
-                </span>
-              </Link>
-            </li>
-            <li><button onClick={handleLogout} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>Logout</button></li>
-          </ul>
-        ) : (
-          <ul className="nav-links">
-            <li><Link to="/login">Login</Link></li>
-          </ul>
-        )}
-      </div>
-    </nav>
+                  >
+                    <span className="nav-icon">🔑</span>
+                    {!isCollapsed && "Connexion"}
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Bouton toggle sidebar (desktop) */}
+        <button 
+          onClick={toggleSidebar}
+          style={{
+            position: 'absolute',
+            bottom: '1rem',
+            right: '1rem',
+            background: 'rgba(255, 255, 255, 0.1)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            color: 'white',
+            padding: '0.5rem',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '0.8rem'
+          }}
+        >
+          {isCollapsed ? '→' : '←'}
+        </button>
+      </nav>
+
+      {/* Overlay pour mobile */}
+      {isMobileOpen && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 999
+          }}
+          onClick={toggleMobileSidebar}
+        />
+      )}
+    </>
   );
 };
 

@@ -136,7 +136,7 @@ const Signup = () => {
               Créer un compte
             </h2>
             <p className="text-center" style={{ color: '#6c757d', margin: 0 }}>
-              Inscrivez-vous pour accéder à la plateforme d'apprentissage
+              Inscrivez-vous pour accéder à Tunisair Academy
             </p>
           </div>
           
@@ -189,7 +189,7 @@ const Signup = () => {
                     width: '120px', 
                     height: '120px', 
                     borderRadius: '50%', 
-                    border: avatarPreview ? '3px solid #007bff' : '3px dashed #dee2e6',
+                    border: avatarPreview ? '3px solid var(--primary-blue)' : '3px dashed #dee2e6',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -202,7 +202,7 @@ const Signup = () => {
                   }}
                   onMouseEnter={(e) => {
                     if (!avatarPreview) {
-                      e.target.style.borderColor = '#007bff';
+                      e.target.style.borderColor = 'var(--primary-blue)';
                       e.target.style.backgroundColor = '#e3f2fd';
                     }
                   }}
@@ -215,7 +215,7 @@ const Signup = () => {
                 >
                   {!avatarPreview && (
                     <div style={{ textAlign: 'center', color: '#6c757d' }}>
-                      <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>📸</div>
+                      <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>📷</div>
                       <div style={{ fontSize: '0.75rem', fontWeight: '500', lineHeight: '1.2' }}>
                         Ajouter une photo
                       </div>
@@ -279,7 +279,7 @@ const Signup = () => {
                       position: 'absolute',
                       top: '5px',
                       right: '5px',
-                      background: '#dc3545',
+                      background: 'var(--danger)',
                       color: 'white',
                       border: 'none',
                       borderRadius: '50%',
@@ -403,12 +403,12 @@ const Signup = () => {
                     backgroundColor: 'white'
                   }}
                 >
-                  <option value="apprenti">👨‍🎓 Apprenti</option>
-                  <option value="tuteur">👨‍🏫 Tuteur</option>
-                  <option value="admin">👑 Administrateur</option>
+                  <option value="apprenti">Apprenti</option>
+                  <option value="tuteur">Tuteur</option>
+                  <option value="admin">Administrateur</option>
                 </select>
                 <small style={{ color: '#6c757d', fontSize: '0.8rem', marginTop: '0.25rem', display: 'block' }}>
-                  💡 Pour les tests uniquement - choisissez le rôle souhaité
+                  Pour les tests uniquement - choisissez le rôle souhaité
                 </small>
               </div>
 
@@ -481,12 +481,10 @@ const Signup = () => {
             >
               {loading ? (
                 <span>
-                  <span style={{ marginRight: '8px' }}>⏳</span>
                   Création du compte...
                 </span>
               ) : (
                 <span>
-                  <span style={{ marginRight: '8px' }}>🚀</span>
                   Créer mon compte
                 </span>
               )}
@@ -499,7 +497,7 @@ const Signup = () => {
               <a 
                 href="/login" 
                 style={{ 
-                  color: '#007bff', 
+                  color: 'var(--primary-blue)', 
                   textDecoration: 'none',
                   fontWeight: '500'
                 }}

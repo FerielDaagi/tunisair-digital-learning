@@ -34,7 +34,7 @@ const Login = () => {
       login(user, token);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      setError(err.response?.data?.message || 'Échec de la connexion. Veuillez réessayer.');
     } finally {
       setLoading(false);
     }
@@ -45,9 +45,9 @@ const Login = () => {
       <div style={{ maxWidth: '400px', margin: '0 auto', paddingTop: '2rem' }}>
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title text-center">Welcome Back</h2>
+            <h2 className="card-title text-center">Bienvenue</h2>
             <p className="text-center" style={{ color: '#6c757d' }}>
-              Sign in to your E-Learning account
+              Connectez-vous à votre compte Tunisair Academy
             </p>
           </div>
           
@@ -74,12 +74,12 @@ const Login = () => {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                placeholder="Enter your email"
+                placeholder="Entrez votre email"
               />
             </div>
             
             <div className="form-group">
-              <label htmlFor="password" className="form-label">Password</label>
+              <label htmlFor="password" className="form-label">Mot de passe</label>
               <input
                 type="password"
                 id="password"
@@ -88,7 +88,7 @@ const Login = () => {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                placeholder="Enter your password"
+                placeholder="Entrez votre mot de passe"
               />
             </div>
             
@@ -98,23 +98,23 @@ const Login = () => {
               style={{ width: '100%' }}
               disabled={loading}
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? 'Connexion en cours...' : 'Se connecter'}
             </button>
           </form>
           
           <div className="text-center mt-3">
         <p style={{ color: '#6c757d', fontSize: '0.9rem' }}>
-  Don't have an account?{' '}
-  <Link to="/signup" style={{ color: '#dc3545', textDecoration: 'none' }}>
-    Sign up here
-  </Link>
-</p>
+          Vous n'avez pas de compte ?{' '}
+          <Link to="/signup" style={{ color: 'var(--primary-blue)', textDecoration: 'none' }}>
+            Inscrivez-vous ici
+          </Link>
+        </p>
           </div>
         </div>
         
         <div className="text-center mt-3">
           <p style={{ color: '#6c757d', fontSize: '0.85rem' }}>
-            Demo credentials: admin@example.com / password123
+            Identifiants de démonstration : admin@example.com / password123
           </p>
         </div>
       </div>

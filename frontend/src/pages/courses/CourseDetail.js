@@ -18,59 +18,59 @@ const CourseDetail = () => {
         // Use mock data for demo
         setCourse({
           id: parseInt(id),
-          title: 'React Fundamentals',
-          description: 'Learn the basics of React development including components, state, and props. This comprehensive course covers everything you need to know to get started with React.',
-          longDescription: 'This course is designed for beginners who want to learn React from scratch. You will learn about JSX, components, state management, props, event handling, and more. By the end of this course, you will be able to build your own React applications.',
-          duration: '8 hours',
-          level: 'Beginner',
+          title: 'Fondamentaux React',
+          description: 'Apprenez les bases du développement React incluant les composants, l\'état et les props. Ce cours complet couvre tout ce que vous devez savoir pour commencer avec React.',
+          longDescription: 'Ce cours est conçu pour les débutants qui veulent apprendre React depuis le début. Vous apprendrez JSX, les composants, la gestion d\'état, les props, la gestion des événements, et plus encore. À la fin de ce cours, vous serez capable de construire vos propres applications React.',
+          duration: '8 heures',
+          level: 'Débutant',
           category: 'Frontend',
-          instructor: 'John Doe',
+          instructor: 'Jean Dupont',
           rating: 4.5,
           students: 1250,
           price: 49.99,
           modules: [
             {
               id: 1,
-              title: 'Introduction to React',
+              title: 'Introduction à React',
               duration: '45 minutes',
               lessons: 3
             },
             {
               id: 2,
-              title: 'Components and JSX',
-              duration: '1 hour',
+              title: 'Composants et JSX',
+              duration: '1 heure',
               lessons: 4
             },
             {
               id: 3,
-              title: 'State and Props',
-              duration: '1.5 hours',
+              title: 'État et Props',
+              duration: '1.5 heures',
               lessons: 5
             },
             {
               id: 4,
-              title: 'Event Handling',
-              duration: '1 hour',
+              title: 'Gestion des événements',
+              duration: '1 heure',
               lessons: 3
             },
             {
               id: 5,
-              title: 'Building a Complete App',
-              duration: '2 hours',
+              title: 'Construction d\'une application complète',
+              duration: '2 heures',
               lessons: 6
             }
           ],
           requirements: [
-            'Basic knowledge of HTML, CSS, and JavaScript',
-            'A computer with internet connection',
-            'Code editor (VS Code recommended)'
+            'Connaissances de base en HTML, CSS et JavaScript',
+            'Un ordinateur avec connexion internet',
+            'Éditeur de code (VS Code recommandé)'
           ],
           outcomes: [
-            'Understand React fundamentals and concepts',
-            'Build reusable components',
-            'Manage state and props effectively',
-            'Create interactive user interfaces',
-            'Deploy React applications'
+            'Comprendre les fondamentaux et concepts de React',
+            'Construire des composants réutilisables',
+            'Gérer efficacement l\'état et les props',
+            'Créer des interfaces utilisateur interactives',
+            'Déployer des applications React'
           ]
         });
       } finally {
@@ -85,10 +85,10 @@ const CourseDetail = () => {
     setEnrolling(true);
     try {
       await coursesAPI.enroll(id);
-      alert('Successfully enrolled in the course!');
+      alert('Inscription au cours réussie !');
     } catch (error) {
       console.error('Error enrolling:', error);
-      alert('Enrollment successful! (Demo mode)');
+      alert('Inscription réussie ! (Mode démo)');
     } finally {
       setEnrolling(false);
     }
@@ -98,7 +98,7 @@ const CourseDetail = () => {
     return (
       <div className="main-content">
         <div className="text-center">
-          <p>Loading course...</p>
+          <p>Chargement du cours...</p>
         </div>
       </div>
     );
@@ -108,9 +108,9 @@ const CourseDetail = () => {
     return (
       <div className="main-content">
         <div className="card text-center">
-          <h2>Course not found</h2>
+          <h2>Cours non trouvé</h2>
           <Link to="/courses" className="btn btn-primary">
-            Back to Courses
+            Retour aux cours
           </Link>
         </div>
       </div>
@@ -129,7 +129,7 @@ const CourseDetail = () => {
             </p>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
               <span style={{ 
-                backgroundColor: '#dc3545', 
+                backgroundColor: 'var(--danger)', 
                 color: 'white', 
                 padding: '0.25rem 0.75rem', 
                 borderRadius: '20px',
@@ -149,11 +149,11 @@ const CourseDetail = () => {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
               <span>⭐ {course.rating}</span>
-              <span>{course.students} students enrolled</span>
+              <span>{course.students} étudiants inscrits</span>
               <span>{course.duration}</span>
             </div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#dc3545' }}>
-              ${course.price}
+            <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--danger)' }}>
+              {course.price}€
             </div>
           </div>
           <div style={{ minWidth: '200px' }}>
@@ -163,10 +163,10 @@ const CourseDetail = () => {
               className="btn btn-primary"
               style={{ width: '100%', marginBottom: '1rem' }}
             >
-              {enrolling ? 'Enrolling...' : 'Enroll Now'}
+              {enrolling ? 'Inscription...' : 'S\'inscrire maintenant'}
             </button>
             <Link to="/courses" className="btn btn-outline" style={{ width: '100%' }}>
-              Back to Courses
+              Retour aux cours
             </Link>
           </div>
         </div>
@@ -177,7 +177,7 @@ const CourseDetail = () => {
         {/* Course Modules */}
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title">Course Content</h2>
+            <h2 className="card-title">Contenu du cours</h2>
           </div>
           <div>
             {course.modules.map((module) => (
@@ -191,7 +191,7 @@ const CourseDetail = () => {
                 <div>
                   <h4 style={{ margin: 0, color: '#495057' }}>{module.title}</h4>
                   <small style={{ color: '#6c757d' }}>
-                    {module.lessons} lessons • {module.duration}
+                    {module.lessons} leçons • {module.duration}
                   </small>
                 </div>
                 <span style={{ color: '#6c757d' }}>▶</span>
@@ -205,7 +205,7 @@ const CourseDetail = () => {
           {/* Requirements */}
           <div className="card mb-3">
             <div className="card-header">
-              <h3 className="card-title">Requirements</h3>
+              <h3 className="card-title">Prérequis</h3>
             </div>
             <ul style={{ paddingLeft: '1.5rem', margin: 0 }}>
               {course.requirements.map((req, index) => (
@@ -219,7 +219,7 @@ const CourseDetail = () => {
           {/* Learning Outcomes */}
           <div className="card">
             <div className="card-header">
-              <h3 className="card-title">What you'll learn</h3>
+              <h3 className="card-title">Ce que vous apprendrez</h3>
             </div>
             <ul style={{ paddingLeft: '1.5rem', margin: 0 }}>
               {course.outcomes.map((outcome, index) => (
@@ -235,14 +235,14 @@ const CourseDetail = () => {
       {/* Instructor */}
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">Instructor</h2>
+          <h2 className="card-title">Instructeur</h2>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div style={{ 
             width: '60px', 
             height: '60px', 
             borderRadius: '50%', 
-            backgroundColor: '#dc3545',
+            backgroundColor: 'var(--danger)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -255,7 +255,7 @@ const CourseDetail = () => {
           <div>
             <h3 style={{ margin: 0, color: '#495057' }}>{course.instructor}</h3>
             <p style={{ margin: 0, color: '#6c757d' }}>
-              Experienced instructor with expertise in {course.category} development
+              Instructeur expérimenté avec expertise en développement {course.category}
             </p>
           </div>
         </div>

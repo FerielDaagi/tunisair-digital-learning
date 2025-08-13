@@ -36,24 +36,24 @@ const Dashboard = () => {
         setRecentCourses([
           {
             id: 1,
-            title: 'React Fundamentals',
-            description: 'Learn the basics of React development',
-            duration: '8 hours',
-            level: 'Beginner'
+            title: 'Fondamentaux React',
+            description: 'Apprenez les bases du développement React',
+            duration: '8 heures',
+            level: 'Débutant'
           },
           {
             id: 2,
-            title: 'Node.js Backend Development',
-            description: 'Build robust backend APIs with Node.js',
-            duration: '12 hours',
-            level: 'Intermediate'
+            title: 'Développement Backend Node.js',
+            description: 'Construisez des APIs robustes avec Node.js',
+            duration: '12 heures',
+            level: 'Intermédiaire'
           },
           {
             id: 3,
-            title: 'Advanced JavaScript',
-            description: 'Master advanced JavaScript concepts',
-            duration: '10 hours',
-            level: 'Advanced'
+            title: 'JavaScript Avancé',
+            description: 'Maîtrisez les concepts avancés de JavaScript',
+            duration: '10 heures',
+            level: 'Avancé'
           }
         ]);
       } finally {
@@ -68,7 +68,7 @@ const Dashboard = () => {
     return (
       <div className="main-content">
         <div className="text-center">
-          <p>Loading dashboard...</p>
+          <p>Chargement du tableau de bord...</p>
         </div>
       </div>
     );
@@ -77,14 +77,14 @@ const Dashboard = () => {
   return (
     <div className="main-content">
       <div className="alert alert-info">
-        <strong>🎨 New Look!</strong> We've enhanced our platform with a beautiful color palette while keeping our signature red and white theme. Enjoy the improved visual experience!
+        <strong>Nouveau design !</strong> Nous avons amélioré notre plateforme avec une belle palette de couleurs tout en conservant notre thème signature rouge et blanc. Profitez de l'expérience visuelle améliorée !
       </div>
       
       <div className="card">
         <div className="card-header">
-          <h1 className="card-title">Welcome back, {user?.name || 'Student'}!</h1>
+          <h1 className="card-title">Bon retour, {user?.name || 'Étudiant'} !</h1>
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
-            Here's your learning progress and recent activity
+            Voici votre progression d'apprentissage et votre activité récente
           </p>
         </div>
       </div>
@@ -93,26 +93,26 @@ const Dashboard = () => {
       <div className="stats-grid">
         <div className="stat-card blue">
           <div className="stat-number blue">{stats.totalCourses}</div>
-          <div className="stat-label">Total Courses</div>
+          <div className="stat-label">Total des cours</div>
         </div>
         <div className="stat-card orange">
           <div className="stat-number orange">{stats.enrolledCourses}</div>
-          <div className="stat-label">Enrolled Courses</div>
+          <div className="stat-label">Cours inscrits</div>
         </div>
         <div className="stat-card green">
           <div className="stat-number green">{stats.completedCourses}</div>
-          <div className="stat-label">Completed Courses</div>
+          <div className="stat-label">Cours terminés</div>
         </div>
         <div className="stat-card purple">
           <div className="stat-number purple">{stats.totalHours}h</div>
-          <div className="stat-label">Total Learning Hours</div>
+          <div className="stat-label">Heures d'apprentissage</div>
         </div>
       </div>
 
       {/* Recent Courses */}
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">Recent Courses</h2>
+          <h2 className="card-title">Cours récents</h2>
         </div>
         <div className="grid grid-3">
           {recentCourses.map((course, index) => {
@@ -140,7 +140,7 @@ const Dashboard = () => {
                     className={`btn ${buttonClass}`}
                     style={{ marginTop: '1rem', display: 'block', textAlign: 'center' }}
                   >
-                    View Course
+                    Voir le cours
                   </Link>
                 </div>
               </div>
@@ -149,7 +149,7 @@ const Dashboard = () => {
         </div>
         <div className="text-center mt-3">
           <Link to="/courses" className="btn btn-primary">
-            View All Courses
+            Voir tous les cours
           </Link>
         </div>
       </div>
@@ -157,25 +157,25 @@ const Dashboard = () => {
       {/* Quick Actions */}
       <div className="card green">
         <div className="card-header">
-          <h2 className="card-title">Quick Actions</h2>
+          <h2 className="card-title">Actions rapides</h2>
         </div>
         <div className="grid grid-2">
           <div className="p-3">
-            <h3 style={{ color: 'var(--secondary-green)', marginBottom: '0.5rem' }}>Continue Learning</h3>
+            <h3 style={{ color: 'var(--secondary-green)', marginBottom: '0.5rem' }}>Continuer l'apprentissage</h3>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-              Pick up where you left off in your enrolled courses
+              Reprenez là où vous vous êtes arrêté dans vos cours inscrits
             </p>
             <Link to="/courses" className="btn btn-green">
-              Resume Learning
+              Reprendre l'apprentissage
             </Link>
           </div>
           <div className="p-3">
-            <h3 style={{ color: 'var(--secondary-purple)', marginBottom: '0.5rem' }}>Explore New Courses</h3>
+            <h3 style={{ color: 'var(--secondary-purple)', marginBottom: '0.5rem' }}>Explorer de nouveaux cours</h3>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-              Discover new topics and expand your skills
+              Découvrez de nouveaux sujets et développez vos compétences
             </p>
             <Link to="/courses" className="btn btn-purple">
-              Browse Courses
+              Parcourir les cours
             </Link>
           </div>
         </div>

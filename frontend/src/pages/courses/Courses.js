@@ -18,54 +18,54 @@ const Courses = () => {
         setCourses([
           {
             id: 1,
-            title: 'React Fundamentals',
-            description: 'Learn the basics of React development including components, state, and props',
-            duration: '8 hours',
-            level: 'Beginner',
+            title: 'Fondamentaux React',
+            description: 'Apprenez les bases du développement React incluant les composants, l\'état et les props',
+            duration: '8 heures',
+            level: 'Débutant',
             category: 'Frontend',
-            instructor: 'John Doe',
+            instructor: 'Jean Dupont',
             rating: 4.5,
             students: 1250
           },
           {
             id: 2,
-            title: 'Node.js Backend Development',
-            description: 'Build robust backend APIs with Node.js and Express',
-            duration: '12 hours',
-            level: 'Intermediate',
+            title: 'Développement Backend Node.js',
+            description: 'Construisez des APIs robustes avec Node.js et Express',
+            duration: '12 heures',
+            level: 'Intermédiaire',
             category: 'Backend',
-            instructor: 'Jane Smith',
+            instructor: 'Marie Martin',
             rating: 4.7,
             students: 890
           },
           {
             id: 3,
-            title: 'Advanced JavaScript',
-            description: 'Master advanced JavaScript concepts and ES6+ features',
-            duration: '10 hours',
-            level: 'Advanced',
+            title: 'JavaScript Avancé',
+            description: 'Maîtrisez les concepts avancés de JavaScript et les fonctionnalités ES6+',
+            duration: '10 heures',
+            level: 'Avancé',
             category: 'JavaScript',
-            instructor: 'Mike Johnson',
+            instructor: 'Michel Johnson',
             rating: 4.8,
             students: 2100
           },
           {
             id: 4,
-            title: 'MongoDB Database Design',
-            description: 'Learn to design and implement MongoDB databases',
-            duration: '6 hours',
-            level: 'Intermediate',
-            category: 'Database',
+            title: 'Conception de Base de Données MongoDB',
+            description: 'Apprenez à concevoir et implémenter des bases de données MongoDB',
+            duration: '6 heures',
+            level: 'Intermédiaire',
+            category: 'Base de données',
             instructor: 'Sarah Wilson',
             rating: 4.6,
             students: 750
           },
           {
             id: 5,
-            title: 'CSS Grid and Flexbox',
-            description: 'Master modern CSS layout techniques',
-            duration: '5 hours',
-            level: 'Beginner',
+            title: 'CSS Grid et Flexbox',
+            description: 'Maîtrisez les techniques modernes de mise en page CSS',
+            duration: '5 heures',
+            level: 'Débutant',
             category: 'Frontend',
             instructor: 'Alex Brown',
             rating: 4.4,
@@ -73,10 +73,10 @@ const Courses = () => {
           },
           {
             id: 6,
-            title: 'RESTful API Design',
-            description: 'Learn to design and implement RESTful APIs',
-            duration: '9 hours',
-            level: 'Intermediate',
+            title: 'Conception d\'API RESTful',
+            description: 'Apprenez à concevoir et implémenter des APIs RESTful',
+            duration: '9 heures',
+            level: 'Intermédiaire',
             category: 'Backend',
             instructor: 'David Lee',
             rating: 4.9,
@@ -101,7 +101,7 @@ const Courses = () => {
     return (
       <div className="main-content">
         <div className="text-center">
-          <p>Loading courses...</p>
+          <p>Chargement des cours...</p>
         </div>
       </div>
     );
@@ -111,9 +111,9 @@ const Courses = () => {
     <div className="main-content">
       <div className="card">
         <div className="card-header">
-          <h1 className="card-title">All Courses</h1>
+          <h1 className="card-title">Tous les cours</h1>
           <p style={{ color: '#6c757d', margin: 0 }}>
-            Explore our comprehensive collection of courses
+            Explorez notre collection complète de cours
           </p>
         </div>
       </div>
@@ -128,7 +128,7 @@ const Courses = () => {
               className={`btn ${filter === category ? 'btn-primary' : 'btn-outline'}`}
               style={{ textTransform: 'capitalize' }}
             >
-              {category}
+              {category === 'all' ? 'Tous' : category}
             </button>
           ))}
         </div>
@@ -165,7 +165,7 @@ const Courses = () => {
                   color: 'var(--text-secondary)'
                 }}>
                   <span>⭐ {course.rating}</span>
-                  <span>{course.students} students</span>
+                  <span>{course.students} étudiants</span>
                 </div>
                 <div style={{ 
                   marginTop: '0.5rem',
@@ -180,7 +180,7 @@ const Courses = () => {
                   className={`btn ${buttonClass}`}
                   style={{ marginTop: '1rem', display: 'block', textAlign: 'center' }}
                 >
-                  View Course
+                  Voir le cours
                 </Link>
               </div>
             </div>
@@ -190,7 +190,7 @@ const Courses = () => {
 
       {filteredCourses.length === 0 && (
         <div className="card text-center">
-          <p style={{ color: '#6c757d' }}>No courses found in this category.</p>
+          <p style={{ color: '#6c757d' }}>Aucun cours trouvé dans cette catégorie.</p>
         </div>
       )}
     </div>

@@ -89,7 +89,7 @@ const AdminDashboard = () => {
           <div className="card">
             <div style={{ textAlign: 'center', padding: '2rem' }}>
               <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚫</div>
-              <h2 style={{ color: '#dc3545', marginBottom: '1rem' }}>Accès refusé</h2>
+              <h2 style={{ color: 'var(--danger)', marginBottom: '1rem' }}>Accès refusé</h2>
               <p style={{ color: '#6c757d' }}>
                 Vous devez être administrateur pour accéder à cette page.
               </p>
@@ -106,7 +106,7 @@ const AdminDashboard = () => {
         {/* En-tête */}
         <div className="card" style={{ marginBottom: '2rem' }}>
           <div className="card-header">
-            <h2 className="card-title">👑 Dashboard Administrateur</h2>
+            <h2 className="card-title">Dashboard Administrateur</h2>
             <p style={{ color: '#6c757d', margin: 0 }}>
               Gestion des utilisateurs et de la plateforme
             </p>
@@ -187,7 +187,7 @@ const AdminDashboard = () => {
         {/* Filtres */}
         <div className="card" style={{ marginBottom: '2rem' }}>
           <div style={{ padding: '1.5rem' }}>
-            <h3 style={{ marginBottom: '1rem', color: '#495057' }}>🔍 Filtres</h3>
+            <h3 style={{ marginBottom: '1rem', color: '#495057' }}>Filtres</h3>
             
             <div style={{ 
               display: 'grid', 
@@ -263,7 +263,7 @@ const AdminDashboard = () => {
         <div className="card">
           <div className="card-header">
             <h3 style={{ margin: 0, color: '#495057' }}>
-              👥 Gestion des Utilisateurs ({filteredUsers.length})
+              Gestion des Utilisateurs ({filteredUsers.length})
             </h3>
           </div>
           
@@ -329,7 +329,7 @@ const AdminDashboard = () => {
                               justifyContent: 'center',
                               fontSize: '1.2rem'
                             }}>
-                              👤
+                              U
                             </div>
                           )}
                           <div>
@@ -338,7 +338,7 @@ const AdminDashboard = () => {
                               {userItem._id === user._id && (
                                 <span style={{ 
                                   marginLeft: '0.5rem',
-                                  backgroundColor: '#007bff',
+                                  backgroundColor: 'var(--primary-blue)',
                                   color: 'white',
                                   padding: '0.2rem 0.5rem',
                                   borderRadius: '12px',
@@ -375,12 +375,12 @@ const AdminDashboard = () => {
                           fontSize: '0.8rem',
                           fontWeight: '500',
                           backgroundColor: 
-                            userItem.role === 'admin' ? '#dc3545' :
-                            userItem.role === 'tuteur' ? '#28a745' : '#007bff',
+                            userItem.role === 'admin' ? 'var(--danger)' :
+                            userItem.role === 'tuteur' ? 'var(--success)' : 'var(--primary-blue)',
                           color: 'white'
                         }}>
-                          {userItem.role === 'admin' ? '👑 Admin' :
-                           userItem.role === 'tuteur' ? '👨‍🏫 Tuteur' : '👨‍🎓 Apprenti'}
+                          {userItem.role === 'admin' ? 'Admin' :
+                           userItem.role === 'tuteur' ? 'Tuteur' : 'Apprenti'}
                         </span>
                       </td>
                       
@@ -390,10 +390,10 @@ const AdminDashboard = () => {
                           borderRadius: '12px',
                           fontSize: '0.8rem',
                           fontWeight: '500',
-                          backgroundColor: userItem.isActive === false ? '#dc3545' : '#28a745',
+                          backgroundColor: userItem.isActive === false ? 'var(--danger)' : 'var(--success)',
                           color: 'white'
                         }}>
-                          {userItem.isActive === false ? '❌ Inactif' : '✅ Actif'}
+                          {userItem.isActive === false ? 'Inactif' : 'Actif'}
                         </span>
                       </td>
                       
@@ -413,12 +413,12 @@ const AdminDashboard = () => {
                                 borderRadius: '4px',
                                 cursor: 'pointer',
                                 fontSize: '0.8rem',
-                                backgroundColor: userItem.isActive === false ? '#28a745' : '#ffc107',
+                                backgroundColor: userItem.isActive === false ? 'var(--success)' : 'var(--warning)',
                                 color: 'white'
                               }}
                               title={userItem.isActive === false ? 'Activer' : 'Désactiver'}
                             >
-                              {userItem.isActive === false ? '✅' : '⏸️'}
+                              {userItem.isActive === false ? 'A' : 'D'}
                             </button>
                           )}
                           
@@ -432,12 +432,12 @@ const AdminDashboard = () => {
                                 borderRadius: '4px',
                                 cursor: 'pointer',
                                 fontSize: '0.8rem',
-                                backgroundColor: '#17a2b8',
+                                backgroundColor: 'var(--primary-blue)',
                                 color: 'white'
                               }}
                               title="Promouvoir tuteur"
                             >
-                              👨‍🏫
+                              T
                             </button>
                           )}
                           
@@ -451,12 +451,12 @@ const AdminDashboard = () => {
                                 borderRadius: '4px',
                                 cursor: 'pointer',
                                 fontSize: '0.8rem',
-                                backgroundColor: '#dc3545',
+                                backgroundColor: 'var(--danger)',
                                 color: 'white'
                               }}
                               title="Supprimer"
                             >
-                              🗑️
+                              ×
                             </button>
                           )}
                         </div>
