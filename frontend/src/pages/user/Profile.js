@@ -17,6 +17,9 @@ const Profile = () => {
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [showAvatarHistory, setShowAvatarHistory] = useState(false);
+  const [avatarHistory, setAvatarHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -92,6 +95,40 @@ const Profile = () => {
     const fileInput = document.getElementById('avatar');
     if (fileInput) {
       fileInput.click();
+    }
+  };
+
+  const loadAvatarHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const response = await userAPI.getAvatarHistory();
+      setAvatarHistory(response.data.previousAvatars || []);
+    } catch (err) {
+      console.error('Erreur chargement historique:', err);
+      setError('Erreur lors du chargement de l\'historique des avatars');
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const restoreAvatar = async (avatarPath) => {
+    try {
+      const response = await userAPI.restoreAvatar(avatarPath);
+      
+      // Mettre à jour le contexte utilisateur
+      login(response.data.user, localStorage.getItem('token'));
+      
+      // Mettre à jour l'aperçu
+      const avatarUrl = avatarPath.startsWith('http') 
+        ? avatarPath 
+        : `http://localhost:5000${avatarPath}`;
+      setAvatarPreview(avatarUrl);
+      
+      setSuccess('Avatar restauré avec succès !');
+      setShowAvatarHistory(false);
+      
+    } catch (err) {
+      setError(err.response?.data?.message || 'Erreur lors de la restauration de l\'avatar');
     }
   };
 
@@ -369,11 +406,46 @@ const Profile = () => {
                 style={{ display: 'none' }}
               />
               
-              <div style={{ marginBottom: '1rem' }}>
-                <small style={{ color: '#6c757d', fontSize: '0.85rem' }}>
-                  Formats acceptés : JPG, PNG, GIF, WebP (max 5MB)
-                </small>
-              </div>
+                             <div style={{ marginBottom: '1rem' }}>
+                 <small style={{ color: '#6c757d', fontSize: '0.85rem' }}>
+                   Formats acceptés : JPG, PNG, GIF, WebP (max 5MB)
+                 </small>
+               </div>
+
+               {/* Bouton Historique des avatars */}
+               <button
+                 type="button"
+                 onClick={() => {
+                   setShowAvatarHistory(true);
+                   loadAvatarHistory();
+                 }}
+                 style={{
+                   background: 'linear-gradient(135deg, #6c757d, #5a6268)',
+                   color: 'white',
+                   border: 'none',
+                   borderRadius: '6px',
+                   padding: '8px 16px',
+                   fontSize: '0.85rem',
+                   fontWeight: '500',
+                   cursor: 'pointer',
+                   transition: 'all 0.3s ease',
+                   display: 'flex',
+                   alignItems: 'center',
+                   gap: '6px',
+                   margin: '0 auto'
+                 }}
+                 onMouseEnter={(e) => {
+                   e.target.style.transform = 'translateY(-1px)';
+                   e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+                 }}
+                 onMouseLeave={(e) => {
+                   e.target.style.transform = 'translateY(0)';
+                   e.target.style.boxShadow = 'none';
+                 }}
+               >
+                 <span>📚</span>
+                 Voir l'historique des avatars
+               </button>
 
               {/* Informations sur le fichier sélectionné */}
               {avatarFile && (
@@ -566,9 +638,192 @@ const Profile = () => {
                 Prenez le temps de bien réfléchir avant de les effectuer.
               </p>
             </div>
-          </div>
+                     </div>
 
-          {/* Modal de suppression de compte */}
+           {/* Modal Historique des avatars */}
+           {showAvatarHistory && (
+             <div style={{
+               position: 'fixed',
+               top: 0,
+               left: 0,
+               right: 0,
+               bottom: 0,
+               backgroundColor: 'rgba(0, 0, 0, 0.5)',
+               display: 'flex',
+               alignItems: 'center',
+               justifyContent: 'center',
+               zIndex: 1000
+             }}>
+               <div style={{
+                 backgroundColor: 'white',
+                 borderRadius: '12px',
+                 padding: '2rem',
+                 maxWidth: '600px',
+                 width: '90%',
+                 maxHeight: '80vh',
+                 overflow: 'auto',
+                 boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
+                 position: 'relative'
+               }}>
+                 {/* En-tête du modal */}
+                 <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                   <div style={{ 
+                     fontSize: '2.5rem', 
+                     marginBottom: '0.5rem',
+                     color: '#007bff'
+                   }}>
+                     📚
+                   </div>
+                   <h3 style={{ 
+                     color: '#495057', 
+                     marginBottom: '0.5rem',
+                     fontSize: '1.5rem',
+                     fontWeight: '700'
+                   }}>
+                     Historique des avatars
+                   </h3>
+                   <p style={{ color: '#6c757d', fontSize: '0.9rem' }}>
+                     Sélectionnez un avatar précédent pour le restaurer
+                   </p>
+                 </div>
+
+                 {/* Contenu de l'historique */}
+                 {loadingHistory ? (
+                   <div style={{ textAlign: 'center', padding: '2rem' }}>
+                     <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
+                     <p>Chargement de l'historique...</p>
+                   </div>
+                 ) : avatarHistory.length === 0 ? (
+                   <div style={{ textAlign: 'center', padding: '2rem' }}>
+                     <div style={{ fontSize: '3rem', marginBottom: '1rem', color: '#6c757d' }}>📷</div>
+                     <p style={{ color: '#6c757d' }}>Aucun avatar dans l'historique</p>
+                     <small style={{ color: '#adb5bd' }}>
+                       Les avatars précédents apparaîtront ici après les avoir changés
+                     </small>
+                   </div>
+                 ) : (
+                   <div style={{ 
+                     display: 'grid', 
+                     gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+                     gap: '1rem',
+                     marginBottom: '1.5rem'
+                   }}>
+                     {avatarHistory.map((avatarPath, index) => {
+                       const avatarUrl = avatarPath.startsWith('http') 
+                         ? avatarPath 
+                         : `http://localhost:5000${avatarPath}`;
+                       
+                       return (
+                         <div
+                           key={index}
+                           style={{
+                             position: 'relative',
+                             cursor: 'pointer',
+                             borderRadius: '8px',
+                             overflow: 'hidden',
+                             border: '2px solid #dee2e6',
+                             transition: 'all 0.3s ease'
+                           }}
+                           onMouseEnter={(e) => {
+                             e.target.style.borderColor = '#007bff';
+                             e.target.style.transform = 'scale(1.05)';
+                           }}
+                           onMouseLeave={(e) => {
+                             e.target.style.borderColor = '#dee2e6';
+                             e.target.style.transform = 'scale(1)';
+                           }}
+                           onClick={() => restoreAvatar(avatarPath)}
+                         >
+                           <img 
+                             src={avatarUrl} 
+                             alt={`Avatar ${index + 1}`}
+                             style={{ 
+                               width: '100%', 
+                               height: '120px', 
+                               objectFit: 'cover',
+                               display: 'block'
+                             }}
+                           />
+                           <div style={{
+                             position: 'absolute',
+                             bottom: 0,
+                             left: 0,
+                             right: 0,
+                             background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
+                             color: 'white',
+                             padding: '0.5rem',
+                             fontSize: '0.8rem',
+                             textAlign: 'center'
+                           }}>
+                             Restaurer
+                           </div>
+                         </div>
+                       );
+                     })}
+                   </div>
+                 )}
+
+                 {/* Boutons d'action */}
+                 <div style={{ 
+                   display: 'flex', 
+                   gap: '12px',
+                   justifyContent: 'center'
+                 }}>
+                   <button
+                     type="button"
+                     onClick={() => setShowAvatarHistory(false)}
+                     style={{
+                       background: '#6c757d',
+                       color: 'white',
+                       border: 'none',
+                       borderRadius: '6px',
+                       padding: '10px 20px',
+                       fontSize: '0.9rem',
+                       fontWeight: '500',
+                       cursor: 'pointer',
+                       transition: 'all 0.3s ease'
+                     }}
+                   >
+                     🔙 Fermer
+                   </button>
+                 </div>
+
+                 {/* Bouton de fermeture */}
+                 <button
+                   onClick={() => setShowAvatarHistory(false)}
+                   style={{
+                     position: 'absolute',
+                     top: '10px',
+                     right: '10px',
+                     background: 'transparent',
+                     border: 'none',
+                     fontSize: '1.5rem',
+                     cursor: 'pointer',
+                     color: '#6c757d',
+                     padding: '5px',
+                     borderRadius: '50%',
+                     width: '35px',
+                     height: '35px',
+                     display: 'flex',
+                     alignItems: 'center',
+                     justifyContent: 'center'
+                   }}
+                   onMouseEnter={(e) => {
+                     e.target.style.backgroundColor = '#f8f9fa';
+                     e.target.style.color = '#dc3545';
+                   }}
+                   onMouseLeave={(e) => {
+                     e.target.style.backgroundColor = 'transparent';
+                     e.target.style.color = '#6c757d';
+                   }}
+                 >
+                   ×
+                 </button>
+               </div>
+             </div>
+           )}
+
+           {/* Modal de suppression de compte */}
           {showDeleteModal && (
             <div style={{
               position: 'fixed',
