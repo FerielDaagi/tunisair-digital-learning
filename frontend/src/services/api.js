@@ -66,6 +66,10 @@ export const userAPI = {
   updateAvatar: (formData) => api.put('/user/avatar', formData),
   getAvatarHistory: () => api.get('/user/avatar/history'),
   restoreAvatar: (avatarPath) => api.post('/user/avatar/restore', { avatarPath }),
+  deleteAvatarFromHistory: (avatarPath) => api.delete('/user/avatar/history', { 
+    headers: { 'Content-Type': 'application/json' },
+    data: { avatarPath } 
+  }),
   getProgress: () => api.get('/user/progress'),
   becomeTutor: () => api.post('/user/become-tutor'),
 };

@@ -8,7 +8,8 @@ const {
   updateAvatar,
   listPreviousAvatars,
   restoreAvatar,
-  becomeTutor
+  becomeTutor,
+  deleteAvatarFromHistory
 } = require('../controllers/userController');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -29,5 +30,8 @@ router.post('/progress', updateLessonProgress);
 
 // Tutor routes
 router.post('/become-tutor', becomeTutor);
+
+// Avatar history routes
+router.delete('/avatar/history', deleteAvatarFromHistory);
 
 module.exports = router; 

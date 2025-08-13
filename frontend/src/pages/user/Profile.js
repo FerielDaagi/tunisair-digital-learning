@@ -20,6 +20,9 @@ const Profile = () => {
   const [showAvatarHistory, setShowAvatarHistory] = useState(false);
   const [avatarHistory, setAvatarHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmMessage, setConfirmMessage] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -132,6 +135,26 @@ const Profile = () => {
     }
   };
 
+  const deleteAvatarFromHistory = async (avatarPath, event) => {
+    event.stopPropagation(); // Empêcher la restauration
+    
+    showConfirmation(
+      'Êtes-vous sûr de vouloir supprimer cet avatar de l\'historique ? Cette action est irréversible.',
+      async () => {
+        try {
+          await userAPI.deleteAvatarFromHistory(avatarPath);
+          
+          // Mettre à jour la liste locale
+          setAvatarHistory(prev => prev.filter(avatar => avatar !== avatarPath));
+          setSuccess('Avatar supprimé de l\'historique !');
+          
+        } catch (err) {
+          setError(err.response?.data?.message || 'Erreur lors de la suppression de l\'avatar');
+        }
+      }
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -170,27 +193,43 @@ const Profile = () => {
     }
   };
 
-  const handleBecomeTutor = async () => {
-    if (!window.confirm('Êtes-vous sûr de vouloir devenir tuteur ? Cette action vous donnera accès à des fonctionnalités supplémentaires.')) {
-      return;
-    }
+  const showConfirmation = (message, action) => {
+    setConfirmMessage(message);
+    setConfirmAction(() => action);
+    setShowConfirmModal(true);
+  };
 
-    setLoading(true);
-    setError('');
-    
-    try {
-      const response = await userAPI.becomeTutor();
-      
-      // Mettre à jour le contexte utilisateur avec le nouveau rôle
-      login(response.data.user, localStorage.getItem('token'));
-      
-      setSuccess('Félicitations ! Vous êtes maintenant tuteur. Vous avez accès à de nouvelles fonctionnalités.');
-      
-    } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de la demande pour devenir tuteur');
-    } finally {
-      setLoading(false);
+  const handleConfirmAction = async () => {
+    if (confirmAction) {
+      await confirmAction();
     }
+    setShowConfirmModal(false);
+    setConfirmAction(null);
+    setConfirmMessage('');
+  };
+
+  const handleBecomeTutor = async () => {
+    showConfirmation(
+      'Êtes-vous sûr de vouloir devenir tuteur ? Cette action vous donnera accès à des fonctionnalités supplémentaires.',
+      async () => {
+        setLoading(true);
+        setError('');
+        
+        try {
+          const response = await userAPI.becomeTutor();
+          
+          // Mettre à jour le contexte utilisateur avec le nouveau rôle
+          login(response.data.user, localStorage.getItem('token'));
+          
+          setSuccess('Félicitations ! Vous êtes maintenant tuteur. Vous avez accès à de nouvelles fonctionnalités.');
+          
+        } catch (err) {
+          setError(err.response?.data?.message || 'Erreur lors de la demande pour devenir tuteur');
+        } finally {
+          setLoading(false);
+        }
+      }
+    );
   };
 
   const handleDeleteAccount = async () => {
@@ -213,11 +252,13 @@ const Profile = () => {
         // Déconnexion après suppression
         logout();
         
-        // Afficher un message de confirmation avant redirection
-        alert('Votre compte a été supprimé définitivement. Vous allez être redirigé vers la page d\'accueil.');
+        // Afficher un message de succès et rediriger
+        setSuccess('Votre compte a été supprimé définitivement. Redirection en cours...');
         
-        // Redirection vers la page d'accueil
-        window.location.href = '/';
+        // Redirection vers la page d'accueil après 2 secondes
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
       } else {
         setError('Erreur lors de la suppression du compte');
         setLoading(false);
@@ -744,19 +785,55 @@ const Profile = () => {
                                display: 'block'
                              }}
                            />
-                           <div style={{
-                             position: 'absolute',
-                             bottom: 0,
-                             left: 0,
-                             right: 0,
-                             background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
-                             color: 'white',
-                             padding: '0.5rem',
-                             fontSize: '0.8rem',
-                             textAlign: 'center'
-                           }}>
-                             Restaurer
-                           </div>
+                                                       {/* Bouton Restaurer */}
+                            <div style={{
+                              position: 'absolute',
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
+                              color: 'white',
+                              padding: '0.5rem',
+                              fontSize: '0.8rem',
+                              textAlign: 'center'
+                            }}>
+                              Restaurer
+                            </div>
+                            
+                            {/* Bouton Supprimer */}
+                            <button
+                              onClick={(e) => deleteAvatarFromHistory(avatarPath, e)}
+                              style={{
+                                position: 'absolute',
+                                top: '5px',
+                                right: '5px',
+                                background: 'rgba(220, 53, 69, 0.9)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '50%',
+                                width: '25px',
+                                height: '25px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.8rem',
+                                fontWeight: 'bold',
+                                transition: 'all 0.3s ease',
+                                opacity: 0.8
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.opacity = 1;
+                                e.target.style.transform = 'scale(1.1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.opacity = 0.8;
+                                e.target.style.transform = 'scale(1)';
+                              }}
+                              title="Supprimer de l'historique"
+                            >
+                              ×
+                            </button>
                          </div>
                        );
                      })}
@@ -823,8 +900,140 @@ const Profile = () => {
              </div>
            )}
 
-           {/* Modal de suppression de compte */}
-          {showDeleteModal && (
+                       {/* Modal de confirmation générale */}
+            {showConfirmModal && (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000
+              }}>
+                <div style={{
+                  backgroundColor: 'white',
+                  borderRadius: '12px',
+                  padding: '2rem',
+                  maxWidth: '500px',
+                  width: '90%',
+                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
+                  position: 'relative'
+                }}>
+                  {/* En-tête du modal */}
+                  <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                    <div style={{ 
+                      fontSize: '2.5rem', 
+                      marginBottom: '1rem',
+                      color: '#ffc107'
+                    }}>
+                      ⚠️
+                    </div>
+                    <h3 style={{ 
+                      color: '#495057', 
+                      marginBottom: '0.5rem',
+                      fontSize: '1.3rem',
+                      fontWeight: '600'
+                    }}>
+                      Confirmation requise
+                    </h3>
+                    <p style={{ color: '#6c757d', fontSize: '1rem', lineHeight: '1.5' }}>
+                      {confirmMessage}
+                    </p>
+                  </div>
+
+                  {/* Boutons d'action */}
+                  <div style={{ 
+                    display: 'flex', 
+                    gap: '12px',
+                    justifyContent: 'center'
+                  }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowConfirmModal(false);
+                        setConfirmAction(null);
+                        setConfirmMessage('');
+                      }}
+                      style={{
+                        background: '#6c757d',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '10px 20px',
+                        fontSize: '0.9rem',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      🔙 Annuler
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={handleConfirmAction}
+                      style={{
+                        background: 'linear-gradient(135deg, #007bff, #0056b3)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '10px 20px',
+                        fontSize: '0.9rem',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 2px 4px rgba(0,123,255,0.3)'
+                      }}
+                    >
+                      ✅ Confirmer
+                    </button>
+                  </div>
+
+                  {/* Bouton de fermeture */}
+                  <button
+                    onClick={() => {
+                      setShowConfirmModal(false);
+                      setConfirmAction(null);
+                      setConfirmMessage('');
+                    }}
+                    style={{
+                      position: 'absolute',
+                      top: '10px',
+                      right: '10px',
+                      background: 'transparent',
+                      border: 'none',
+                      fontSize: '1.5rem',
+                      cursor: 'pointer',
+                      color: '#6c757d',
+                      padding: '5px',
+                      borderRadius: '50%',
+                      width: '35px',
+                      height: '35px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = '#f8f9fa';
+                      e.target.style.color = '#dc3545';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = 'transparent';
+                      e.target.style.color = '#6c757d';
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Modal de suppression de compte */}
+           {showDeleteModal && (
             <div style={{
               position: 'fixed',
               top: 0,

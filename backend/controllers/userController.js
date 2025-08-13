@@ -374,6 +374,71 @@ const becomeTutor = async (req, res) => {
   }
 };
 
+// Supprimer un avatar de l'historique
+const deleteAvatarFromHistory = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { avatarPath } = req.body;
+    
+    if (!avatarPath) {
+      return res.status(400).json({
+        success: false,
+        message: 'Chemin de l\'avatar requis'
+      });
+    }
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur introuvable'
+      });
+    }
+    
+    // Vérifier que l'avatar existe dans l'historique
+    if (!user.profile?.previousAvatars?.includes(avatarPath)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Avatar introuvable dans l\'historique'
+      });
+    }
+    
+    // Supprimer l'avatar de l'historique
+    user.profile.previousAvatars = user.profile.previousAvatars.filter(
+      path => path !== avatarPath
+    );
+    
+    await user.save();
+    
+    // Supprimer le fichier du serveur
+    const fs = require('fs');
+    const path = require('path');
+    const avatarFilePath = path.join(__dirname, '..', avatarPath);
+    
+    try {
+      if (fs.existsSync(avatarFilePath)) {
+        fs.unlinkSync(avatarFilePath);
+        console.log('Fichier avatar supprimé:', avatarPath);
+      }
+    } catch (err) {
+      console.error('Erreur suppression fichier avatar:', err);
+      // On continue même si la suppression du fichier échoue
+    }
+    
+    res.json({
+      success: true,
+      message: 'Avatar supprimé de l\'historique avec succès'
+    });
+    
+  } catch (error) {
+    console.error('Erreur deleteAvatarFromHistory:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur interne du serveur'
+    });
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
@@ -382,5 +447,6 @@ module.exports = {
   restoreAvatar,
   getProgress,
   updateLessonProgress,
-  becomeTutor
+  becomeTutor,
+  deleteAvatarFromHistory
 };
