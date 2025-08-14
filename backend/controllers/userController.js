@@ -71,20 +71,26 @@ const getProfile = async (req, res) => {
 // Mettre à jour le profil utilisateur
 const updateProfile = async (req, res) => {
   try {
-    const { name, bio, phone, dateOfBirth, address } = req.body;
+    const { name, profile } = req.body;
     
     const updateData = {};
     
     if (name) updateData.name = name;
-    if (bio) updateData['profile.bio'] = bio;
-    if (phone) updateData['profile.phone'] = phone;
-    if (dateOfBirth) updateData['profile.dateOfBirth'] = dateOfBirth;
-    if (address) {
-      if (address.street) updateData['profile.address.street'] = address.street;
-      if (address.city) updateData['profile.address.city'] = address.city;
-      if (address.country) updateData['profile.address.country'] = address.country;
-      if (address.zipCode) updateData['profile.address.zipCode'] = address.zipCode;
+    
+    // Gérer les données du profil
+    if (profile) {
+      if (profile.bio !== undefined) updateData['profile.bio'] = profile.bio;
+      if (profile.phone !== undefined) updateData['profile.phone'] = profile.phone;
+      if (profile.dateOfBirth !== undefined) updateData['profile.dateOfBirth'] = profile.dateOfBirth;
+      if (profile.address) {
+        if (profile.address.street) updateData['profile.address.street'] = profile.address.street;
+        if (profile.address.city) updateData['profile.address.city'] = profile.address.city;
+        if (profile.address.country) updateData['profile.address.country'] = profile.address.country;
+        if (profile.address.zipCode) updateData['profile.address.zipCode'] = profile.address.zipCode;
+      }
     }
+
+    console.log('Données de mise à jour:', updateData);
 
     const user = await User.findByIdAndUpdate(
       req.user.id,
@@ -98,6 +104,8 @@ const updateProfile = async (req, res) => {
         message: 'Utilisateur introuvable'
       });
     }
+
+    console.log('Utilisateur mis à jour:', user);
 
     res.json({
       success: true,
@@ -116,10 +124,10 @@ const updateProfile = async (req, res) => {
         message: messages.join(', ')
       });
     }
-
+    
     res.status(500).json({
       success: false,
-      message: 'Erreur interne du serveur'
+      message: 'Erreur lors de la mise à jour du profil'
     });
   }
 };

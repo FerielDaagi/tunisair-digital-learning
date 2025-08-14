@@ -63,6 +63,27 @@ const Profile = () => {
     }
   };
 
+  // Fonction pour déclencher l'input file
+  const triggerFileInput = () => {
+    // Créer un input file temporaire
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        handleAvatarSelect(file);
+      }
+    };
+    input.click();
+  };
+
+  // Fonction pour supprimer l'avatar
+  const removeAvatar = () => {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -80,38 +101,63 @@ const Profile = () => {
         }
       };
 
+      console.log('Données à envoyer:', profileData);
       const profileResponse = await userAPI.updateProfile(profileData);
+      console.log('Profil mis à jour:', profileResponse.data);
       
       // Mettre à jour l'avatar si un nouveau fichier a été sélectionné
       if (avatarFile) {
+        console.log('Mise à jour de l\'avatar...');
         const formDataAvatar = new FormData();
         formDataAvatar.append('avatar', avatarFile);
         
-        const avatarResponse = await userAPI.updateAvatar(formDataAvatar);
-        console.log('Avatar mis à jour:', avatarResponse.data);
-        
-        // Mettre à jour l'aperçu avec la nouvelle URL
-        if (avatarResponse.data.user?.profile?.avatar) {
-          const newAvatarUrl = avatarResponse.data.user.profile.avatar.startsWith('http') 
-            ? avatarResponse.data.user.profile.avatar 
-            : `http://localhost:5000${avatarResponse.data.user.profile.avatar}`;
-          setAvatarPreview(newAvatarUrl);
+        try {
+          const avatarResponse = await userAPI.updateAvatar(formDataAvatar);
+          console.log('Avatar mis à jour:', avatarResponse.data);
+          
+          // Mettre à jour l'aperçu avec la nouvelle URL
+          if (avatarResponse.data.user?.profile?.avatar) {
+            const newAvatarUrl = avatarResponse.data.user.profile.avatar.startsWith('http') 
+              ? avatarResponse.data.user.profile.avatar 
+              : `http://localhost:5000${avatarResponse.data.user.profile.avatar}`;
+            setAvatarPreview(newAvatarUrl);
+            console.log('Nouvelle URL avatar:', newAvatarUrl);
+          }
+          
+          // Mettre à jour le contexte utilisateur avec les nouvelles données
+          if (avatarResponse.data.user) {
+            login(avatarResponse.data.user, localStorage.getItem('token'));
+            console.log('Contexte utilisateur mis à jour avec avatar');
+          }
+        } catch (avatarError) {
+          console.error('Erreur mise à jour avatar:', avatarError);
+          setError('Erreur lors de la mise à jour de l\'avatar');
+          return;
+        }
+      } else {
+        // Si pas d'avatar, mettre à jour le contexte avec la réponse du profil
+        if (profileResponse.data.user) {
+          login(profileResponse.data.user, localStorage.getItem('token'));
+          console.log('Contexte utilisateur mis à jour sans avatar');
         }
       }
 
       setSuccess('Profil mis à jour avec succès !');
-      
-      // Recharger les données utilisateur
-      if (profileResponse.data.user) {
-        login(profileResponse.data.user, localStorage.getItem('token'));
-      }
       
       // Réinitialiser l'avatar
       setAvatarFile(null);
       
     } catch (err) {
       console.error('Erreur mise à jour profil:', err);
-      setError(err.response?.data?.message || 'Erreur lors de la mise à jour du profil');
+      let errorMessage = 'Erreur lors de la mise à jour du profil';
+      
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -186,6 +232,31 @@ const Profile = () => {
     }
   };
 
+  const handleRequestTutor = async () => {
+    try {
+      // Ici vous pouvez ajouter l'appel API pour demander à être tuteur
+      // Pour l'instant, on simule juste la demande
+      setSuccess('Votre demande de tuteur a été envoyée aux administrateurs !');
+      
+      // Optionnel : mettre à jour l'état local pour masquer le bouton
+      // setUser(prev => ({ ...prev, tutorRequestPending: true }));
+      
+    } catch (err) {
+      setError('Erreur lors de l\'envoi de la demande de tuteur');
+    }
+  };
+
+  const handleConfirmAction = async () => {
+    if (confirmAction === 'deleteAccount') {
+      await handleDeleteAccount();
+    } else if (confirmAction === 'requestTutor') {
+      await handleRequestTutor();
+    }
+    setShowConfirmModal(false);
+    setConfirmAction(null);
+    setConfirmMessage('');
+  };
+
   if (!user) {
     return (
       <div style={{ textAlign: 'center', padding: '2rem' }}>
@@ -200,8 +271,8 @@ const Profile = () => {
         {/* Carte principale du profil */}
         <div className="card">
           <div className="card-header">
-            <h2 style={{ margin: 0, color: '#495057' }}>Mon Profil</h2>
-            <p style={{ margin: '0.5rem 0 0 0', color: '#6c757d' }}>
+            <h2 className="card-title">Mon Profil</h2>
+            <p className="card-subtitle">
               Gérez vos informations personnelles et votre avatar
             </p>
           </div>
@@ -220,67 +291,65 @@ const Profile = () => {
 
           <form onSubmit={handleSubmit}>
             {/* Section Avatar */}
-            <div style={{ marginBottom: '2rem' }}>
-              <h4 style={{ 
-                marginBottom: '1rem', 
-                color: '#495057', 
-                fontSize: '1.1rem',
-                borderBottom: '1px solid #dee2e6',
-                paddingBottom: '0.5rem'
-              }}>
-                Photo de profil
-              </h4>
+            <div className="form-group">
+              <label className="form-label">Photo de profil</label>
               
-              <ImageUploader
-                onImageSelect={handleAvatarSelect}
-                currentImage={avatarFile || avatarPreview}
-                placeholder="Sélectionnez votre photo de profil"
-                maxSize={5}
-                acceptedTypes={['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']}
-                style={{ maxWidth: '400px' }}
-              />
+              <div className="avatar-preview-container">
+                <div 
+                  className="avatar-preview clickable"
+                  onClick={triggerFileInput}
+                  title="Cliquez pour changer votre photo"
+                >
+                  {avatarPreview ? (
+                    <img 
+                      src={avatarPreview} 
+                      alt="Avatar" 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <div className="avatar-placeholder">
+                      {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                  )}
+                  
+                  {/* Overlay pour indiquer que c'est cliquable */}
+                  <div className="avatar-overlay">
+                    <span className="avatar-overlay-text">📷</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Informations personnelles */}
-            <div style={{ marginBottom: '2rem' }}>
-              <h4 style={{ 
-                marginBottom: '1rem', 
-                color: '#495057', 
-                fontSize: '1.1rem',
-                borderBottom: '1px solid #dee2e6',
-                paddingBottom: '0.5rem'
-              }}>
-                Informations personnelles
-              </h4>
+            <div className="form-group">
+              <label htmlFor="name" className="form-label">Nom complet *</label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                className="form-control"
+                value={formData.name}
+                onChange={handleChange}
+                required
+                placeholder="Votre nom complet"
+              />
+            </div>
 
-              <div className="form-group">
-                <label htmlFor="name" className="form-label">Nom complet *</label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  className="form-control"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  placeholder="Votre nom complet"
-                />
-              </div>
+            <div className="form-group">
+              <label htmlFor="bio" className="form-label">Bio</label>
+              <textarea
+                id="bio"
+                name="bio"
+                className="form-control"
+                value={formData.bio}
+                onChange={handleChange}
+                placeholder="Décrivez-vous en quelques mots..."
+                rows="4"
+                style={{ resize: 'vertical' }}
+              />
+            </div>
 
-              <div className="form-group">
-                <label htmlFor="bio" className="form-label">Bio</label>
-                <textarea
-                  id="bio"
-                  name="bio"
-                  className="form-control"
-                  value={formData.bio}
-                  onChange={handleChange}
-                  placeholder="Décrivez-vous en quelques mots..."
-                  rows="4"
-                  style={{ resize: 'vertical' }}
-                />
-              </div>
-
+            <div className="grid grid-cols-2" style={{ gap: '1rem' }}>
               <div className="form-group">
                 <label htmlFor="phone" className="form-label">Téléphone</label>
                 <input
@@ -321,10 +390,10 @@ const Profile = () => {
         {/* Carte des informations du compte */}
         <div className="card">
           <div className="card-header">
-            <h3 style={{ margin: 0, color: '#495057' }}>Informations du compte</h3>
+            <h3 className="card-title">Informations du compte</h3>
           </div>
 
-          <div style={{ marginBottom: '1.5rem' }}>
+          <div className="form-group">
             <div style={{ 
               display: 'flex', 
               alignItems: 'center', 
@@ -349,12 +418,12 @@ const Profile = () => {
                 <div style={{
                   fontSize: '1.2rem',
                   fontWeight: '600',
-                  color: '#495057'
+                  color: 'var(--text-primary)'
                 }}>
                   {user.name || 'Utilisateur'}
                 </div>
                 <div style={{
-                  color: '#6c757d',
+                  color: 'var(--text-secondary)',
                   fontSize: '0.9rem'
                 }}>
                   {user.email}
@@ -377,13 +446,13 @@ const Profile = () => {
           </div>
 
           <div style={{ 
-            backgroundColor: '#f8f9fa', 
-            padding: '1rem', 
-            borderRadius: '8px',
+            backgroundColor: 'var(--bg-secondary)', 
+            padding: '1.5rem', 
+            borderRadius: '12px',
             marginBottom: '1.5rem'
           }}>
-            <h5 style={{ margin: '0 0 0.5rem 0', color: '#495057' }}>Actions du compte</h5>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <h5 style={{ margin: '0 0 1rem 0', color: 'var(--text-primary)' }}>Actions du compte</h5>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <button
                 type="button"
                 onClick={() => {
@@ -396,9 +465,32 @@ const Profile = () => {
                 📚 Historique des avatars
               </button>
               
+              {user.role === 'apprenti' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfirmAction('requestTutor');
+                    setConfirmMessage('Voulez-vous demander à devenir tuteur ? Cette demande sera envoyée aux administrateurs pour validation.');
+                    setShowConfirmModal(true);
+                  }}
+                  className="btn btn-outline"
+                  style={{ 
+                    fontSize: '0.9rem',
+                    color: 'var(--secondary-teal)',
+                    borderColor: 'var(--secondary-teal)'
+                  }}
+                >
+                  🎓 Demander à être tuteur
+                </button>
+              )}
+              
               <button
                 type="button"
-                onClick={() => setShowDeleteModal(true)}
+                onClick={() => {
+                  setConfirmAction('deleteAccount');
+                  setConfirmMessage('Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.');
+                  setShowConfirmModal(true);
+                }}
                 className="btn btn-outline"
                 style={{ 
                   fontSize: '0.9rem',
@@ -406,7 +498,7 @@ const Profile = () => {
                   borderColor: 'var(--danger)'
                 }}
               >
-                🗑️ Supprimer mon compte
+                🗑️ Supprimer le compte
               </button>
             </div>
           </div>
@@ -697,6 +789,134 @@ const Profile = () => {
               onMouseLeave={(e) => {
                 e.target.style.backgroundColor = 'transparent';
                 e.target.style.color = '#6c757d';
+              }}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modale de confirmation */}
+      {showConfirmModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '2rem',
+            maxWidth: '500px',
+            width: '90%',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.2)',
+            position: 'relative'
+          }}>
+            <h3 style={{ 
+              margin: '0 0 1rem 0', 
+              color: 'var(--text-primary)',
+              fontSize: '1.5rem'
+            }}>
+              Confirmation
+            </h3>
+            
+            <p style={{ 
+              margin: '0 0 2rem 0', 
+              color: 'var(--text-secondary)',
+              lineHeight: '1.6'
+            }}>
+              {confirmMessage}
+            </p>
+
+            {confirmAction === 'deleteAccount' && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label htmlFor="deleteConfirm" className="form-label">
+                  Tapez SUPPRIMER pour confirmer
+                </label>
+                <input
+                  type="text"
+                  id="deleteConfirm"
+                  className="form-control"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="SUPPRIMER"
+                />
+              </div>
+            )}
+
+            <div style={{ 
+              display: 'flex', 
+              gap: '1rem',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  setConfirmAction(null);
+                  setConfirmMessage('');
+                  setDeleteConfirmText('');
+                }}
+                className="btn btn-outline"
+                style={{ minWidth: '100px' }}
+              >
+                Annuler
+              </button>
+              
+              <button
+                type="button"
+                onClick={handleConfirmAction}
+                className="btn btn-primary"
+                style={{ 
+                  minWidth: '100px',
+                  backgroundColor: confirmAction === 'deleteAccount' ? 'var(--danger)' : 'var(--primary-blue)'
+                }}
+              >
+                {confirmAction === 'deleteAccount' ? 'Supprimer' : 'Confirmer'}
+              </button>
+            </div>
+
+            {/* Bouton de fermeture */}
+            <button
+              onClick={() => {
+                setShowConfirmModal(false);
+                setConfirmAction(null);
+                setConfirmMessage('');
+                setDeleteConfirmText('');
+              }}
+              style={{
+                position: 'absolute',
+                top: '15px',
+                right: '15px',
+                background: 'transparent',
+                border: 'none',
+                fontSize: '1.5rem',
+                cursor: 'pointer',
+                color: 'var(--text-secondary)',
+                padding: '8px',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = 'var(--bg-secondary)';
+                e.target.style.color = 'var(--text-primary)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'transparent';
+                e.target.style.color = 'var(--text-secondary)';
               }}
             >
               ×

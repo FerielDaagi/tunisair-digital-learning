@@ -1,13 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
-const Navbar = () => {
+const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Synchroniser l'état local avec la prop externe
+  useEffect(() => {
+    setIsCollapsed(isSidebarCollapsed);
+  }, [isSidebarCollapsed]);
 
   const handleLogout = () => {
     logout();
@@ -15,7 +20,11 @@ const Navbar = () => {
   };
 
   const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed);
+    const newState = !isCollapsed;
+    setIsCollapsed(newState);
+    if (onSidebarToggle) {
+      onSidebarToggle(newState);
+    }
   };
 
   const toggleMobileMenu = () => {

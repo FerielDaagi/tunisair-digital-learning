@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/common/Navbar';
@@ -19,11 +19,19 @@ import './App.css';
 const AppContent = () => {
   const location = useLocation();
   const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  
+  const handleSidebarToggle = (collapsed) => {
+    setIsSidebarCollapsed(collapsed);
+  };
   
   return (
     <div className={`app-container ${isAuthPage ? 'auth-pages' : ''}`}>
-      <Navbar />
-      <div className="main-content">
+      <Navbar 
+        onSidebarToggle={handleSidebarToggle}
+        isSidebarCollapsed={isSidebarCollapsed}
+      />
+      <div className={`main-content ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />

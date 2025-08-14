@@ -141,122 +141,110 @@ const Signup = () => {
   };
 
   return (
-    <div className="login-page">
-      <div className="login-card">
+    <div className="signup-page">
+      <div className="signup-card">
         <div className="card-header">
           <h2 className="card-title">Créer un compte</h2>
-          <p style={{ color: '#6c757d', margin: 0, fontSize: '1.1rem' }}>
+          <p className="card-subtitle">
             Inscrivez-vous pour accéder à Tunisair Academy
           </p>
         </div>
         
         <form onSubmit={handleSubmit}>
           {error && (
-            <div style={{ 
-              backgroundColor: '#f8d7da', 
-              color: '#721c24', 
-              padding: '0.75rem', 
-              borderRadius: '8px', 
-              marginBottom: '1.5rem',
-              border: '1px solid #f5c6cb',
-              fontSize: '0.9rem'
-            }}>
+            <div className="alert alert-error">
               {error}
             </div>
           )}
           
           {success && (
-            <div style={{ 
-              backgroundColor: '#d4edda', 
-              color: '#155724', 
-              padding: '0.75rem', 
-              borderRadius: '8px', 
-              marginBottom: '1.5rem',
-              border: '1px solid #c3e6cb',
-              fontSize: '0.9rem'
-            }}>
+            <div className="alert alert-success">
               {success}
             </div>
           )}
 
           {/* Informations de base */}
-          <div style={{ marginBottom: '2rem' }}>
+          <div className="form-group">
             <h4 style={{ 
               marginBottom: '1rem', 
-              color: '#495057', 
-              fontSize: '1rem',
-              borderBottom: '1px solid #dee2e6',
+              color: 'var(--text-primary)', 
+              fontSize: '1.1rem',
+              borderBottom: '1px solid var(--gray-200)',
               paddingBottom: '0.5rem'
             }}>
               Informations de base
             </h4>
 
-            <div className="form-group">
-              <label htmlFor="name" className="form-label">Nom complet *</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                className="form-control"
-                value={formData.name}
-                onChange={handleChange}
-                required
-                placeholder="Votre nom complet"
-              />
+            <div className="grid grid-cols-2" style={{ gap: '1rem' }}>
+              <div className="form-group">
+                <label htmlFor="name" className="form-label">Nom complet *</label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  className="form-control"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  placeholder="Votre nom complet"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="email" className="form-label">Email *</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  className="form-control"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  placeholder="votre.email@exemple.com"
+                />
+              </div>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="email" className="form-label">Email *</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                className="form-control"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                placeholder="votre.email@exemple.com"
-              />
-            </div>
+            <div className="grid grid-cols-2" style={{ gap: '1rem' }}>
+              <div className="form-group">
+                <label htmlFor="password" className="form-label">Mot de passe *</label>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  className="form-control"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  placeholder="Minimum 6 caractères"
+                  minLength="6"
+                />
+              </div>
 
-            <div className="form-group">
-              <label htmlFor="password" className="form-label">Mot de passe *</label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                className="form-control"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                placeholder="Minimum 6 caractères"
-                minLength="6"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="role" className="form-label">Rôle *</label>
-              <select
-                id="role"
-                name="role"
-                className="form-control"
-                value={formData.role}
-                onChange={handleChange}
-                required
-              >
-                <option value="apprenti">Apprenti</option>
-                <option value="tuteur">Tuteur</option>
-              </select>
+              <div className="form-group">
+                <label htmlFor="role" className="form-label">Rôle *</label>
+                <select
+                  id="role"
+                  name="role"
+                  className="form-control"
+                  value={formData.role}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="apprenti">Apprenti</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
             </div>
           </div>
 
           {/* Avatar */}
-          <div style={{ marginBottom: '2rem' }}>
+          <div className="form-group">
             <h4 style={{ 
               marginBottom: '1rem', 
-              color: '#495057', 
-              fontSize: '1rem',
-              borderBottom: '1px solid #dee2e6',
+              color: 'var(--text-primary)', 
+              fontSize: '1.1rem',
+              borderBottom: '1px solid var(--gray-200)',
               paddingBottom: '0.5rem'
             }}>
               Photo de profil (optionnel)
@@ -274,32 +262,32 @@ const Signup = () => {
                     width: '120px', 
                     height: '120px', 
                     borderRadius: '50%', 
-                    border: avatarPreview ? '3px solid var(--primary-blue)' : '3px dashed #dee2e6',
+                    border: avatarPreview ? '3px solid var(--primary-blue)' : '3px dashed var(--gray-300)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer',
                     position: 'relative',
                     overflow: 'hidden',
-                    backgroundColor: '#f8f9fa',
+                    backgroundColor: 'var(--bg-secondary)',
                     transition: 'all 0.3s ease',
                     margin: '0 auto'
                   }}
                   onMouseEnter={(e) => {
                     if (!avatarPreview) {
                       e.target.style.borderColor = 'var(--primary-blue)';
-                      e.target.style.backgroundColor = '#e3f2fd';
+                      e.target.style.backgroundColor = 'rgba(79, 70, 229, 0.05)';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!avatarPreview) {
-                      e.target.style.borderColor = '#dee2e6';
-                      e.target.style.backgroundColor = '#f8f9fa';
+                      e.target.style.borderColor = 'var(--gray-300)';
+                      e.target.style.backgroundColor = 'var(--bg-secondary)';
                     }
                   }}
                 >
                   {!avatarPreview && (
-                    <div style={{ textAlign: 'center', color: '#6c757d' }}>
+                    <div style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
                       <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>📷</div>
                       <div style={{ fontSize: '0.75rem', fontWeight: '500', lineHeight: '1.2' }}>
                         Ajouter une photo
@@ -391,19 +379,20 @@ const Signup = () => {
               />
               
               <div style={{ marginBottom: '1rem' }}>
-                <small style={{ color: '#6c757d', fontSize: '0.85rem' }}>
+                <small style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                   Formats acceptés : JPG, PNG, GIF, WebP (max 5MB)
                 </small>
               </div>
 
               {avatarPreview && (
                 <div style={{ 
-                  backgroundColor: '#e9ecef', 
-                  padding: '0.5rem', 
+                  backgroundColor: 'var(--bg-secondary)', 
+                  padding: '0.75rem', 
                   borderRadius: '8px', 
                   marginBottom: '1rem',
                   fontSize: '0.85rem',
-                  color: '#495057'
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--gray-200)'
                 }}>
                   <strong>Fichier sélectionné :</strong> {formData.avatar.name} 
                   ({(formData.avatar.size / 1024 / 1024).toFixed(2)} MB)
@@ -413,12 +402,12 @@ const Signup = () => {
           </div>
 
           {/* Informations personnelles */}
-          <div style={{ marginBottom: '1.5rem' }}>
+          <div className="form-group">
             <h4 style={{ 
               marginBottom: '1rem', 
-              color: '#495057', 
-              fontSize: '1rem',
-              borderBottom: '1px solid #dee2e6',
+              color: 'var(--text-primary)', 
+              fontSize: '1.1rem',
+              borderBottom: '1px solid var(--gray-200)',
               paddingBottom: '0.5rem'
             }}>
               Informations personnelles (optionnel)
@@ -438,50 +427,55 @@ const Signup = () => {
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="phone" className="form-label">Téléphone</label>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                className="form-control"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="+33 1 23 45 67 89"
-              />
-            </div>
+            <div className="grid grid-cols-2" style={{ gap: '1rem' }}>
+              <div className="form-group">
+                <label htmlFor="phone" className="form-label">Téléphone</label>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  className="form-control"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="+33 1 23 45 67 89"
+                />
+              </div>
 
-            <div className="form-group">
-              <label htmlFor="dateOfBirth" className="form-label">Date de naissance</label>
-              <input
-                type="date"
-                id="dateOfBirth"
-                name="dateOfBirth"
-                className="form-control"
-                value={formData.dateOfBirth}
-                onChange={handleChange}
-              />
+              <div className="form-group">
+                <label htmlFor="dateOfBirth" className="form-label">Date de naissance</label>
+                <input
+                  type="date"
+                  id="dateOfBirth"
+                  name="dateOfBirth"
+                  className="form-control"
+                  value={formData.dateOfBirth}
+                  onChange={handleChange}
+                />
+              </div>
             </div>
           </div>
           
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={loading}
-          >
-            {loading ? 'Création du compte...' : 'Créer mon compte'}
-          </button>
+          <div className="form-group">
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={loading}
+              style={{ width: '100%' }}
+            >
+              {loading ? 'Création du compte...' : 'Créer mon compte'}
+            </button>
+          </div>
         </form>
         
-        <div className="text-center" style={{ paddingTop: '1rem', borderTop: '1px solid #dee2e6' }}>
-          <p style={{ color: '#6c757d', fontSize: '0.9rem', margin: 0 }}>
+        <div style={{ textAlign: 'center', paddingTop: '1.5rem', borderTop: '1px solid var(--gray-200)' }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', margin: 0 }}>
             Déjà un compte ?{' '}
             <Link 
               to="/login" 
               style={{ 
                 color: 'var(--primary-blue)', 
                 textDecoration: 'none',
-                fontWeight: '500'
+                fontWeight: '600'
               }}
             >
               Connectez-vous ici
