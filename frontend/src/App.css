@@ -314,71 +314,153 @@ body {
 }
 
 .login-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(15px);
-  border-radius: 20px;
-  padding: 3rem;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 3.5rem;
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
   width: 100%;
-  max-width: 500px;
+  max-width: 520px;
   border: 1px solid rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s ease;
+}
+
+.login-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-blue), var(--secondary-purple), var(--secondary-teal));
+  border-radius: 24px 24px 0 0;
+}
+
+.login-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 
+    0 35px 70px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .login-card .card-header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
   padding-bottom: 0;
   border-bottom: none;
+  position: relative;
 }
 
 .login-card .card-title {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
+  font-size: 2.8rem;
+  margin-bottom: 0.75rem;
   color: var(--text-primary);
-  font-weight: 700;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--primary-blue), var(--secondary-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+}
+
+.login-card .card-header p {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  margin: 0;
+  font-weight: 500;
+  line-height: 1.5;
 }
 
 .login-card .form-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.75rem;
   width: 100%;
+  position: relative;
 }
 
 .login-card .form-label {
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
   font-weight: 600;
   color: var(--text-primary);
-  font-size: 0.95rem;
+  font-size: 1rem;
   text-align: left;
+  transition: all 0.3s ease;
 }
 
 .login-card .form-control {
   width: 100%;
-  padding: 1rem 1.25rem;
-  border: 2px solid var(--gray-300);
-  border-radius: 12px;
-  font-size: 1rem;
+  padding: 1.25rem 1.5rem;
+  border: 2px solid var(--gray-200);
+  border-radius: 16px;
+  font-size: 1.05rem;
   transition: all 0.3s ease;
   background-color: rgba(255, 255, 255, 0.9);
   color: var(--text-primary);
   box-sizing: border-box;
   margin: 0;
+  font-weight: 500;
 }
 
 .login-card .form-control:focus {
   outline: none;
   border-color: var(--primary-blue);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  box-shadow: 
+    0 0 0 4px rgba(79, 70, 229, 0.1),
+    0 8px 25px rgba(79, 70, 229, 0.15);
   background-color: white;
+  transform: translateY(-2px);
+}
+
+.login-card .form-control::placeholder {
+  color: var(--gray-400);
+  font-weight: 400;
 }
 
 .login-card .btn {
   width: 100%;
-  padding: 1rem;
+  padding: 1.25rem;
   font-size: 1.1rem;
-  font-weight: 600;
-  border-radius: 12px;
+  font-weight: 700;
+  border-radius: 16px;
   box-sizing: border-box;
+  background: linear-gradient(135deg, var(--primary-blue), var(--secondary-purple));
+  border: none;
+  color: white;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-card .btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.login-card .btn:hover::before {
+  left: 100%;
+}
+
+.login-card .btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 
+    0 15px 35px rgba(79, 70, 229, 0.3),
+    0 0 0 1px rgba(79, 70, 229, 0.1);
+}
+
+.login-card .btn:active {
+  transform: translateY(-1px);
 }
 
 .login-card form {
@@ -388,6 +470,170 @@ body {
 .login-card .text-center {
   text-align: center;
   width: 100%;
+}
+
+/* Styles pour les messages d'erreur et de succès améliorés */
+.login-card .alert {
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  border: none;
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-card .alert::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: currentColor;
+}
+
+.login-card .alert-error {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #DC2626;
+  border-left: 4px solid #DC2626;
+}
+
+.login-card .alert-success {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border-left: 4px solid #059669;
+}
+
+/* Styles pour le composant ImageUploader */
+.image-uploader {
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.upload-area {
+  width: 100%;
+  min-height: 200px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.upload-area:hover {
+  border-color: var(--primary-blue);
+  background-color: rgba(79, 70, 229, 0.02);
+}
+
+.upload-area.drag-active {
+  border-color: var(--primary-blue);
+  background-color: rgba(79, 70, 229, 0.05);
+  transform: scale(1.02);
+}
+
+.upload-placeholder {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+}
+
+.upload-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.7;
+}
+
+.upload-text {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.upload-hint {
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  opacity: 0.8;
+}
+
+.upload-info {
+  font-size: 0.8rem;
+  opacity: 0.6;
+  line-height: 1.4;
+}
+
+.image-preview {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 12px;
+}
+
+.image-preview:hover .image-overlay {
+  opacity: 1;
+}
+
+.overlay-content {
+  text-align: center;
+  color: white;
+}
+
+.overlay-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.overlay-text {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.upload-error {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.remove-image-btn {
+  background: var(--danger);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  margin-top: 1rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: block;
+  width: 100%;
+}
+
+.remove-image-btn:hover {
+  background: #DC2626;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 /* Styles existants pour les composants */
