@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -9,11 +9,29 @@ const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
   const { user, logout, notifications, removeNotification, clearAllNotifications, addNotification } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const notificationsRef = useRef(null);
 
   // Synchroniser l'état local avec la prop externe
   useEffect(() => {
     setIsCollapsed(isSidebarCollapsed);
   }, [isSidebarCollapsed]);
+
+  // Gérer le clic en dehors des notifications
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    };
+
+    if (showNotifications) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showNotifications]);
 
   const handleLogout = () => {
     logout();
@@ -233,19 +251,22 @@ const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
                   
                   {/* Dropdown des notifications */}
                   {showNotifications && !isCollapsed && (
-                    <div style={{
-                      position: 'fixed',
-                      left: '280px', // Fixed position instead of absolute
-                      top: '120px',
-                      backgroundColor: 'white',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-                      width: '320px',
-                      maxHeight: '400px',
-                      overflow: 'hidden',
-                      zIndex: 1000,
-                      border: '1px solid #e9ecef'
-                    }}>
+                    <div 
+                      ref={notificationsRef}
+                      style={{
+                        position: 'fixed',
+                        left: '280px', // Fixed position instead of absolute
+                        top: '120px',
+                        backgroundColor: 'white',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                        width: '320px',
+                        maxHeight: '400px',
+                        overflow: 'hidden',
+                        zIndex: 1000,
+                        border: '1px solid #e9ecef'
+                      }}
+                    >
                       <div style={{
                         padding: '1rem',
                         borderBottom: '1px solid #e9ecef',

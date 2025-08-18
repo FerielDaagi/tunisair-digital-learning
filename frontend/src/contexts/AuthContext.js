@@ -48,11 +48,6 @@ export const AuthProvider = ({ children }) => {
     const id = Date.now();
     const newNotification = { id, message, type, timestamp: new Date() };
     setNotifications(prev => [...prev, newNotification]);
-    
-    // Auto-remove after 8 seconds
-    setTimeout(() => {
-      removeNotification(id);
-    }, 8000);
   };
 
   const removeNotification = (id) => {
