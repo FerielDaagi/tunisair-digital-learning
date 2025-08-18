@@ -72,7 +72,7 @@ export const userAPI = {
     data: { avatarPath } 
   }),
   getProgress: () => api.get('/user/progress'),
-  requestTutor: (message) => api.post('/user/request-tutor', { message }),
+  requestTutor: (note) => api.post('/user/request-tutor', { message: note }),
   // Admin functions
   getAllUsers: () => api.get('/user/admin/all'),
   toggleUserStatus: (userId, isActive) => api.put(`/user/admin/${userId}/status`, { isActive }),

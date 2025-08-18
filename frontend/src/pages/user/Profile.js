@@ -26,6 +26,9 @@ const Profile = () => {
   const [confirmMessage, setConfirmMessage] = useState('');
   const lastRoleRef = useRef(user?.role);
   const lastTutorStatusRef = useRef(user?.tutorRequestStatus || 'none');
+  const [tutorRequestNote, setTutorRequestNote] = useState('');
+  const [showTutorRequestModal, setShowTutorRequestModal] = useState(false);
+  const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     if (user) {
@@ -72,9 +75,15 @@ const Profile = () => {
 
           // Feedback utilisateur en cas de transition notable
           if (prevStatus === 'pending' && nextStatus === 'approved') {
-            setSuccess('Votre demande de tuteur a été approuvée. Vous êtes maintenant tuteur.');
+            addNotification('Votre demande de tuteur a été approuvée. Vous êtes maintenant tuteur.', 'success');
           } else if (prevStatus === 'pending' && nextStatus === 'rejected') {
-            setError("Votre demande de tuteur a été rejetée.");
+            addNotification("Votre demande de tuteur a été rejetée.", 'error');
+            // Si il y a une raison de refus, l'afficher aussi
+            if (freshUser.tutorRequestMessage) {
+              setTimeout(() => {
+                addNotification(`Raison du refus: ${freshUser.tutorRequestMessage}`, 'error');
+              }, 1000);
+            }
           }
         }
       } catch (_) {
@@ -272,13 +281,15 @@ const Profile = () => {
 
   const handleRequestTutor = async () => {
     try {
-      const response = await userAPI.requestTutor();
-      setSuccess('Votre demande de tuteur a été envoyée aux administrateurs !');
+      const response = await userAPI.requestTutor(tutorRequestNote);
+      addNotification('Votre demande de tuteur a été envoyée aux administrateurs !', 'success');
       if (response.data?.user) {
         login(response.data.user, localStorage.getItem('token'));
       }
+      setShowTutorRequestModal(false);
+      setTutorRequestNote('');
     } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de l\'envoi de la demande de tuteur');
+      addNotification(err.response?.data?.message || 'Erreur lors de l\'envoi de la demande de tuteur', 'error');
     }
   };
 
@@ -291,6 +302,21 @@ const Profile = () => {
     setShowConfirmModal(false);
     setConfirmAction(null);
     setConfirmMessage('');
+  };
+
+  const addNotification = (message, type = 'info') => {
+    const id = Date.now();
+    const newNotification = { id, message, type, timestamp: new Date() };
+    setNotifications(prev => [...prev, newNotification]);
+    
+    // Auto-remove after 8 seconds
+    setTimeout(() => {
+      removeNotification(id);
+    }, 8000);
+  };
+
+  const removeNotification = (id) => {
+    setNotifications(prev => prev.filter(notif => notif.id !== id));
   };
 
   if (!user) {
@@ -521,13 +547,13 @@ const Profile = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    setConfirmAction('requestTutor');
-                    setConfirmMessage(
-                      user.tutorRequestStatus === 'pending' 
-                        ? 'Votre demande est déjà en cours de traitement.' 
-                        : 'Voulez-vous demander à devenir tuteur ? Cette demande sera envoyée aux administrateurs pour validation.'
-                    );
-                    setShowConfirmModal(true);
+                    if (user.tutorRequestStatus === 'pending') {
+                      setConfirmAction('requestTutor');
+                      setConfirmMessage('Votre demande est déjà en cours de traitement.');
+                      setShowConfirmModal(true);
+                    } else {
+                      setShowTutorRequestModal(true);
+                    }
                   }}
                   className="btn btn-outline"
                   style={{ 
@@ -540,6 +566,8 @@ const Profile = () => {
                   {user.tutorRequestStatus === 'pending' ? '⏳ Traitement de votre demande en cours' : '🎓 Demander à être tuteur'}
                 </button>
               )}
+              
+
               
               <button
                 type="button"
@@ -981,6 +1009,201 @@ const Profile = () => {
           </div>
         </div>
       )}
+
+      {/* Modal: Demande de tutorat avec note */}
+      {showTutorRequestModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '2rem',
+            maxWidth: '500px',
+            width: '90%',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.2)',
+            position: 'relative'
+          }}>
+            <h3 style={{ 
+              margin: '0 0 1rem 0', 
+              color: 'var(--text-primary)',
+              fontSize: '1.5rem'
+            }}>
+              Demande de tutorat
+            </h3>
+            
+            <p style={{ 
+              margin: '0 0 1.5rem 0', 
+              color: 'var(--text-secondary)',
+              lineHeight: '1.6'
+            }}>
+              Vous pouvez joindre une note à votre demande (optionnel) :
+            </p>
+
+            <div style={{ marginBottom: '2rem' }}>
+              <label htmlFor="tutorRequestNote" className="form-label">
+                Note (optionnel)
+              </label>
+              <textarea
+                id="tutorRequestNote"
+                className="form-control"
+                value={tutorRequestNote}
+                onChange={(e) => setTutorRequestNote(e.target.value)}
+                placeholder="Expliquez pourquoi vous souhaitez devenir tuteur..."
+                rows="4"
+                style={{ resize: 'vertical' }}
+              />
+            </div>
+
+            <div style={{ 
+              display: 'flex', 
+              gap: '1rem',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowTutorRequestModal(false);
+                  setTutorRequestNote('');
+                }}
+                className="btn btn-outline"
+                style={{ minWidth: '100px' }}
+              >
+                Annuler
+              </button>
+              
+              <button
+                type="button"
+                onClick={handleRequestTutor}
+                className="btn btn-primary"
+                style={{ minWidth: '100px' }}
+              >
+                Envoyer la demande
+              </button>
+            </div>
+
+            {/* Bouton de fermeture */}
+            <button
+              onClick={() => {
+                setShowTutorRequestModal(false);
+                setTutorRequestNote('');
+              }}
+              style={{
+                position: 'absolute',
+                top: '15px',
+                right: '15px',
+                background: 'transparent',
+                border: 'none',
+                fontSize: '1.5rem',
+                cursor: 'pointer',
+                color: 'var(--text-secondary)',
+                padding: '8px',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = 'var(--bg-secondary)';
+                e.target.style.color = 'var(--text-primary)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'transparent';
+                e.target.style.color = 'var(--text-secondary)';
+              }}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Notifications côté droit */}
+      <div style={{
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        zIndex: 1001,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px',
+        maxWidth: '400px'
+      }}>
+        {notifications.map(notification => (
+          <div
+            key={notification.id}
+            style={{
+              backgroundColor: notification.type === 'success' ? '#d4edda' : 
+                             notification.type === 'error' ? '#f8d7da' : '#d1ecf1',
+              color: notification.type === 'success' ? '#155724' : 
+                     notification.type === 'error' ? '#721c24' : '#0c5460',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              border: `1px solid ${notification.type === 'success' ? '#c3e6cb' : 
+                                   notification.type === 'error' ? '#f5c6cb' : '#bee5eb'}`,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '12px',
+              animation: 'slideInRight 0.3s ease-out',
+              maxWidth: '100%'
+            }}
+          >
+            <div style={{ flex: 1, fontSize: '0.9rem', lineHeight: '1.4' }}>
+              {notification.message}
+            </div>
+            <button
+              onClick={() => removeNotification(notification.id)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'inherit',
+                cursor: 'pointer',
+                fontSize: '18px',
+                padding: '0',
+                width: '20px',
+                height: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: 0.7,
+                transition: 'opacity 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.opacity = 1}
+              onMouseLeave={(e) => e.target.style.opacity = 0.7}
+              title="Fermer"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Styles CSS pour l'animation */}
+      <style jsx>{`
+        @keyframes slideInRight {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 };
