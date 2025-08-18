@@ -6,10 +6,10 @@ const {
   getLearningProgress, 
   getAchievements 
 } = require('../controllers/dashboardController');
-const { authenticateToken } = require('../middleware/auth');
+const auth = require('../middleware/auth');
 
 // All routes require authentication
-router.use(authenticateToken);
+router.use(auth);
 
 // Dashboard routes
 router.get('/stats', getStats);

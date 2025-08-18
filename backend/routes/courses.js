@@ -6,14 +6,14 @@ const {
   enrollInCourse, 
   getEnrolledCourses 
 } = require('../controllers/courseController');
-const { authenticateToken } = require('../middleware/auth');
+const auth = require('../middleware/auth');
 
 // Public routes
 router.get('/', getAllCourses);
 router.get('/:id', getCourseById);
 
 // Protected routes
-router.get('/enrolled', authenticateToken, getEnrolledCourses);
-router.post('/:id/enroll', authenticateToken, enrollInCourse);
+router.get('/enrolled', auth, getEnrolledCourses);
+router.post('/:id/enroll', auth, enrollInCourse);
 
 module.exports = router; 

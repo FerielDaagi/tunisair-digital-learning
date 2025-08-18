@@ -223,7 +223,7 @@ const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
                       position: 'relative'
                     }}
                   >
-                    <span className="nav-icon" style={{ fontSize: '1.1rem' }}>!</span>
+                    <span className="nav-icon" style={{ fontSize: '1.1rem' }}>📢</span>
                     {!isCollapsed && (
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
                         <span>Notifications</span>
@@ -246,8 +246,6 @@ const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
                       </div>
                     )}
                   </button>
-                  
-
                   
                   {/* Dropdown des notifications */}
                   {showNotifications && !isCollapsed && (

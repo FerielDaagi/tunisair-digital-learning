@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 
 const AuthContext = createContext();
 
@@ -26,8 +27,12 @@ export const AuthProvider = ({ children }) => {
       setUser(JSON.parse(userData));
     }
     
+
+    
     setLoading(false);
-  }, []);
+    }, []);
+
+
 
   const login = (userData, token) => {
     setIsAuthenticated(true);
@@ -58,6 +63,60 @@ export const AuthProvider = ({ children }) => {
     setNotifications([]);
   };
 
+  const notifyAdmins = async (title, message, type = 'info', category = 'general') => {
+    try {
+      console.log('🔔 notifyAdmins appelé:', title, message, type);
+      console.log('🔔 Utilisateur actuel:', user?.name, 'Role:', user?.role);
+      
+      // Envoyer via API WebSocket
+      const response = await axios.post('/api/notifications/admin', {
+        title,
+        message,
+        type,
+        category
+      }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      
+      console.log('🔔 Notification admin envoyée via API:', response.data);
+      
+      // Si l'utilisateur actuel est admin, ajouter la notification à ses notifications
+      if (user?.role === 'admin') {
+        const id = Date.now();
+        const newNotification = { 
+          id, 
+          message: `${title}: ${message}`, 
+          type, 
+          timestamp: new Date(),
+          isAdminNotification: true 
+        };
+        setNotifications(prev => [...prev, newNotification]);
+      }
+      
+      return response.data.notification;
+    } catch (error) {
+      console.error('❌ Erreur envoi notification admin:', error);
+      
+      // Fallback: ajouter directement aux notifications si l'utilisateur est admin
+      if (user?.role === 'admin') {
+        const id = Date.now();
+        const newNotification = { 
+          id, 
+          message: `${title}: ${message}`, 
+          type, 
+          timestamp: new Date(),
+          isAdminNotification: true 
+        };
+        setNotifications(prev => [...prev, newNotification]);
+        return newNotification;
+      }
+      
+      return null;
+    }
+  };
+
+
+
   const value = {
     isAuthenticated,
     user,
@@ -67,7 +126,8 @@ export const AuthProvider = ({ children }) => {
     notifications,
     addNotification,
     removeNotification,
-    clearAllNotifications
+    clearAllNotifications,
+    notifyAdmins
   };
 
   return (

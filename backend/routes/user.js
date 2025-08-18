@@ -18,10 +18,10 @@ const {
   demoteToApprentice,
   deleteUser
 } = require('../controllers/userController');
-const { authenticateToken } = require('../middleware/auth');
+const auth = require('../middleware/auth');
 
 // All routes require authentication
-router.use(authenticateToken);
+router.use(auth);
 
 // Profile routes
 router.get('/profile', getProfile);

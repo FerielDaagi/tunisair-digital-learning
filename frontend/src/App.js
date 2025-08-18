@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { SocketProvider } from './contexts/SocketContext';
 import Navbar from './components/common/Navbar';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import NotificationHandler from './components/NotificationHandler';
 
 // Pages
 import Login from './pages/auth/Login';
@@ -12,6 +14,8 @@ import Courses from './pages/courses/Courses';
 import CourseDetail from './pages/courses/CourseDetail';
 import Profile from './pages/user/Profile';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import NotificationCenter from './pages/admin/NotificationCenter';
+import TestNotification from './pages/user/TestNotification';
 
 import './App.css';
 
@@ -27,6 +31,7 @@ const AppContent = () => {
   
   return (
     <div className={`app-container ${isAuthPage ? 'auth-pages' : ''}`}>
+      <NotificationHandler />
       <Navbar 
         onSidebarToggle={handleSidebarToggle}
         isSidebarCollapsed={isSidebarCollapsed}
@@ -60,6 +65,16 @@ const AppContent = () => {
               <AdminDashboard />
             </ProtectedRoute>
           } />
+          <Route path="/admin/notifications" element={
+            <ProtectedRoute>
+              <NotificationCenter />
+            </ProtectedRoute>
+          } />
+          <Route path="/test-notifications" element={
+            <ProtectedRoute>
+              <TestNotification />
+            </ProtectedRoute>
+          } />
         </Routes>
       </div>
     </div>
@@ -69,9 +84,11 @@ const AppContent = () => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <SocketProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </SocketProvider>
     </AuthProvider>
   );
 }

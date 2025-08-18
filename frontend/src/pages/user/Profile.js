@@ -4,7 +4,7 @@ import { userAPI, authAPI } from '../../services/api';
 import ImageUploader from '../../components/common/ImageUploader';
 
 const Profile = () => {
-  const { user, login, logout, addNotification } = useAuth();
+  const { user, login, logout, addNotification, notifyAdmins } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     bio: '',
@@ -282,6 +282,12 @@ const Profile = () => {
     try {
       const response = await userAPI.requestTutor(tutorRequestNote);
       addNotification('Votre demande de tuteur a été envoyée aux administrateurs !', 'success');
+      
+      // Notifier les admins (pour l'instant, notification locale)
+      if (user.role === 'apprenti') {
+        notifyAdmins(`Nouvelle demande de tutorat de ${user.name}`, 'info');
+      }
+      
       if (response.data?.user) {
         login(response.data.user, localStorage.getItem('token'));
       }
@@ -291,6 +297,8 @@ const Profile = () => {
       addNotification(err.response?.data?.message || 'Erreur lors de l\'envoi de la demande de tuteur', 'error');
     }
   };
+
+
 
   const handleConfirmAction = async () => {
     if (confirmAction === 'deleteAccount') {

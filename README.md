@@ -18,6 +18,7 @@ Une plateforme d'apprentissage en ligne moderne construite avec React.js fronten
 - **Système de rôles** : Système de promotion d'apprenti à tuteur
 - **UI professionnelle** : Modales de confirmation personnalisées remplaçant les alertes du navigateur
 - **Navigation améliorée** : Affichage d'avatar dans la navbar avec informations utilisateur
+- **Système de notifications** : Notifications en temps réel entre utilisateurs et admins
 
 ### Gestion de profil
 - **Téléchargement d'avatar** : Support pour JPG, PNG, GIF, WebP (max 5MB)
@@ -37,6 +38,7 @@ Une plateforme d'apprentissage en ligne moderne construite avec React.js fronten
 - React.js 18
 - React Router pour la navigation
 - Axios pour les appels API
+- Socket.IO Client pour les notifications en temps réel
 - CSS3 avec style personnalisé
 - Context API pour la gestion d'état
 - Gestion des téléchargements de fichiers avec FormData
@@ -44,6 +46,7 @@ Une plateforme d'apprentissage en ligne moderne construite avec React.js fronten
 ### Backend
 - Node.js
 - Express.js
+- Socket.IO pour les notifications en temps réel
 - JWT pour l'authentification
 - bcryptjs pour le hachage des mots de passe
 - Multer pour les téléchargements de fichiers
@@ -64,7 +67,8 @@ e-learning/
 │   │   │       ├── Navbar.js    # Navbar améliorée avec avatar
 │   │   │       └── ProtectedRoute.js
 │   │   ├── contexts/        # Contextes React
-│   │   │   └── AuthContext.js
+│   │   │   ├── AuthContext.js
+│   │   │   └── SocketContext.js # Contexte WebSocket
 │   │   ├── pages/          # Composants de page
 │   │   │   ├── auth/
 │   │   │   │   ├── Login.js
@@ -74,6 +78,8 @@ e-learning/
 │   │   │   │   └── CourseDetail.js
 │   │   │   ├── dashboard/
 │   │   │   │   └── Dashboard.js
+│   │   │   ├── admin/
+│   │   │   │   └── NotificationCenter.js # Centre de notifications admin
 │   │   │   └── user/
 │   │   │       └── Profile.js   # Gestion de profil améliorée
 │   │   ├── services/       # Services API
@@ -92,15 +98,19 @@ e-learning/
 │   │   ├── auth.js
 │   │   └── errorHandler.js
 │   ├── models/
-│   │   └── User.js
+│   │   ├── User.js
+│   │   └── Notification.js # Modèle de notifications
 │   ├── routes/            # Routes API
 │   │   ├── auth.js        # Routes d'auth améliorées
 │   │   ├── user.js        # Gestion utilisateur complète
 │   │   ├── courses.js
-│   │   └── dashboard.js
+│   │   ├── dashboard.js
+│   │   └── notifications.js # Routes de notifications
+│   ├── services/
+│   │   └── notificationService.js # Service de notifications
 │   ├── uploads/           # Stockage de fichiers
 │   │   └── avatars/       # Stockage des avatars utilisateur
-│   ├── server.js          # Fichier serveur principal
+│   ├── server.js          # Fichier serveur principal + WebSocket
 │   └── package.json
 └── README.md
 ```
@@ -190,6 +200,36 @@ e-learning/
 - `GET /api/dashboard/recent-activity` - Obtenir l'activité récente
 - `GET /api/dashboard/learning-progress` - Obtenir la progression d'apprentissage
 - `GET /api/dashboard/achievements` - Obtenir les réalisations utilisateur
+
+### Notifications
+- `GET /api/notifications/user` - Récupérer les notifications utilisateur
+- `GET /api/notifications/admin` - Récupérer les notifications admin
+- `POST /api/notifications/admin` - Envoyer une notification admin
+- `POST /api/notifications/user/:userId` - Envoyer une notification utilisateur
+- `PUT /api/notifications/:id/read` - Marquer comme lu
+- `DELETE /api/notifications/:id` - Supprimer une notification
+- `GET /api/notifications/stats` - Statistiques (admin seulement)
+
+## 🔔 Système de Notifications
+
+### Fonctionnalités de notifications
+- **Notifications en temps réel** : Communication instantanée via WebSocket
+- **Notifications unifiées** : Toutes les notifications apparaissent dans la sidebar principale
+- **Types de notifications** : Info, Succès, Avertissement, Erreur
+- **Catégories** : Général, Action utilisateur, Système, Cours, Demande tuteur
+- **Gestion des notifications** : Marquage comme lu, suppression, statistiques
+- **Authentification sécurisée** : WebSocket authentifié avec JWT
+
+### Architecture des notifications
+- **Backend** : Socket.IO pour les communications en temps réel
+- **Frontend** : Socket.IO Client pour la réception instantanée
+- **Base de données** : Persistance des notifications en MongoDB
+- **Context API** : Gestion d'état centralisée des notifications
+
+### Événements WebSocket
+- `notification` - Nouvelle notification reçue
+- `notificationRead` - Notification marquée comme lu
+- `notificationDeleted` - Notification supprimée
 
 ## 🎨 Fonctionnalités de design
 
@@ -287,12 +327,14 @@ L'application est entièrement responsive et optimisée pour :
 - **UI améliorée** : Modales professionnelles et navigation améliorée
 - **Gestion des fichiers** : Stockage organisé des avatars et nettoyage
 - **Améliorations de sécurité** : Authentification et protection des données améliorées
+- **Système de notifications** : Notifications en temps réel entre utilisateurs et admins
 
 ### Améliorations techniques
-- **Backend** : Contrôleurs améliorés avec gestion des fichiers
-- **Frontend** : Expérience utilisateur améliorée avec les avatars
+- **Backend** : Contrôleurs améliorés avec gestion des fichiers et WebSocket
+- **Frontend** : Expérience utilisateur améliorée avec les avatars et notifications
 - **API** : Endpoints RESTful complets pour toutes les fonctionnalités
-- **Base de données** : Modèle utilisateur amélioré avec suivi des avatars
+- **Base de données** : Modèles utilisateur et notification améliorés
+- **Temps réel** : Intégration WebSocket pour les notifications instantanées
 
 ## 🤝 Contribution
 
@@ -308,10 +350,12 @@ Ce projet est créé à des fins éducatives dans le cadre d'un stage de 6 semai
 
 ## 🎯 Améliorations futures
 
-- **Fonctionnalités en temps réel** : Chat en direct, notifications
+- **Notifications push** : Notifications navigateur et email
+- **Chat en direct** : Communication en temps réel entre utilisateurs
 - **Analyses avancées** : Suivi de la progression d'apprentissage
 - **Gestion de contenu** : Outils de création de cours
 - **Fonctionnalités sociales** : Interactions utilisateur et forums
 - **Application mobile** : Application mobile native
+- **Filtres de notifications** : Recherche et filtrage avancés
 
  
