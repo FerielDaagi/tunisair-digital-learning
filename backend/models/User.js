@@ -84,6 +84,18 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  // Tutor request workflow
+  tutorRequestStatus: {
+    type: String,
+    enum: ['none', 'pending', 'approved', 'rejected'],
+    default: 'none'
+  },
+  tutorRequestMessage: {
+    type: String
+  },
+  tutorRequestAt: {
+    type: Date
+  },
   enrolledCourses: [EnrolledCourseSchema],
   profile: {
     avatar: String,

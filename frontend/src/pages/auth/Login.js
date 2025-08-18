@@ -72,14 +72,22 @@ const Login = () => {
       <div className="login-card">
         <div className="card-header">
           <h2 className="card-title">Bienvenue</h2>
-          <p className="card-subtitle">
+          <p style={{ color: '#6c757d', margin: 0, fontSize: '1.1rem' }}>
             Connectez-vous à votre compte Tunisair Academy
           </p>
         </div>
         
         <form onSubmit={handleSubmit}>
           {error && (
-            <div className="alert alert-error">
+            <div style={{ 
+              backgroundColor: '#f8d7da', 
+              color: '#721c24', 
+              padding: '0.75rem', 
+              borderRadius: '8px', 
+              marginBottom: '1.5rem',
+              border: '1px solid #f5c6cb',
+              fontSize: '0.9rem'
+            }}>
               {error}
             </div>
           )}
@@ -112,26 +120,27 @@ const Login = () => {
             />
           </div>
           
-          <div className="form-group">
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={loading}
-              style={{ width: '100%' }}
-            >
-              {loading ? 'Connexion en cours...' : 'Se connecter'}
-            </button>
-          </div>
-          
-          <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
-              Vous n'avez pas de compte ?{' '}
-              <Link to="/signup" style={{ color: 'var(--primary-blue)', textDecoration: 'none', fontWeight: '600' }}>
-                Inscrivez-vous ici
-              </Link>
-            </p>
-          </div>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={loading}
+          >
+            {loading ? 'Connexion en cours...' : 'Se connecter'}
+          </button>
         </form>
+        
+        <div className="text-center mt-3">
+          <p style={{ color: '#6c757d', fontSize: '0.95rem', margin: '1.5rem 0 0 0' }}>
+            Vous n'avez pas de compte ?{' '}
+            <Link to="/signup" style={{ color: 'var(--primary-blue)', textDecoration: 'none', fontWeight: '600' }}>
+              Inscrivez-vous ici
+            </Link>
+          </p>
+        </div>
+        
+        <div className="text-center mt-3">
+       
+        </div>
       </div>
     </div>
   );

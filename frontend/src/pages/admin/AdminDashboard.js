@@ -81,6 +81,17 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleRejectTutor = async (userId) => {
+    const reason = window.prompt('Raison du refus (optionnel) ?') || '';
+    try {
+      await userAPI.rejectTutorRequest(userId, reason);
+      setSuccess('Demande de tuteur rejetée');
+      loadUsers();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Erreur lors du rejet');
+    }
+  };
+
   const handleDeleteUser = async (userId, userName) => {
     if (window.confirm(`Êtes-vous sûr de vouloir supprimer l'utilisateur "${userName}" ? Cette action est irréversible.`)) {
       try {
@@ -327,6 +338,7 @@ const AdminDashboard = () => {
                     <th style={{ padding: '1rem', textAlign: 'center' }}>Rôle</th>
                     <th style={{ padding: '1rem', textAlign: 'center' }}>Statut</th>
                     <th style={{ padding: '1rem', textAlign: 'center' }}>Date d'inscription</th>
+                    <th style={{ padding: '1rem', textAlign: 'center' }}>Demande Tuteur</th>
                     <th style={{ padding: '1rem', textAlign: 'center' }}>Actions</th>
                   </tr>
                 </thead>
@@ -433,6 +445,28 @@ const AdminDashboard = () => {
                       <td style={{ padding: '1rem', textAlign: 'center', color: '#6c757d' }}>
                         {new Date(userItem.createdAt).toLocaleDateString('fr-FR')}
                       </td>
+                      <td style={{ padding: '1rem', textAlign: 'center' }}>
+                        {userItem.role === 'apprenti' ? (
+                          <span style={{
+                            padding: '0.25rem 0.75rem',
+                            borderRadius: '12px',
+                            fontSize: '0.8rem',
+                            fontWeight: '500',
+                            backgroundColor:
+                              userItem.tutorRequestStatus === 'pending' ? 'var(--warning)' :
+                              userItem.tutorRequestStatus === 'approved' ? 'var(--success)' :
+                              userItem.tutorRequestStatus === 'rejected' ? 'var(--danger)' : '#e9ecef',
+                            color: userItem.tutorRequestStatus ? 'white' : '#495057'
+                          }}>
+                            {userItem.tutorRequestStatus === 'pending' && 'En attente'}
+                            {userItem.tutorRequestStatus === 'approved' && 'Approuvée'}
+                            {userItem.tutorRequestStatus === 'rejected' && 'Rejetée'}
+                            {!userItem.tutorRequestStatus || userItem.tutorRequestStatus === 'none' ? 'Aucune' : ''}
+                          </span>
+                        ) : (
+                          <span style={{ color: '#6c757d', fontSize: '0.85rem' }}>—</span>
+                        )}
+                      </td>
                       
                       <td style={{ padding: '1rem', textAlign: 'center' }}>
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
@@ -455,23 +489,42 @@ const AdminDashboard = () => {
                             </button>
                           )}
                           
-                          {/* Promote to Tutor */}
+                          {/* Tutor request actions */}
                           {userItem.role === 'apprenti' && userItem._id !== user._id && (
-                            <button
-                              onClick={() => handlePromoteToTutor(userItem._id)}
-                              style={{
-                                padding: '0.5rem',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '0.8rem',
-                                backgroundColor: 'var(--primary-blue)',
-                                color: 'white'
-                              }}
-                              title="Promouvoir tuteur"
-                            >
-                              T
-                            </button>
+                            <>
+                              <button
+                                onClick={() => handlePromoteToTutor(userItem._id)}
+                                style={{
+                                  padding: '0.5rem',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.8rem',
+                                  backgroundColor: 'var(--primary-blue)',
+                                  color: 'white'
+                                }}
+                                title="Approuver la demande"
+                                disabled={userItem.tutorRequestStatus !== 'pending' && userItem.tutorRequestStatus !== 'none'}
+                              >
+                                ✓
+                              </button>
+                              <button
+                                onClick={() => handleRejectTutor(userItem._id)}
+                                style={{
+                                  padding: '0.5rem',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.8rem',
+                                  backgroundColor: 'var(--danger)',
+                                  color: 'white'
+                                }}
+                                title="Rejeter la demande"
+                                disabled={userItem.tutorRequestStatus !== 'pending'}
+                              >
+                                ✕
+                              </button>
+                            </>
                           )}
                           
                           {/* Delete User */}

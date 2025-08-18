@@ -234,15 +234,13 @@ const Profile = () => {
 
   const handleRequestTutor = async () => {
     try {
-      // Ici vous pouvez ajouter l'appel API pour demander à être tuteur
-      // Pour l'instant, on simule juste la demande
+      const response = await userAPI.requestTutor();
       setSuccess('Votre demande de tuteur a été envoyée aux administrateurs !');
-      
-      // Optionnel : mettre à jour l'état local pour masquer le bouton
-      // setUser(prev => ({ ...prev, tutorRequestPending: true }));
-      
+      if (response.data?.user) {
+        login(response.data.user, localStorage.getItem('token'));
+      }
     } catch (err) {
-      setError('Erreur lors de l\'envoi de la demande de tuteur');
+      setError(err.response?.data?.message || 'Erreur lors de l\'envoi de la demande de tuteur');
     }
   };
 
@@ -470,7 +468,11 @@ const Profile = () => {
                   type="button"
                   onClick={() => {
                     setConfirmAction('requestTutor');
-                    setConfirmMessage('Voulez-vous demander à devenir tuteur ? Cette demande sera envoyée aux administrateurs pour validation.');
+                    setConfirmMessage(
+                      user.tutorRequestStatus === 'pending' 
+                        ? 'Votre demande est déjà en cours de traitement.' 
+                        : 'Voulez-vous demander à devenir tuteur ? Cette demande sera envoyée aux administrateurs pour validation.'
+                    );
                     setShowConfirmModal(true);
                   }}
                   className="btn btn-outline"
@@ -479,8 +481,9 @@ const Profile = () => {
                     color: 'var(--secondary-teal)',
                     borderColor: 'var(--secondary-teal)'
                   }}
+                  disabled={user.tutorRequestStatus === 'pending'}
                 >
-                  🎓 Demander à être tuteur
+                  {user.tutorRequestStatus === 'pending' ? '⏳ Traitement de votre demande en cours' : '🎓 Demander à être tuteur'}
                 </button>
               )}
               

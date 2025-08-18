@@ -8,12 +8,13 @@ const {
   updateAvatar,
   listPreviousAvatars,
   restoreAvatar,
-  becomeTutor,
+  requestTutor,
   deleteAvatarFromHistory,
   // Admin functions
   getAllUsers,
   toggleUserStatus,
   promoteToTutor,
+  rejectTutorRequest,
   deleteUser
 } = require('../controllers/userController');
 const { authenticateToken } = require('../middleware/auth');
@@ -34,7 +35,7 @@ router.get('/progress', getProgress);
 router.post('/progress', updateLessonProgress);
 
 // Tutor routes
-router.post('/become-tutor', becomeTutor);
+router.post('/request-tutor', requestTutor);
 
 // Avatar history routes
 router.delete('/avatar/history', deleteAvatarFromHistory);
@@ -44,6 +45,7 @@ router.delete('/avatar/history', deleteAvatarFromHistory);
 router.get('/admin/all', getAllUsers);
 router.put('/admin/:userId/status', toggleUserStatus);
 router.put('/admin/:userId/promote', promoteToTutor);
+router.put('/admin/:userId/reject-tutor', rejectTutorRequest);
 router.delete('/admin/:userId', deleteUser);
 
 module.exports = router; 

@@ -345,40 +345,32 @@ const updateLessonProgress = async (req, res) => {
   }
 };
 
-// Devenir tuteur
-const becomeTutor = async (req, res) => {
+// Demander à devenir tuteur (crée une demande en attente)
+const requestTutor = async (req, res) => {
   try {
+    const { message } = req.body || {};
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
     }
 
-    // Vérifier que l'utilisateur est actuellement un apprenti
     if (user.role !== 'apprenti') {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Vous ne pouvez devenir tuteur que si vous êtes actuellement un apprenti' 
-      });
+      return res.status(400).json({ success: false, message: 'Seuls les apprentis peuvent demander à devenir tuteur' });
     }
 
-    // Mettre à jour le rôle vers tuteur
-    const updatedUser = await User.findByIdAndUpdate(
-      req.user.id,
-      { role: 'tuteur' },
-      { new: true }
-    );
+    if (user.tutorRequestStatus === 'pending') {
+      return res.status(400).json({ success: false, message: 'Une demande est déjà en cours de traitement' });
+    }
 
-    res.json({
-      success: true,
-      message: 'Félicitations ! Vous êtes maintenant tuteur.',
-      user: updatedUser.toJSON()
-    });
+    user.tutorRequestStatus = 'pending';
+    user.tutorRequestMessage = message || '';
+    user.tutorRequestAt = new Date();
+    await user.save();
+
+    res.json({ success: true, message: 'Votre demande de tutorat a été envoyée', user: user.toJSON() });
   } catch (error) {
-    console.error('Erreur becomeTutor:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur interne du serveur'
-    });
+    console.error('Erreur requestTutor:', error);
+    res.status(500).json({ success: false, message: 'Erreur interne du serveur' });
   }
 };
 
@@ -543,15 +535,13 @@ const promoteToTutor = async (req, res) => {
       });
     }
 
-    // Vérifier que l'utilisateur est un apprenti
+    // Seuls les apprentis avec une demande en attente ou non traitée peuvent être promus
     if (user.role !== 'apprenti') {
-      return res.status(400).json({
-        success: false,
-        message: 'Seuls les apprentis peuvent être promus tuteurs'
-      });
+      return res.status(400).json({ success: false, message: 'Seuls les apprentis peuvent être promus tuteurs' });
     }
 
     user.role = 'tuteur';
+    user.tutorRequestStatus = 'approved';
     await user.save();
 
     res.json({
@@ -565,6 +555,36 @@ const promoteToTutor = async (req, res) => {
       success: false,
       message: 'Erreur interne du serveur'
     });
+  }
+};
+
+// Rejeter une demande de tuteur (admin seulement)
+const rejectTutorRequest = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Accès refusé. Rôle administrateur requis.' });
+    }
+
+    const { userId } = req.params;
+    const { reason } = req.body || {};
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
+    }
+
+    if (user.role !== 'apprenti') {
+      return res.status(400).json({ success: false, message: 'L’utilisateur est déjà tuteur ou admin' });
+    }
+
+    user.tutorRequestStatus = 'rejected';
+    user.tutorRequestMessage = reason || user.tutorRequestMessage;
+    await user.save();
+
+    res.json({ success: true, message: 'Demande de tuteur rejetée', user: user.toJSON() });
+  } catch (error) {
+    console.error('Erreur rejectTutorRequest:', error);
+    res.status(500).json({ success: false, message: 'Erreur interne du serveur' });
   }
 };
 
@@ -653,11 +673,12 @@ module.exports = {
   restoreAvatar,
   getProgress,
   updateLessonProgress,
-  becomeTutor,
+  requestTutor,
   deleteAvatarFromHistory,
   // Admin functions
   getAllUsers,
   toggleUserStatus,
   promoteToTutor,
+  rejectTutorRequest,
   deleteUser
 };

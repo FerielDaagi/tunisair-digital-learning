@@ -72,11 +72,12 @@ export const userAPI = {
     data: { avatarPath } 
   }),
   getProgress: () => api.get('/user/progress'),
-  becomeTutor: () => api.post('/user/become-tutor'),
+  requestTutor: (message) => api.post('/user/request-tutor', { message }),
   // Admin functions
   getAllUsers: () => api.get('/user/admin/all'),
   toggleUserStatus: (userId, isActive) => api.put(`/user/admin/${userId}/status`, { isActive }),
   promoteToTutor: (userId) => api.put(`/user/admin/${userId}/promote`),
+  rejectTutorRequest: (userId, reason) => api.put(`/user/admin/${userId}/reject-tutor`, { reason }),
   deleteUser: (userId) => api.delete(`/user/admin/${userId}`),
 };
 
