@@ -14,6 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     // Check if user is logged in on app start
@@ -38,8 +39,28 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setIsAuthenticated(false);
     setUser(null);
+    setNotifications([]);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+  };
+
+  const addNotification = (message, type = 'info') => {
+    const id = Date.now();
+    const newNotification = { id, message, type, timestamp: new Date() };
+    setNotifications(prev => [...prev, newNotification]);
+    
+    // Auto-remove after 8 seconds
+    setTimeout(() => {
+      removeNotification(id);
+    }, 8000);
+  };
+
+  const removeNotification = (id) => {
+    setNotifications(prev => prev.filter(notif => notif.id !== id));
+  };
+
+  const clearAllNotifications = () => {
+    setNotifications([]);
   };
 
   const value = {
@@ -47,7 +68,11 @@ export const AuthProvider = ({ children }) => {
     user,
     login,
     logout,
-    loading
+    loading,
+    notifications,
+    addNotification,
+    removeNotification,
+    clearAllNotifications
   };
 
   return (

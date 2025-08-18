@@ -4,7 +4,7 @@ import { userAPI, authAPI } from '../../services/api';
 import ImageUploader from '../../components/common/ImageUploader';
 
 const Profile = () => {
-  const { user, login, logout } = useAuth();
+  const { user, login, logout, addNotification } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     bio: '',
@@ -28,7 +28,6 @@ const Profile = () => {
   const lastTutorStatusRef = useRef(user?.tutorRequestStatus || 'none');
   const [tutorRequestNote, setTutorRequestNote] = useState('');
   const [showTutorRequestModal, setShowTutorRequestModal] = useState(false);
-  const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     if (user) {
@@ -304,20 +303,7 @@ const Profile = () => {
     setConfirmMessage('');
   };
 
-  const addNotification = (message, type = 'info') => {
-    const id = Date.now();
-    const newNotification = { id, message, type, timestamp: new Date() };
-    setNotifications(prev => [...prev, newNotification]);
-    
-    // Auto-remove after 8 seconds
-    setTimeout(() => {
-      removeNotification(id);
-    }, 8000);
-  };
 
-  const removeNotification = (id) => {
-    setNotifications(prev => prev.filter(notif => notif.id !== id));
-  };
 
   if (!user) {
     return (
@@ -1130,80 +1116,7 @@ const Profile = () => {
         </div>
       )}
 
-      {/* Notifications côté droit */}
-      <div style={{
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
-        zIndex: 1001,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px',
-        maxWidth: '400px'
-      }}>
-        {notifications.map(notification => (
-          <div
-            key={notification.id}
-            style={{
-              backgroundColor: notification.type === 'success' ? '#d4edda' : 
-                             notification.type === 'error' ? '#f8d7da' : '#d1ecf1',
-              color: notification.type === 'success' ? '#155724' : 
-                     notification.type === 'error' ? '#721c24' : '#0c5460',
-              padding: '12px 16px',
-              borderRadius: '8px',
-              border: `1px solid ${notification.type === 'success' ? '#c3e6cb' : 
-                                   notification.type === 'error' ? '#f5c6cb' : '#bee5eb'}`,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '12px',
-              animation: 'slideInRight 0.3s ease-out',
-              maxWidth: '100%'
-            }}
-          >
-            <div style={{ flex: 1, fontSize: '0.9rem', lineHeight: '1.4' }}>
-              {notification.message}
-            </div>
-            <button
-              onClick={() => removeNotification(notification.id)}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'inherit',
-                cursor: 'pointer',
-                fontSize: '18px',
-                padding: '0',
-                width: '20px',
-                height: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: 0.7,
-                transition: 'opacity 0.2s'
-              }}
-              onMouseEnter={(e) => e.target.style.opacity = 1}
-              onMouseLeave={(e) => e.target.style.opacity = 0.7}
-              title="Fermer"
-            >
-              ×
-            </button>
-          </div>
-        ))}
-      </div>
 
-      {/* Styles CSS pour l'animation */}
-      <style jsx>{`
-        @keyframes slideInRight {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-      `}</style>
     </div>
   );
 };

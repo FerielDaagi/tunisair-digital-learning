@@ -5,7 +5,8 @@ import { useAuth } from '../../contexts/AuthContext';
 const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const [showNotifications, setShowNotifications] = useState(false);
+  const { user, logout, notifications, removeNotification, clearAllNotifications, addNotification } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -185,6 +186,169 @@ const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
                     </div>
                   </Link>
                 </li>
+
+                {/* Section Notifications */}
+                <li>
+                  <button 
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'inherit',
+                      cursor: 'pointer',
+                      width: '100%',
+                      textAlign: 'left',
+                      padding: '12px 1.5rem',
+                      fontSize: '0.95rem',
+                      fontWeight: '500',
+                      transition: 'all 0.3s ease',
+                      position: 'relative'
+                    }}
+                  >
+                    <span className="nav-icon" style={{ fontSize: '1.1rem' }}>!</span>
+                    {!isCollapsed && (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
+                        <span>Notifications</span>
+                        {notifications && notifications.length > 0 && (
+                          <span style={{
+                            backgroundColor: 'var(--danger)',
+                            color: 'white',
+                            borderRadius: '50%',
+                            width: '20px',
+                            height: '20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '0.75rem',
+                            fontWeight: 'bold'
+                          }}>
+                            {notifications.length > 9 ? '9+' : notifications.length}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </button>
+                  
+
+                  
+                  {/* Dropdown des notifications */}
+                  {showNotifications && !isCollapsed && (
+                    <div style={{
+                      position: 'fixed',
+                      left: '280px', // Fixed position instead of absolute
+                      top: '120px',
+                      backgroundColor: 'white',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                      width: '320px',
+                      maxHeight: '400px',
+                      overflow: 'hidden',
+                      zIndex: 1000,
+                      border: '1px solid #e9ecef'
+                    }}>
+                      <div style={{
+                        padding: '1rem',
+                        borderBottom: '1px solid #e9ecef',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}>
+                        <h4 style={{ margin: 0, color: '#495057' }}>Notifications</h4>
+                        {notifications && notifications.length > 0 && (
+                          <button
+                            onClick={clearAllNotifications}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#6c757d',
+                              cursor: 'pointer',
+                              fontSize: '0.8rem',
+                              textDecoration: 'underline'
+                            }}
+                          >
+                            Tout effacer
+                          </button>
+                        )}
+                      </div>
+                      
+                      <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                        {!notifications || notifications.length === 0 ? (
+                          <div style={{
+                            padding: '2rem',
+                            textAlign: 'center',
+                            color: '#6c757d'
+                          }}>
+                            Aucune notification
+                          </div>
+                        ) : (
+                          notifications.map(notification => (
+                            <div
+                              key={notification.id}
+                              style={{
+                                padding: '1rem',
+                                borderBottom: '1px solid #f8f9fa',
+                                backgroundColor: notification.type === 'success' ? '#f8fff9' : 
+                                               notification.type === 'error' ? '#fff8f8' : '#f8fbff'
+                              }}
+                            >
+                              <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'flex-start',
+                                gap: '0.5rem'
+                              }}>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{
+                                    color: notification.type === 'success' ? '#155724' : 
+                                           notification.type === 'error' ? '#721c24' : '#0c5460',
+                                    fontSize: '0.9rem',
+                                    lineHeight: '1.4'
+                                  }}>
+                                    {notification.message}
+                                  </div>
+                                  <div style={{
+                                    color: '#6c757d',
+                                    fontSize: '0.75rem',
+                                    marginTop: '0.25rem'
+                                  }}>
+                                    {new Date(notification.timestamp).toLocaleTimeString('fr-FR', { 
+                                      hour: '2-digit', 
+                                      minute: '2-digit' 
+                                    })}
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => removeNotification(notification.id)}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#6c757d',
+                                    cursor: 'pointer',
+                                    fontSize: '1.2rem',
+                                    padding: '0',
+                                    width: '20px',
+                                    height: '20px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    opacity: 0.7,
+                                    transition: 'opacity 0.2s'
+                                  }}
+                                  onMouseEnter={(e) => e.target.style.opacity = 1}
+                                  onMouseLeave={(e) => e.target.style.opacity = 0.7}
+                                  title="Fermer"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </li>
+
                 <li>
                   <button 
                     onClick={handleLogout}
