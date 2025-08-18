@@ -11,6 +11,16 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  // UI state for professional confirmations and inputs
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectUserId, setRejectUserId] = useState(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null); // 'approve' | 'demote'
+  const [targetUserId, setTargetUserId] = useState(null);
+  const [confirmTitle, setConfirmTitle] = useState('');
+  const [confirmMessage, setConfirmMessage] = useState('');
+  const [expandedRequestMessageId, setExpandedRequestMessageId] = useState(null);
 
   useEffect(() => {
     loadUsers();
@@ -81,14 +91,50 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleRejectTutor = async (userId) => {
-    const reason = window.prompt('Raison du refus (optionnel) ?') || '';
+  const handleOpenRejectModal = (userId) => {
+    setRejectUserId(userId);
+    setRejectReason('');
+    setShowRejectModal(true);
+  };
+
+  const handleSubmitReject = async () => {
+    if (!rejectUserId) return;
     try {
-      await userAPI.rejectTutorRequest(userId, reason);
+      await userAPI.rejectTutorRequest(rejectUserId, rejectReason);
       setSuccess('Demande de tuteur rejetée');
+      setShowRejectModal(false);
+      setRejectUserId(null);
+      setRejectReason('');
       loadUsers();
     } catch (err) {
       setError(err.response?.data?.message || 'Erreur lors du rejet');
+    }
+  };
+
+  const handleOpenConfirm = (action, userId, title, message) => {
+    setConfirmAction(action);
+    setTargetUserId(userId);
+    setConfirmTitle(title);
+    setConfirmMessage(message);
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmAction = async () => {
+    if (!confirmAction || !targetUserId) return;
+    try {
+      if (confirmAction === 'approve') {
+        await userAPI.promoteToTutor(targetUserId);
+        setSuccess('Utilisateur promu tuteur avec succès');
+      } else if (confirmAction === 'demote') {
+        await userAPI.demoteToApprentice(targetUserId);
+        setSuccess('Utilisateur rétrogradé au rôle d\'apprenti');
+      }
+      setShowConfirmModal(false);
+      setConfirmAction(null);
+      setTargetUserId(null);
+      loadUsers();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Action échouée');
     }
   };
 
@@ -446,25 +492,176 @@ const AdminDashboard = () => {
                         {new Date(userItem.createdAt).toLocaleDateString('fr-FR')}
                       </td>
                       <td style={{ padding: '1rem', textAlign: 'center' }}>
-                        {userItem.role === 'apprenti' ? (
-                          <span style={{
-                            padding: '0.25rem 0.75rem',
-                            borderRadius: '12px',
-                            fontSize: '0.8rem',
-                            fontWeight: '500',
-                            backgroundColor:
-                              userItem.tutorRequestStatus === 'pending' ? 'var(--warning)' :
-                              userItem.tutorRequestStatus === 'approved' ? 'var(--success)' :
-                              userItem.tutorRequestStatus === 'rejected' ? 'var(--danger)' : '#e9ecef',
-                            color: userItem.tutorRequestStatus ? 'white' : '#495057'
-                          }}>
-                            {userItem.tutorRequestStatus === 'pending' && 'En attente'}
-                            {userItem.tutorRequestStatus === 'approved' && 'Approuvée'}
-                            {userItem.tutorRequestStatus === 'rejected' && 'Rejetée'}
-                            {!userItem.tutorRequestStatus || userItem.tutorRequestStatus === 'none' ? 'Aucune' : ''}
-                          </span>
-                        ) : (
-                          <span style={{ color: '#6c757d', fontSize: '0.85rem' }}>—</span>
+                        {/* Cas ADMIN (ligne) -> ne rien afficher */}
+                        {userItem.role === 'admin' && (
+                          <div />
+                        )}
+
+                        {/* Cas APPRENTI */}
+                        {userItem.role === 'apprenti' && (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                            {/* S'il y a une demande en attente: X / ✓ / détails */}
+                            {userItem.tutorRequestStatus === 'pending' && (
+                              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                                <button
+                                  onClick={() => handleOpenConfirm(
+                                    'approve',
+                                    userItem._id,
+                                    'Approuver la demande de tutorat',
+                                    `Confirmez-vous l\'approbation de la demande de ${userItem.name} ?`
+                                  )}
+                                  style={{
+                                    padding: '0.4rem 0.6rem',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.8rem',
+                                    backgroundColor: 'var(--success)',
+                                    color: 'white'
+                                  }}
+                                  title={'Approuver la demande'}
+                                  disabled={userItem._id === user._id}
+                                >
+                                  ✓
+                                </button>
+                                <button
+                                  onClick={() => handleOpenRejectModal(userItem._id)}
+                                  style={{
+                                    padding: '0.4rem 0.6rem',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.8rem',
+                                    backgroundColor: 'var(--danger)',
+                                    color: 'white'
+                                  }}
+                                  title={'Rejeter la demande'}
+                                  disabled={userItem._id === user._id}
+                                >
+                                  ✕
+                                </button>
+                                {(userItem.tutorRequestMessage || userItem.tutorRequestAt) && (
+                                  <button
+                                    onClick={() => setExpandedRequestMessageId(
+                                      expandedRequestMessageId === userItem._id ? null : userItem._id
+                                    )}
+                                    style={{
+                                      padding: '0.4rem 0.6rem',
+                                      border: 'none',
+                                      borderRadius: '4px',
+                                      cursor: 'pointer',
+                                      fontSize: '0.8rem',
+                                      backgroundColor: 'var(--primary-blue)',
+                                      color: 'white'
+                                    }}
+                                    title={'Voir détails'}
+                                  >
+                                    ℹ️
+                                  </button>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Si aucune demande: icône d'upgrade */}
+                            {(!userItem.tutorRequestStatus || userItem.tutorRequestStatus === 'none') && (
+                              <button
+                                onClick={() => handleOpenConfirm(
+                                  'approve',
+                                  userItem._id,
+                                  'Promouvoir en tuteur',
+                                  `Promouvoir ${userItem.name} au rôle de tuteur ?`
+                                )}
+                                style={{
+                                  padding: '0.4rem 0.6rem',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.8rem',
+                                  backgroundColor: 'var(--success)',
+                                  color: 'white'
+                                }}
+                                title={'Promouvoir en tuteur'}
+                                disabled={userItem._id === user._id}
+                              >
+                                ⬆️
+                              </button>
+                            )}
+
+                            {/* Si demande existe mais non pending (approved/rejected): seulement détails */}
+                            {(userItem.tutorRequestStatus === 'approved' || userItem.tutorRequestStatus === 'rejected') && (
+                              (userItem.tutorRequestMessage || userItem.tutorRequestAt) ? (
+                                <button
+                                  onClick={() => setExpandedRequestMessageId(
+                                    expandedRequestMessageId === userItem._id ? null : userItem._id
+                                  )}
+                                  style={{
+                                    padding: '0.4rem 0.6rem',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.8rem',
+                                    backgroundColor: 'var(--primary-blue)',
+                                    color: 'white'
+                                  }}
+                                  title={'Voir détails'}
+                                >
+                                  ℹ️
+                                </button>
+                              ) : <div />
+                            )}
+
+                            {expandedRequestMessageId === userItem._id && (
+                              <div style={{
+                                marginTop: '0.5rem',
+                                textAlign: 'left',
+                                backgroundColor: '#f8f9fa',
+                                padding: '0.5rem 0.75rem',
+                                borderRadius: '6px',
+                                border: '1px solid #e9ecef',
+                                maxWidth: '360px'
+                              }}>
+                                {userItem.tutorRequestAt && (
+                                  <div style={{ color: '#6c757d', fontSize: '0.8rem', marginBottom: '0.25rem' }}>
+                                    Demande du {new Date(userItem.tutorRequestAt).toLocaleString('fr-FR')}
+                                  </div>
+                                )}
+                                {userItem.tutorRequestMessage ? (
+                                  <div style={{ color: '#495057', fontSize: '0.9rem' }}>
+                                    {userItem.tutorRequestMessage}
+                                  </div>
+                                ) : (
+                                  <div style={{ color: '#6c757d', fontSize: '0.85rem' }}>Aucun message joint.</div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Cas TUTEUR */}
+                        {userItem.role === 'tuteur' && (
+                          <div style={{ display: 'flex', justifyContent: 'center' }}>
+                            <button
+                              onClick={() => handleOpenConfirm(
+                                'demote',
+                                userItem._id,
+                                'Rétrograder au rôle d\'apprenti',
+                                `Confirmez-vous la rétrogradation de ${userItem.name} au rôle d\'apprenti ?`
+                              )}
+                              style={{
+                                padding: '0.4rem 0.6rem',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '0.8rem',
+                                backgroundColor: 'var(--warning)',
+                                color: 'white'
+                              }}
+                              title="Rétrograder à apprenti"
+                              disabled={userItem._id === user._id}
+                            >
+                              ⇩
+                            </button>
+                          </div>
                         )}
                       </td>
                       
@@ -489,43 +686,7 @@ const AdminDashboard = () => {
                             </button>
                           )}
                           
-                          {/* Tutor request actions */}
-                          {userItem.role === 'apprenti' && userItem._id !== user._id && (
-                            <>
-                              <button
-                                onClick={() => handlePromoteToTutor(userItem._id)}
-                                style={{
-                                  padding: '0.5rem',
-                                  border: 'none',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer',
-                                  fontSize: '0.8rem',
-                                  backgroundColor: 'var(--primary-blue)',
-                                  color: 'white'
-                                }}
-                                title="Approuver la demande"
-                                disabled={userItem.tutorRequestStatus !== 'pending' && userItem.tutorRequestStatus !== 'none'}
-                              >
-                                ✓
-                              </button>
-                              <button
-                                onClick={() => handleRejectTutor(userItem._id)}
-                                style={{
-                                  padding: '0.5rem',
-                                  border: 'none',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer',
-                                  fontSize: '0.8rem',
-                                  backgroundColor: 'var(--danger)',
-                                  color: 'white'
-                                }}
-                                title="Rejeter la demande"
-                                disabled={userItem.tutorRequestStatus !== 'pending'}
-                              >
-                                ✕
-                              </button>
-                            </>
-                          )}
+                          {/* Tutor actions déplacées dans la colonne Demande Tuteur */}
                           
                           {/* Delete User */}
                           {userItem._id !== user._id && (
@@ -554,6 +715,71 @@ const AdminDashboard = () => {
             </div>
           )}
         </div>
+
+        {/* Modal: Rejeter demande */}
+        {showRejectModal && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+          }}>
+            <div style={{
+              background: 'white', padding: '1.5rem', borderRadius: '12px', width: '90%', maxWidth: '520px'
+            }}>
+              <h3 style={{ marginTop: 0, color: 'var(--danger)' }}>Rejeter la demande de tutorat</h3>
+              <p style={{ color: '#6c757d' }}>Vous pouvez indiquer une raison (optionnelle) :</p>
+              <textarea
+                rows="4"
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                style={{ width: '100%', padding: '0.75rem', border: '1px solid #ced4da', borderRadius: '6px' }}
+                placeholder="Raison du refus (optionnel)"
+              />
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                <button
+                  onClick={() => { setShowRejectModal(false); setRejectUserId(null); setRejectReason(''); }}
+                  className="btn btn-outline"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSubmitReject}
+                  className="btn"
+                  style={{ backgroundColor: 'var(--danger)', color: 'white' }}
+                >
+                  Rejeter
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal: Confirmation générique (approuver / rétrograder) */}
+        {showConfirmModal && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+          }}>
+            <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', width: '90%', maxWidth: '520px' }}>
+              <h3 style={{ marginTop: 0, color: 'var(--text-primary)' }}>{confirmTitle}</h3>
+              <p style={{ color: '#6c757d' }}>{confirmMessage}</p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => { setShowConfirmModal(false); setConfirmAction(null); setTargetUserId(null); }}
+                  className="btn btn-outline"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleConfirmAction}
+                  className="btn btn-primary"
+                  style={{ backgroundColor: confirmAction === 'demote' ? 'var(--warning)' : 'var(--success)', color: 'white' }}
+                >
+                  Confirmer
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

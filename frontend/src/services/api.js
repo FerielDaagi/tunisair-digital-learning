@@ -78,6 +78,7 @@ export const userAPI = {
   toggleUserStatus: (userId, isActive) => api.put(`/user/admin/${userId}/status`, { isActive }),
   promoteToTutor: (userId) => api.put(`/user/admin/${userId}/promote`),
   rejectTutorRequest: (userId, reason) => api.put(`/user/admin/${userId}/reject-tutor`, { reason }),
+  demoteToApprentice: (userId) => api.put(`/user/admin/${userId}/demote`),
   deleteUser: (userId) => api.delete(`/user/admin/${userId}`),
 };
 

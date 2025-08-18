@@ -588,6 +588,35 @@ const rejectTutorRequest = async (req, res) => {
   }
 };
 
+// Rétrograder un utilisateur au rôle d'apprenti (admin seulement)
+const demoteToApprentice = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Accès refusé. Rôle administrateur requis.' });
+    }
+
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Utilisateur introuvable' });
+    }
+
+    if (user.role === 'admin') {
+      return res.status(400).json({ success: false, message: 'Impossible de rétrograder un administrateur' });
+    }
+
+    user.role = 'apprenti';
+    user.tutorRequestStatus = 'none';
+    await user.save();
+
+    res.json({ success: true, message: 'Utilisateur rétrogradé au rôle d\'apprenti', user: user.toJSON() });
+  } catch (error) {
+    console.error('Erreur demoteToApprentice:', error);
+    res.status(500).json({ success: false, message: 'Erreur interne du serveur' });
+  }
+};
+
 // Supprimer un utilisateur (admin seulement)
 const deleteUser = async (req, res) => {
   try {
@@ -680,5 +709,6 @@ module.exports = {
   toggleUserStatus,
   promoteToTutor,
   rejectTutorRequest,
+  demoteToApprentice,
   deleteUser
 };

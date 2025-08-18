@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { userAPI, authAPI } from '../../services/api';
 import ImageUploader from '../../components/common/ImageUploader';
@@ -24,6 +24,8 @@ const Profile = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
   const [confirmMessage, setConfirmMessage] = useState('');
+  const lastRoleRef = useRef(user?.role);
+  const lastTutorStatusRef = useRef(user?.tutorRequestStatus || 'none');
 
   useEffect(() => {
     if (user) {
@@ -46,6 +48,42 @@ const Profile = () => {
       }
     }
   }, [user]);
+
+  // Rafraîchissement périodique du profil pour mettre à jour le statut/role sans déconnexion
+  useEffect(() => {
+    const intervalId = setInterval(async () => {
+      try {
+        const response = await userAPI.getProfile();
+        const freshUser = response.data?.user;
+        if (!freshUser) return;
+
+        const prevRole = lastRoleRef.current;
+        const prevStatus = lastTutorStatusRef.current;
+        const nextRole = freshUser.role;
+        const nextStatus = freshUser.tutorRequestStatus || 'none';
+
+        const roleChanged = prevRole !== nextRole;
+        const statusChanged = prevStatus !== nextStatus;
+
+        if (roleChanged || statusChanged) {
+          lastRoleRef.current = nextRole;
+          lastTutorStatusRef.current = nextStatus;
+          login(freshUser, localStorage.getItem('token'));
+
+          // Feedback utilisateur en cas de transition notable
+          if (prevStatus === 'pending' && nextStatus === 'approved') {
+            setSuccess('Votre demande de tuteur a été approuvée. Vous êtes maintenant tuteur.');
+          } else if (prevStatus === 'pending' && nextStatus === 'rejected') {
+            setError("Votre demande de tuteur a été rejetée.");
+          }
+        }
+      } catch (_) {
+        // Ignorer les erreurs de polling silencieusement
+      }
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [login]);
 
   const handleChange = (e) => {
     setFormData({
@@ -275,15 +313,31 @@ const Profile = () => {
             </p>
           </div>
 
-          {error && (
-            <div className="alert alert-error">
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="alert alert-success">
-              {success}
+          {(error || success) && (
+            <div style={{ marginBottom: '1rem' }}>
+              {error && (
+                <div style={{
+                  backgroundColor: '#f8d7da',
+                  color: '#721c24',
+                  padding: '0.75rem',
+                  borderRadius: '6px',
+                  border: '1px solid #f5c6cb',
+                  marginBottom: success ? '0.5rem' : 0
+                }}>
+                  {error}
+                </div>
+              )}
+              {success && (
+                <div style={{
+                  backgroundColor: '#d4edda',
+                  color: '#155724',
+                  padding: '0.75rem',
+                  borderRadius: '6px',
+                  border: '1px solid #c3e6cb'
+                }}>
+                  {success}
+                </div>
+              )}
             </div>
           )}
 
