@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { Icon, IconSizes, IconColors } from './IconTheme';
 
 const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -93,7 +94,11 @@ const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
             }}
             title={isCollapsed ? 'Étendre la sidebar' : 'Réduire la sidebar'}
           >
-            {isCollapsed ? '→' : '←'}
+            {isCollapsed ? (
+              <Icon name="sidebarToggleCollapsed" size={IconSizes.sm} color={IconColors.white} />
+            ) : (
+              <Icon name="sidebarToggle" size={IconSizes.sm} color={IconColors.white} />
+            )}
           </button>
         </div>
 
@@ -108,7 +113,7 @@ const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
                   className={isActive('/') ? 'active' : ''}
                   onClick={closeMobileMenu}
                 >
-                  <span className="nav-icon">⌂</span>
+                  <Icon name="dashboard" size={IconSizes.sm} color={IconColors.white} className="nav-icon" />
                   {!isCollapsed && 'Tableau de bord'}
                 </Link>
               </li>
@@ -118,19 +123,19 @@ const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
                   className={isActive('/courses') ? 'active' : ''}
                   onClick={closeMobileMenu}
                 >
-                  <span className="nav-icon">📖</span>
+                  <Icon name="courses" size={IconSizes.sm} color={IconColors.white} className="nav-icon" />
                   {!isCollapsed && 'Cours'}
                 </Link>
               </li>
               {user?.role === 'admin' && (
                 <li>
-                  <Link 
+                                    <Link 
                     to="/admin" 
                     className={isActive('/admin') ? 'active' : ''}
                     onClick={closeMobileMenu}
                   >
-                    <span className="nav-icon">⚙</span>
-                    {!isCollapsed && 'Administration'}
+                    <Icon name="admin" size={IconSizes.sm} color={IconColors.white} className="nav-icon" />
+                    {!isCollapsed && 'Gestion des comptes'}
                   </Link>
                 </li>
               )}
@@ -209,41 +214,18 @@ const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
                 <li>
                   <button 
                     onClick={() => setShowNotifications(!showNotifications)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'inherit',
-                      cursor: 'pointer',
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '12px 1.5rem',
-                      fontSize: '0.95rem',
-                      fontWeight: '500',
-                      transition: 'all 0.3s ease',
-                      position: 'relative'
-                    }}
+                    className="notification-button"
                   >
-                    <span className="nav-icon" style={{ fontSize: '1.1rem' }}>📢</span>
+                    <Icon name="notifications" size={IconSizes.sm} color={IconColors.white} className="nav-icon" />
                     {!isCollapsed && (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
+                      <>
                         <span>Notifications</span>
                         {notifications && notifications.length > 0 && (
-                          <span style={{
-                            backgroundColor: 'var(--danger)',
-                            color: 'white',
-                            borderRadius: '50%',
-                            width: '20px',
-                            height: '20px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '0.75rem',
-                            fontWeight: 'bold'
-                          }}>
+                          <span className="notification-badge">
                             {notifications.length > 9 ? '9+' : notifications.length}
                           </span>
                         )}
-                      </div>
+                      </>
                     )}
                   </button>
                   
@@ -253,83 +235,128 @@ const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
                       ref={notificationsRef}
                       style={{
                         position: 'fixed',
-                        left: '280px', // Fixed position instead of absolute
+                        left: '280px',
                         top: '120px',
-                        backgroundColor: 'white',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-                        width: '320px',
-                        maxHeight: '400px',
+                        backgroundColor: 'var(--bg-primary)',
+                        borderRadius: '12px',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                        width: '360px',
+                        maxHeight: '500px',
                         overflow: 'hidden',
                         zIndex: 1000,
-                        border: '1px solid #e9ecef'
+                        border: '1px solid var(--gray-200)',
+                        backdropFilter: 'blur(10px)'
                       }}
                     >
                       <div style={{
-                        padding: '1rem',
-                        borderBottom: '1px solid #e9ecef',
+                        padding: '1.25rem',
+                        borderBottom: '1px solid var(--gray-200)',
                         display: 'flex',
                         justifyContent: 'space-between',
-                        alignItems: 'center'
+                        alignItems: 'center',
+                        background: 'linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%)',
+                        color: 'white'
                       }}>
-                        <h4 style={{ margin: 0, color: '#495057' }}>Notifications</h4>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <Icon name="notifications" size={IconSizes.sm} color="white" />
+                          <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '600' }}>Notifications</h4>
+                        </div>
                         {notifications && notifications.length > 0 && (
                           <button
                             onClick={clearAllNotifications}
                             style={{
-                              background: 'none',
+                              background: 'rgba(255,255,255,0.2)',
                               border: 'none',
-                              color: '#6c757d',
+                              color: 'white',
                               cursor: 'pointer',
                               fontSize: '0.8rem',
-                              textDecoration: 'underline'
+                              padding: '0.5rem 0.75rem',
+                              borderRadius: '6px',
+                              transition: 'all 0.2s ease',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem'
                             }}
+                            onMouseEnter={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
+                            onMouseLeave={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
                           >
+                            <Icon name="trash2" size={IconSizes.xs} color="white" />
                             Tout effacer
                           </button>
                         )}
                       </div>
                       
-                      <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                      <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
                         {!notifications || notifications.length === 0 ? (
                           <div style={{
-                            padding: '2rem',
+                            padding: '3rem 2rem',
                             textAlign: 'center',
-                            color: '#6c757d'
+                            color: 'var(--text-secondary)'
                           }}>
-                            Aucune notification
+                            <Icon name="bell" size={IconSizes.xl} color={IconColors.light} />
+                            <p style={{ margin: '1rem 0 0 0', fontSize: '1rem' }}>Aucune notification</p>
+                            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', opacity: 0.7 }}>Vous serez notifié ici des nouvelles activités</p>
                           </div>
                         ) : (
                           notifications.map(notification => (
                             <div
                               key={notification.id}
                               style={{
-                                padding: '1rem',
-                                borderBottom: '1px solid #f8f9fa',
-                                backgroundColor: notification.type === 'success' ? '#f8fff9' : 
-                                               notification.type === 'error' ? '#fff8f8' : '#f8fbff'
+                                padding: '1.25rem',
+                                borderBottom: '1px solid var(--gray-100)',
+                                backgroundColor: 'var(--bg-primary)',
+                                transition: 'all 0.2s ease',
+                                cursor: 'pointer'
                               }}
+                              onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--gray-50)'}
+                              onMouseLeave={(e) => e.target.style.backgroundColor = 'var(--bg-primary)'}
                             >
                               <div style={{
                                 display: 'flex',
-                                justifyContent: 'space-between',
                                 alignItems: 'flex-start',
-                                gap: '0.5rem'
+                                gap: '1rem'
                               }}>
-                                <div style={{ flex: 1 }}>
+                                <div style={{
+                                  flexShrink: 0,
+                                  width: '40px',
+                                  height: '40px',
+                                  borderRadius: '50%',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  background: notification.type === 'success' ? 'var(--success)' : 
+                                             notification.type === 'error' ? 'var(--danger)' : 
+                                             notification.type === 'warning' ? 'var(--warning)' : 'var(--info)',
+                                  opacity: 0.1
+                                }}>
+                                  <Icon 
+                                    name={notification.type === 'success' ? 'success' : 
+                                          notification.type === 'error' ? 'error' : 
+                                          notification.type === 'warning' ? 'warning' : 'info'} 
+                                    size={IconSizes.sm} 
+                                    color={notification.type === 'success' ? 'var(--success)' : 
+                                           notification.type === 'error' ? 'var(--danger)' : 
+                                           notification.type === 'warning' ? 'var(--warning)' : 'var(--info)'} 
+                                  />
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
                                   <div style={{
-                                    color: notification.type === 'success' ? '#155724' : 
-                                           notification.type === 'error' ? '#721c24' : '#0c5460',
-                                    fontSize: '0.9rem',
-                                    lineHeight: '1.4'
+                                    color: 'var(--text-primary)',
+                                    fontSize: '0.95rem',
+                                    lineHeight: '1.4',
+                                    fontWeight: '500',
+                                    marginBottom: '0.5rem'
                                   }}>
                                     {notification.message}
                                   </div>
                                   <div style={{
-                                    color: '#6c757d',
-                                    fontSize: '0.75rem',
-                                    marginTop: '0.25rem'
+                                    color: 'var(--text-secondary)',
+                                    fontSize: '0.8rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem'
                                   }}>
+                                    <Icon name="clock" size={IconSizes.xs} color="var(--gray-400)" />
                                     {new Date(notification.timestamp).toLocaleTimeString('fr-FR', { 
                                       hour: '2-digit', 
                                       minute: '2-digit' 
@@ -341,23 +368,24 @@ const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
                                   style={{
                                     background: 'none',
                                     border: 'none',
-                                    color: '#6c757d',
+                                    color: 'var(--gray-400)',
                                     cursor: 'pointer',
-                                    fontSize: '1.2rem',
-                                    padding: '0',
-                                    width: '20px',
-                                    height: '20px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    opacity: 0.7,
-                                    transition: 'opacity 0.2s'
+                                    padding: '0.25rem',
+                                    borderRadius: '4px',
+                                    transition: 'all 0.2s ease',
+                                    opacity: 0.7
                                   }}
-                                  onMouseEnter={(e) => e.target.style.opacity = 1}
-                                  onMouseLeave={(e) => e.target.style.opacity = 0.7}
-                                  title="Fermer"
+                                  onMouseEnter={(e) => {
+                                    e.target.style.opacity = 1;
+                                    e.target.style.backgroundColor = 'var(--gray-100)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.target.style.opacity = 0.7;
+                                    e.target.style.backgroundColor = 'transparent';
+                                  }}
+                                  title="Supprimer la notification"
                                 >
-                                  ×
+                                  <Icon name="close" size={IconSizes.xs} color="var(--gray-400)" />
                                 </button>
                               </div>
                             </div>
@@ -371,20 +399,9 @@ const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
                 <li>
                   <button 
                     onClick={handleLogout}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'inherit',
-                      cursor: 'pointer',
-                      width: '100%',
-                      textAlign: 'left',
-                      padding: '12px 1.5rem',
-                      fontSize: '0.95rem',
-                      fontWeight: '500',
-                      transition: 'all 0.3s ease'
-                    }}
+                    className="logout-button"
                   >
-                    <span className="nav-icon">⇥</span>
+                    <Icon name="logout" size={IconSizes.sm} color={IconColors.white} className="nav-icon" />
                     {!isCollapsed && 'Déconnexion'}
                   </button>
                 </li>

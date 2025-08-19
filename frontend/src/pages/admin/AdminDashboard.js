@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { userAPI } from '../../services/api';
+import { Icon, IconSizes, IconColors } from '../../components/common/IconTheme';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -352,48 +353,41 @@ const AdminDashboard = () => {
         {/* Liste des utilisateurs */}
         <div className="card">
           <div className="card-header">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <Icon name="user" size={IconSizes.md} color={IconColors.gray} />
             <h3 style={{ margin: 0, color: '#495057' }}>
               Gestion des Utilisateurs ({filteredUsers.length})
             </h3>
           </div>
+          </div>
           
           {loading ? (
             <div style={{ textAlign: 'center', padding: '2rem' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
+              <Icon name="loading" size={IconSizes.xl} color={IconColors.gray} style={{ animation: 'spin 1s linear infinite' }} />
               <p>Chargement des utilisateurs...</p>
             </div>
           ) : filteredUsers.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '2rem' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem', color: '#6c757d' }}>🔍</div>
+              <Icon name="search" size={IconSizes.xl} color={IconColors.light} />
               <p style={{ color: '#6c757d' }}>Aucun utilisateur trouvé</p>
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ 
-                width: '100%', 
-                borderCollapse: 'collapse',
-                fontSize: '0.9rem'
-              }}>
+              <table className="admin-table">
                 <thead>
-                  <tr style={{ 
-                    backgroundColor: '#f8f9fa',
-                    borderBottom: '2px solid #dee2e6'
-                  }}>
-                    <th style={{ padding: '1rem', textAlign: 'left' }}>Utilisateur</th>
-                    <th style={{ padding: '1rem', textAlign: 'left' }}>Email</th>
-                    <th style={{ padding: '1rem', textAlign: 'center' }}>Rôle</th>
-                    <th style={{ padding: '1rem', textAlign: 'center' }}>Statut</th>
-                    <th style={{ padding: '1rem', textAlign: 'center' }}>Date d'inscription</th>
-                    <th style={{ padding: '1rem', textAlign: 'center' }}>Demande Tuteur</th>
-                    <th style={{ padding: '1rem', textAlign: 'center' }}>Actions</th>
+                  <tr>
+                    <th>Utilisateur</th>
+                    <th>Email</th>
+                    <th style={{ textAlign: 'center' }}>Rôle</th>
+                    <th style={{ textAlign: 'center' }}>Statut</th>
+                    <th style={{ textAlign: 'center' }}>Date d'inscription</th>
+                    <th style={{ textAlign: 'center' }}>Demande Tuteur</th>
+                    <th style={{ textAlign: 'center' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredUsers.map((userItem) => (
-                    <tr key={userItem._id} style={{ 
-                      borderBottom: '1px solid #dee2e6',
-                      backgroundColor: userItem._id === user._id ? '#f8f9fa' : 'white'
-                    }}>
+                    <tr key={userItem._id} className={userItem._id === user._id ? 'current-user' : ''}>
                       <td style={{ padding: '1rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                           {userItem.profile?.avatar ? (
@@ -427,14 +421,7 @@ const AdminDashboard = () => {
                             <div style={{ fontWeight: '500', color: '#495057' }}>
                               {userItem.name}
                               {userItem._id === user._id && (
-                                <span style={{ 
-                                  marginLeft: '0.5rem',
-                                  backgroundColor: 'var(--primary-blue)',
-                                  color: 'white',
-                                  padding: '0.2rem 0.5rem',
-                                  borderRadius: '12px',
-                                  fontSize: '0.7rem'
-                                }}>
+                                <span className="current-user-badge">
                                   Vous
                                 </span>
                               )}
@@ -459,31 +446,15 @@ const AdminDashboard = () => {
                         {userItem.email}
                       </td>
                       
-                      <td style={{ padding: '1rem', textAlign: 'center' }}>
-                        <span style={{
-                          padding: '0.25rem 0.75rem',
-                          borderRadius: '12px',
-                          fontSize: '0.8rem',
-                          fontWeight: '500',
-                          backgroundColor: 
-                            userItem.role === 'admin' ? 'var(--danger)' :
-                            userItem.role === 'tuteur' ? 'var(--success)' : 'var(--primary-blue)',
-                          color: 'white'
-                        }}>
+                      <td style={{ textAlign: 'center' }}>
+                        <span className={`role-badge ${userItem.role}`}>
                           {userItem.role === 'admin' ? 'Admin' :
                            userItem.role === 'tuteur' ? 'Tuteur' : 'Apprenti'}
                         </span>
                       </td>
                       
-                      <td style={{ padding: '1rem', textAlign: 'center' }}>
-                        <span style={{
-                          padding: '0.25rem 0.75rem',
-                          borderRadius: '12px',
-                          fontSize: '0.8rem',
-                          fontWeight: '500',
-                          backgroundColor: userItem.isActive === false ? 'var(--danger)' : 'var(--success)',
-                          color: 'white'
-                        }}>
+                      <td style={{ textAlign: 'center' }}>
+                        <span className={`status-badge ${userItem.isActive === false ? 'inactive' : 'active'}`}>
                           {userItem.isActive === false ? 'Inactif' : 'Actif'}
                         </span>
                       </td>
@@ -510,53 +481,29 @@ const AdminDashboard = () => {
                                     'Approuver la demande de tutorat',
                                     `Confirmez-vous l\'approbation de la demande de ${userItem.name} ?`
                                   )}
-                                  style={{
-                                    padding: '0.4rem 0.6rem',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontSize: '0.8rem',
-                                    backgroundColor: 'var(--success)',
-                                    color: 'white'
-                                  }}
+                                  className="admin-action-btn approve-btn"
                                   title={'Approuver la demande'}
                                   disabled={userItem._id === user._id}
                                 >
-                                  ✓
+                                  <Icon name="success" size={IconSizes.xs} color={IconColors.white} />
                                 </button>
                                 <button
                                   onClick={() => handleOpenRejectModal(userItem._id)}
-                                  style={{
-                                    padding: '0.4rem 0.6rem',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontSize: '0.8rem',
-                                    backgroundColor: 'var(--danger)',
-                                    color: 'white'
-                                  }}
+                                  className="admin-action-btn reject-btn"
                                   title={'Rejeter la demande'}
                                   disabled={userItem._id === user._id}
                                 >
-                                  ✕
+                                  <Icon name="error" size={IconSizes.xs} color={IconColors.white} />
                                 </button>
                                 {(userItem.tutorRequestMessage || userItem.tutorRequestAt) && (
                                   <button
                                     onClick={() => setExpandedRequestMessageId(
                                       expandedRequestMessageId === userItem._id ? null : userItem._id
                                     )}
-                                    style={{
-                                      padding: '0.4rem 0.6rem',
-                                      border: 'none',
-                                      borderRadius: '4px',
-                                      cursor: 'pointer',
-                                      fontSize: '0.8rem',
-                                      backgroundColor: 'var(--primary-blue)',
-                                      color: 'white'
-                                    }}
+                                    className="admin-action-btn info-btn"
                                     title={'Voir détails'}
                                   >
-                                    ℹ️
+                                    <Icon name="info" size={IconSizes.xs} color={IconColors.white} />
                                   </button>
                                 )}
                               </div>
@@ -571,19 +518,11 @@ const AdminDashboard = () => {
                                   'Promouvoir en tuteur',
                                   `Promouvoir ${userItem.name} au rôle de tuteur ?`
                                 )}
-                                style={{
-                                  padding: '0.4rem 0.6rem',
-                                  border: 'none',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer',
-                                  fontSize: '0.8rem',
-                                  backgroundColor: 'var(--success)',
-                                  color: 'white'
-                                }}
+                                className="admin-action-btn promote-btn"
                                 title={'Promouvoir en tuteur'}
                                 disabled={userItem._id === user._id}
                               >
-                                ⬆️
+                                <Icon name="graduation" size={IconSizes.xs} color={IconColors.white} />
                               </button>
                             )}
 
@@ -594,18 +533,10 @@ const AdminDashboard = () => {
                                   onClick={() => setExpandedRequestMessageId(
                                     expandedRequestMessageId === userItem._id ? null : userItem._id
                                   )}
-                                  style={{
-                                    padding: '0.4rem 0.6rem',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontSize: '0.8rem',
-                                    backgroundColor: 'var(--primary-blue)',
-                                    color: 'white'
-                                  }}
+                                  className="admin-action-btn info-btn"
                                   title={'Voir détails'}
                                 >
-                                  ℹ️
+                                  <Icon name="info" size={IconSizes.xs} color={IconColors.white} />
                                 </button>
                               ) : <div />
                             )}
@@ -647,19 +578,11 @@ const AdminDashboard = () => {
                                 'Rétrograder au rôle d\'apprenti',
                                 `Confirmez-vous la rétrogradation de ${userItem.name} au rôle d\'apprenti ?`
                               )}
-                              style={{
-                                padding: '0.4rem 0.6rem',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '0.8rem',
-                                backgroundColor: 'var(--warning)',
-                                color: 'white'
-                              }}
+                              className="admin-action-btn demote-btn"
                               title="Rétrograder à apprenti"
                               disabled={userItem._id === user._id}
                             >
-                              ⇩
+                              <Icon name="user" size={IconSizes.xs} color={IconColors.white} />
                             </button>
                           </div>
                         )}
@@ -671,39 +594,25 @@ const AdminDashboard = () => {
                           {userItem._id !== user._id && (
                             <button
                               onClick={() => handleToggleStatus(userItem._id, userItem.isActive === false)}
-                              style={{
-                                padding: '0.5rem',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '0.8rem',
-                                backgroundColor: userItem.isActive === false ? 'var(--success)' : 'var(--warning)',
-                                color: 'white'
-                              }}
+                              className={`admin-action-btn ${userItem.isActive === false ? 'activate-btn' : 'deactivate-btn'}`}
                               title={userItem.isActive === false ? 'Activer' : 'Désactiver'}
                             >
-                              {userItem.isActive === false ? 'A' : 'D'}
+                              {userItem.isActive === false ? (
+                                <Icon name="unlock" size={IconSizes.xs} color={IconColors.white} />
+                              ) : (
+                                <Icon name="lock" size={IconSizes.xs} color={IconColors.white} />
+                              )}
                             </button>
                           )}
-                          
-                          {/* Tutor actions déplacées dans la colonne Demande Tuteur */}
                           
                           {/* Delete User */}
                           {userItem._id !== user._id && (
                             <button
                               onClick={() => handleDeleteUser(userItem._id, userItem.name)}
-                              style={{
-                                padding: '0.5rem',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '0.8rem',
-                                backgroundColor: 'var(--danger)',
-                                color: 'white'
-                              }}
+                              className="admin-action-btn delete-btn"
                               title="Supprimer"
                             >
-                              ×
+                              <Icon name="delete" size={IconSizes.xs} color={IconColors.white} />
                             </button>
                           )}
                         </div>

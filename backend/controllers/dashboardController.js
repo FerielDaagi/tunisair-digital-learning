@@ -135,7 +135,7 @@ const getAchievements = (req, res) => {
         id: 1,
         title: 'First Steps',
         description: 'Complete your first lesson',
-        icon: '🎯',
+        icon: 'target',
         earned: true,
         earnedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
       },
@@ -143,7 +143,7 @@ const getAchievements = (req, res) => {
         id: 2,
         title: 'Course Champion',
         description: 'Complete your first course',
-        icon: '🏆',
+        icon: 'trophy',
         earned: true,
         earnedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
       },
@@ -151,7 +151,7 @@ const getAchievements = (req, res) => {
         id: 3,
         title: 'Streak Master',
         description: 'Maintain a 7-day learning streak',
-        icon: '🔥',
+        icon: 'flame',
         earned: false,
         progress: 5,
         required: 7
@@ -160,7 +160,7 @@ const getAchievements = (req, res) => {
         id: 4,
         title: 'Knowledge Seeker',
         description: 'Enroll in 5 courses',
-        icon: '📚',
+        icon: 'graduation',
         earned: false,
         progress: 3,
         required: 5

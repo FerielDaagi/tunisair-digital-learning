@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useSocket } from '../contexts/SocketContext';
 import { useAuth } from '../contexts/AuthContext';
+import { Icon, IconSizes, IconColors } from './common/IconTheme';
 
 const NotificationHandler = () => {
   const { socket, on, off } = useSocket();
