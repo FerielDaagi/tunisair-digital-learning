@@ -22,6 +22,10 @@ const AdminDashboard = () => {
   const [confirmTitle, setConfirmTitle] = useState('');
   const [confirmMessage, setConfirmMessage] = useState('');
   const [expandedRequestMessageId, setExpandedRequestMessageId] = useState(null);
+  
+  // États de pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [usersPerPage, setUsersPerPage] = useState(3);
 
   useEffect(() => {
     loadUsers();
@@ -45,7 +49,7 @@ const AdminDashboard = () => {
       }
     } catch (err) {
       console.error('Erreur loadUsers:', err);
-      console.error('Détails de l\'erreur:', {
+      console.error("Détails de l'erreur:", {
         message: err.message,
         response: err.response,
         status: err.response?.status,
@@ -72,6 +76,45 @@ const AdminDashboard = () => {
     }
   };
 
+  // Fonctions de pagination
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  
+  // Filtrer et paginer les utilisateurs
+  const getFilteredUsers = () => {
+    let filtered = users.filter(userItem => {
+      const matchesSearch = userItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           userItem.email.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesRole = filterRole === 'all' || userItem.role === filterRole;
+      const matchesStatus = filterStatus === 'all' || 
+                           (filterStatus === 'active' && userItem.isActive !== false) ||
+                           (filterStatus === 'inactive' && userItem.isActive === false);
+      
+      return matchesSearch && matchesRole && matchesStatus;
+    });
+    
+    return filtered;
+  };
+  
+  const currentUsers = getFilteredUsers().slice(indexOfFirstUser, indexOfLastUser);
+  const totalPages = Math.ceil(getFilteredUsers().length / usersPerPage);
+  
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    // Scroll to top of table
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  const handleFirstPage = () => setCurrentPage(1);
+  const handleLastPage = () => setCurrentPage(totalPages);
+  const handlePrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
+  const handleNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterRole, filterStatus]);
+
   const handleToggleStatus = async (userId, currentStatus) => {
     try {
       await userAPI.toggleUserStatus(userId, !currentStatus);
@@ -82,15 +125,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const handlePromoteToTutor = async (userId) => {
-    try {
-      await userAPI.promoteToTutor(userId);
-      setSuccess('Utilisateur promu tuteur avec succès');
-      loadUsers(); // Recharger la liste
-    } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de la promotion');
-    }
-  };
+
 
   const handleOpenRejectModal = (userId) => {
     setRejectUserId(userId);
@@ -128,7 +163,7 @@ const AdminDashboard = () => {
         setSuccess('Utilisateur promu tuteur avec succès');
       } else if (confirmAction === 'demote') {
         await userAPI.demoteToApprentice(targetUserId);
-        setSuccess('Utilisateur rétrogradé au rôle d\'apprenti');
+        setSuccess("Utilisateur rétrogradé au rôle d'apprenti");
       }
       setShowConfirmModal(false);
       setConfirmAction(null);
@@ -351,14 +386,14 @@ const AdminDashboard = () => {
         </div>
 
         {/* Liste des utilisateurs */}
-        <div className="card">
-          <div className="card-header">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <Icon name="user" size={IconSizes.md} color={IconColors.gray} />
-            <h3 style={{ margin: 0, color: '#495057' }}>
-              Gestion des Utilisateurs ({filteredUsers.length})
-            </h3>
-          </div>
+                  <div className="card">
+            <div className="card-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <Icon name="user" size={IconSizes.md} color={IconColors.gray} />
+                <h3 style={{ margin: 0, color: '#495057' }}>
+                  Gestion des Utilisateurs ({getFilteredUsers().length})
+                </h3>
+              </div>
           </div>
           
           {loading ? (
@@ -386,7 +421,7 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map((userItem) => (
+                  {currentUsers.map((userItem) => (
                     <tr key={userItem._id} className={userItem._id === user._id ? 'current-user' : ''}>
                       <td style={{ padding: '1rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -479,7 +514,7 @@ const AdminDashboard = () => {
                                     'approve',
                                     userItem._id,
                                     'Approuver la demande de tutorat',
-                                    `Confirmez-vous l\'approbation de la demande de ${userItem.name} ?`
+                                    `Confirmez-vous l'approbation de la demande de ${userItem.name} ?`
                                   )}
                                   className="admin-action-btn approve-btn"
                                   title={'Approuver la demande'}
@@ -575,8 +610,8 @@ const AdminDashboard = () => {
                               onClick={() => handleOpenConfirm(
                                 'demote',
                                 userItem._id,
-                                'Rétrograder au rôle d\'apprenti',
-                                `Confirmez-vous la rétrogradation de ${userItem.name} au rôle d\'apprenti ?`
+                                "Rétrograder au rôle d'apprenti",
+                                `Confirmez-vous la rétrogradation de ${userItem.name} au rôle d'apprenti ?`
                               )}
                               className="admin-action-btn demote-btn"
                               title="Rétrograder à apprenti"
@@ -621,6 +656,112 @@ const AdminDashboard = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+          
+          {/* Pagination */}
+          {getFilteredUsers().length > 0 && (
+            <div className="card" style={{ marginTop: '1rem' }}>
+              <div className="card-body">
+                <div className="pagination-container">
+                  {/* Informations de pagination */}
+                  <div className="pagination-info">
+                    Affichage de {indexOfFirstUser + 1} à {Math.min(indexOfLastUser, getFilteredUsers().length)} sur {getFilteredUsers().length} utilisateurs
+                    {totalPages === 1 && ' (1 page)'}
+                  </div>
+                  
+                  {/* Contrôles de pagination - masqués si une seule page */}
+                  {totalPages > 1 && (
+                    <div className="pagination-controls">
+                      {/* Bouton première page */}
+                      <button
+                        onClick={handleFirstPage}
+                        disabled={currentPage === 1}
+                        className="pagination-btn"
+                        title="Première page"
+                      >
+                        <Icon name="chevronLeft" size={IconSizes.xs} />
+                        <Icon name="chevronLeft" size={IconSizes.xs} style={{ marginLeft: '-8px' }} />
+                      </button>
+                      
+                      {/* Bouton page précédente */}
+                      <button
+                        onClick={handlePrevPage}
+                        disabled={currentPage === 1}
+                        className="pagination-btn"
+                        title="Page précédente"
+                      >
+                        <Icon name="chevronLeft" size={IconSizes.xs} />
+                      </button>
+                      
+                      {/* Numéros de pages */}
+                      <div className="pagination-page-numbers">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, index) => {
+                          let pageNumber;
+                          if (totalPages <= 5) {
+                            pageNumber = index + 1;
+                          } else if (currentPage <= 3) {
+                            pageNumber = index + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNumber = totalPages - 4 + index;
+                          } else {
+                            pageNumber = currentPage - 2 + index;
+                          }
+                          
+                          return (
+                            <button
+                              key={pageNumber}
+                              onClick={() => handlePageChange(pageNumber)}
+                              className={`pagination-btn ${currentPage === pageNumber ? 'active' : ''}`}
+                            >
+                              {pageNumber}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Bouton page suivante */}
+                      <button
+                        onClick={handleNextPage}
+                        disabled={currentPage === totalPages}
+                        className="pagination-btn"
+                        title="Page suivante"
+                      >
+                        <Icon name="chevronRight" size={IconSizes.xs} />
+                      </button>
+                      
+                      {/* Bouton dernière page */}
+                      <button
+                        onClick={handleLastPage}
+                        disabled={currentPage === totalPages}
+                        className="pagination-btn"
+                        title="Dernière page"
+                      >
+                        <Icon name="chevronRight" size={IconSizes.xs} />
+                        <Icon name="chevronRight" size={IconSizes.xs} style={{ marginLeft: '-8px' }} />
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Sélecteur d'utilisateurs par page - toujours visible */}
+                  <div className="pagination-selector">
+                    <span>Afficher :</span>
+                    <select
+                      value={usersPerPage}
+                      onChange={(e) => {
+                        setUsersPerPage(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <option value={3}>3</option>
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                    </select>
+                    <span>par page</span>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
