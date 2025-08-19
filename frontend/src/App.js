@@ -15,6 +15,7 @@ import CourseDetail from './pages/courses/CourseDetail';
 import Profile from './pages/user/Profile';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import NotificationCenter from './pages/admin/NotificationCenter';
+import UserStats from './pages/admin/UserStats';
 import TestNotification from './pages/user/TestNotification';
 
 import './App.css';
@@ -63,6 +64,11 @@ const AppContent = () => {
           <Route path="/admin" element={
             <ProtectedRoute>
               <AdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/stats" element={
+            <ProtectedRoute>
+              <UserStats />
             </ProtectedRoute>
           } />
           <Route path="/admin/notifications" element={

@@ -21,6 +21,7 @@ const courseRoutes = require('./routes/courses');
 const userRoutes = require('./routes/user');
 const dashboardRoutes = require('./routes/dashboard');
 const notificationRoutes = require('./routes/notifications');
+const adminRoutes = require('./routes/admin');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -87,6 +88,7 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin', adminRoutes);
 
 // 🆕 NOUVEAU - Gestion des connexions WebSocket
 io.use(async (socket, next) => {

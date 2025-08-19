@@ -128,16 +128,28 @@ const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
                 </Link>
               </li>
               {user?.role === 'admin' && (
-                <li>
-                                    <Link 
-                    to="/admin" 
-                    className={isActive('/admin') ? 'active' : ''}
-                    onClick={closeMobileMenu}
-                  >
-                    <Icon name="admin" size={IconSizes.sm} color={IconColors.white} className="nav-icon" />
-                    {!isCollapsed && 'Gestion des comptes'}
-                  </Link>
-                </li>
+                <>
+                  <li>
+                    <Link 
+                      to="/admin" 
+                      className={isActive('/admin') ? 'active' : ''}
+                      onClick={closeMobileMenu}
+                    >
+                      <Icon name="admin" size={IconSizes.sm} color={IconColors.white} className="nav-icon" />
+                      {!isCollapsed && 'Gestion des comptes'}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      to="/admin/stats" 
+                      className={isActive('/admin/stats') ? 'active' : ''}
+                      onClick={closeMobileMenu}
+                    >
+                      <Icon name="barChart" size={IconSizes.sm} color={IconColors.white} className="nav-icon" />
+                      {!isCollapsed && 'Statistiques'}
+                    </Link>
+                  </li>
+                </>
               )}
             </ul>
           </div>
