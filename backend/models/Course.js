@@ -1,0 +1,200 @@
+const mongoose = require('mongoose');
+
+const courseSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: [true, 'Le titre du cours est requis'],
+    trim: true,
+    maxlength: [100, 'Le titre ne peut pas dépasser 100 caractères']
+  },
+  description: {
+    type: String,
+    required: [true, 'La description du cours est requise'],
+    trim: true,
+    maxlength: [500, 'La description ne peut pas dépasser 500 caractères']
+  },
+  longDescription: {
+    type: String,
+    required: [true, 'La description détaillée du cours est requise'],
+    trim: true
+  },
+  instructor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'L\'instructeur est requis']
+  },
+  category: {
+    type: String,
+    required: [true, 'La catégorie est requise'],
+    enum: ['frontend', 'backend', 'database', 'mobile', 'devops', 'ai-ml', 'cybersecurity', 'other']
+  },
+  level: {
+    type: String,
+    enum: ['débutant', 'intermédiaire', 'avancé'],
+    required: [true, 'Le niveau est requis']
+  },
+  duration: {
+    type: String,
+    required: [true, 'La durée est requise']
+  },
+  price: {
+    type: Number,
+    default: 0,
+    min: [0, 'Le prix ne peut pas être négatif']
+  },
+  thumbnail: {
+    type: String,
+    default: null
+  },
+  status: {
+    type: String,
+    enum: ['draft', 'published', 'archived'],
+    default: 'draft'
+  },
+  isPublished: {
+    type: Boolean,
+    default: false
+  },
+  publishedAt: {
+    type: Date
+  },
+  requirements: [{
+    type: String,
+    trim: true
+  }],
+  outcomes: [{
+    type: String,
+    trim: true
+  }],
+  modules: [{
+    title: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    description: {
+      type: String,
+      trim: true
+    },
+    duration: {
+      type: String,
+      required: true
+    },
+    lessons: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Lesson'
+    }]
+  }],
+  enrolledStudents: [{
+    student: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    enrolledAt: {
+      type: Date,
+      default: Date.now
+    },
+    progress: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100
+    },
+    completedLessons: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Lesson'
+    }],
+    lastAccessed: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  rating: {
+    average: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5
+    },
+    count: {
+      type: Number,
+      default: 0
+    },
+    reviews: [{
+      student: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      rating: {
+        type: Number,
+        required: true,
+        min: 1,
+        max: 5
+      },
+      comment: {
+        type: String,
+        trim: true
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now
+      }
+    }]
+  },
+  tags: [{
+    type: String,
+    trim: true
+  }],
+  language: {
+    type: String,
+    default: 'français'
+  }
+}, {
+  timestamps: true
+});
+
+// Index pour la recherche
+courseSchema.index({ title: 'text', description: 'text', longDescription: 'text', tags: 'text' });
+
+// Index pour les performances
+courseSchema.index({ instructor: 1, status: 1 });
+courseSchema.index({ category: 1, level: 1 });
+courseSchema.index({ isPublished: 1, status: 1 });
+
+// Méthode pour calculer le nombre d'étudiants inscrits
+courseSchema.virtual('studentCount').get(function() {
+  return this.enrolledStudents.length;
+});
+
+// Méthode pour calculer la durée totale en heures
+courseSchema.virtual('totalDuration').get(function() {
+  if (!this.modules || this.modules.length === 0) return '0 heure';
+  
+  let totalMinutes = 0;
+  this.modules.forEach(module => {
+    const duration = module.duration;
+    if (duration.includes('heure')) {
+      totalMinutes += parseInt(duration) * 60;
+    } else if (duration.includes('minute')) {
+      totalMinutes += parseInt(duration);
+    }
+  });
+  
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  
+  if (hours === 0) return `${minutes} minute${minutes > 1 ? 's' : ''}`;
+  if (minutes === 0) return `${hours} heure${hours > 1 ? 's' : ''}`;
+  return `${hours} heure${hours > 1 ? 's' : ''} ${minutes} minute${minutes > 1 ? 's' : ''}`;
+});
+
+// Middleware pour mettre à jour publishedAt
+courseSchema.pre('save', function(next) {
+  if (this.isModified('status') && this.status === 'published' && !this.publishedAt) {
+    this.publishedAt = new Date();
+    this.isPublished = true;
+  }
+  next();
+});
+
+module.exports = mongoose.model('Course', courseSchema);

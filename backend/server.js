@@ -18,6 +18,7 @@ const connectDB = require('./config/database');
 
 const authRoutes = require('./routes/auth');
 const courseRoutes = require('./routes/courses');
+const moduleRoutes = require('./routes/modules');
 const userRoutes = require('./routes/user');
 const dashboardRoutes = require('./routes/dashboard');
 const notificationRoutes = require('./routes/notifications');
@@ -85,6 +86,7 @@ app.use(morgan('combined'));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
+app.use('/api/modules', moduleRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notifications', notificationRoutes);

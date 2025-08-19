@@ -58,6 +58,20 @@ export const coursesAPI = {
   getById: (id) => api.get(`/courses/${id}`),
   enroll: (courseId) => api.post(`/courses/${courseId}/enroll`),
   getEnrolled: () => api.get('/courses/enrolled'),
+  // Tutor functions
+  create: (courseData) => api.post('/courses', courseData),
+  update: (id, courseData) => api.put(`/courses/${id}`, courseData),
+  delete: (id) => api.delete(`/courses/${id}`),
+  publish: (id) => api.patch(`/courses/${id}/publish`),
+  getTutorCourses: () => api.get('/courses/tutor/my-courses'),
+};
+
+// Modules API
+export const modulesAPI = {
+  getByCourse: (courseId) => api.get(`/modules/course/${courseId}`),
+  create: (courseId, moduleData) => api.post(`/modules/course/${courseId}`, moduleData),
+  update: (id, moduleData) => api.put(`/modules/${id}`, moduleData),
+  delete: (id) => api.delete(`/modules/${id}`),
 };
 
 // User API

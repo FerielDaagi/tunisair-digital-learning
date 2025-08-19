@@ -127,6 +127,30 @@ const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
                   {!isCollapsed && 'Cours'}
                 </Link>
               </li>
+              {user?.role === 'tuteur' && (
+                <>
+                  <li>
+                    <Link 
+                      to="/tutor/my-courses" 
+                      className={isActive('/tutor/my-courses') ? 'active' : ''}
+                      onClick={closeMobileMenu}
+                    >
+                      <Icon name="bookOpen" size={IconSizes.sm} color={IconColors.white} className="nav-icon" />
+                      {!isCollapsed && 'Mes Cours'}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      to="/tutor/create-course" 
+                      className={isActive('/tutor/create-course') ? 'active' : ''}
+                      onClick={closeMobileMenu}
+                    >
+                      <Icon name="plus" size={IconSizes.sm} color={IconColors.white} className="nav-icon" />
+                      {!isCollapsed && 'Créer un cours'}
+                    </Link>
+                  </li>
+                </>
+              )}
               {user?.role === 'admin' && (
                 <>
                   <li>
