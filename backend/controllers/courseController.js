@@ -1,5 +1,4 @@
 const Course = require('../models/Course');
-const Category = require('../models/Category');
 const User = require('../models/User');
 
 // Obtenir tous les cours publiés
@@ -30,7 +29,6 @@ const getAllCourses = async (req, res) => {
     
     const courses = await Course.find(query)
       .populate('instructor', 'name profile.avatar')
-      .populate('category', 'name')
       .sort(sortOptions)
       .select('-modules -enrolledStudents -rating.reviews');
     
@@ -54,7 +52,6 @@ const getCourseById = async (req, res) => {
     
     const course = await Course.findById(id)
       .populate('instructor', 'name profile.avatar profile.bio')
-      .populate('category', 'name description')
       .populate({
         path: 'modules',
         populate: {
@@ -186,8 +183,7 @@ const updateCourse = async (req, res) => {
       id,
       updateData,
       { new: true, runValidators: true }
-    ).populate('instructor', 'name profile.avatar')
-     .populate('category', 'name');
+    ).populate('instructor', 'name profile.avatar');
     
     res.json({
       success: true,
@@ -314,7 +310,6 @@ const getTutorCourses = async (req, res) => {
     sortOptions[sort] = order === 'desc' ? -1 : 1;
     
     const courses = await Course.find(query)
-      .populate('category', 'name')
       .sort(sortOptions);
     
     res.json({
@@ -396,7 +391,6 @@ const getEnrolledCourses = async (req, res) => {
       'enrolledStudents.student': req.user.id
     })
     .populate('instructor', 'name profile.avatar')
-    .populate('category', 'name')
     .select('title description thumbnail instructor category level duration');
     
     res.json({

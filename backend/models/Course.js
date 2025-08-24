@@ -147,19 +147,35 @@ const courseSchema = new mongoose.Schema({
   }],
   language: {
     type: String,
-    default: 'français'
+    default: 'français',
+    enum: ['français', 'english']
   }
 }, {
   timestamps: true
 });
 
-// Index pour la recherche
-courseSchema.index({ title: 'text', description: 'text', longDescription: 'text', tags: 'text' });
-
 // Index pour les performances
 courseSchema.index({ instructor: 1, status: 1 });
 courseSchema.index({ category: 1, level: 1 });
 courseSchema.index({ isPublished: 1, status: 1 });
+
+// Fonction pour nettoyer les index textuels problématiques
+courseSchema.statics.cleanupTextIndexes = async function() {
+  try {
+    const indexes = await this.collection.listIndexes().toArray();
+    
+    for (const index of indexes) {
+      if (index.key && Object.values(index.key).some(val => val === 'text')) {
+        console.log(`🗑️ Suppression de l'index textuel: ${index.name}`);
+        await this.collection.dropIndex(index.name);
+      }
+    }
+    
+    console.log('✅ Tous les index textuels ont été supprimés');
+  } catch (error) {
+    console.log('ℹ️ Aucun index textuel à supprimer ou erreur:', error.message);
+  }
+};
 
 // Méthode pour calculer le nombre d'étudiants inscrits
 courseSchema.virtual('studentCount').get(function() {

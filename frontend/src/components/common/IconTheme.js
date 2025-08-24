@@ -243,7 +243,8 @@ import {
   Hash98,
   Hash99,
   Hash100,
-  LogOut
+  LogOut,
+  Tag
 } from 'lucide-react';
 
 // Icon theme configuration
@@ -262,9 +263,11 @@ export const IconTheme = {
   
   // Actions & Controls
   add: Plus,
+  plus: Plus,
   remove: Minus,
   edit: Edit,
   delete: Trash2,
+  trash: Trash2,
   save: Save,
   upload: Upload,
   download: Download,
@@ -284,6 +287,7 @@ export const IconTheme = {
   warning: AlertTriangle,
   info: Info,
   loading: RefreshCw,
+  loader: RefreshCw,
   
   // Achievements & Progress
   target: Target,
@@ -350,7 +354,11 @@ export const IconTheme = {
   share: Share2,
   zap: Zap,
   shield: Shield,
-  key: Key
+  key: Key,
+  
+  // Additional icons for course creation
+  settings: Settings,
+  tag: Tag
 };
 
 // Icon component with consistent styling
