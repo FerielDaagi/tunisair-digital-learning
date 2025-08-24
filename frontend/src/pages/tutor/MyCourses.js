@@ -12,10 +12,14 @@ const MyCourses = () => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [success, setSuccess] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [deleteConfirm, setDeleteConfirm] = useState({ show: false, courseId: null, courseTitle: '' });
+  const [actionLoading, setActionLoading] = useState({ publish: null, delete: null });
 
   useEffect(() => {
+    // Vérifier que l'utilisateur est un tuteur
     if (user && user.role !== 'tuteur') {
       navigate('/dashboard');
       return;
@@ -28,10 +32,32 @@ const MyCourses = () => {
     try {
       setLoading(true);
       const response = await coursesAPI.getTutorCourses();
-      setCourses(response.data.data || []);
+      
+      // S'assurer que courses est un tableau
+      let coursesData = [];
+      if (response && response.data) {
+        // Si response.data est un tableau, l'utiliser directement
+        if (Array.isArray(response.data)) {
+          coursesData = response.data;
+        }
+        // Si response.data.data est un tableau (structure imbriquée)
+        else if (response.data.data && Array.isArray(response.data.data)) {
+          coursesData = response.data.data;
+        }
+        // Si response.data est un objet avec une propriété courses
+        else if (response.data.courses && Array.isArray(response.data.courses)) {
+          coursesData = response.data.courses;
+        }
+      }
+      
+      console.log('Données reçues de l\'API:', response);
+      console.log('Cours extraits:', coursesData);
+      
+      setCourses(coursesData);
     } catch (error) {
-      console.error('Erreur lors du chargement des cours:', error);
-      setError('Erreur lors du chargement des cours');
+      console.error('Erreur lors de la récupération des cours:', error);
+      setError('Erreur lors de la récupération de vos cours');
+      setCourses([]); // S'assurer que courses est un tableau vide en cas d'erreur
     } finally {
       setLoading(false);
     }
@@ -41,7 +67,7 @@ const MyCourses = () => {
     try {
       await coursesAPI.publish(courseId);
       setSuccess('Cours publié avec succès !');
-      fetchCourses(); // Recharger les cours
+      fetchCourses(); // Recharger la liste
     } catch (error) {
       console.error('Erreur lors de la publication:', error);
       setError('Erreur lors de la publication du cours');
@@ -49,11 +75,11 @@ const MyCourses = () => {
   };
 
   const handleDelete = async (courseId) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce cours ?')) {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce cours ? Cette action est irréversible.')) {
       try {
         await coursesAPI.delete(courseId);
         setSuccess('Cours supprimé avec succès !');
-        fetchCourses(); // Recharger les cours
+        fetchCourses(); // Recharger la liste
       } catch (error) {
         console.error('Erreur lors de la suppression:', error);
         setError('Erreur lors de la suppression du cours');
@@ -62,16 +88,16 @@ const MyCourses = () => {
   };
 
   const handleEdit = (courseId) => {
-    // TODO: Implémenter l'édition
-    alert('Fonctionnalité d\'édition à venir !');
+    // TODO: Implémenter la navigation vers la page d'édition
+    console.log('Éditer le cours:', courseId);
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'published': return 'success';
-      case 'draft': return 'warning';
-      case 'archived': return 'muted';
-      default: return 'muted';
+      case 'published': return 'status-published';
+      case 'draft': return 'status-draft';
+      case 'archived': return 'status-archived';
+      default: return 'status-draft';
     }
   };
 
@@ -80,25 +106,59 @@ const MyCourses = () => {
       case 'published': return 'checkCircle';
       case 'draft': return 'edit';
       case 'archived': return 'archive';
-      default: return 'circle';
+      default: return 'edit';
     }
   };
 
   const getLevelColor = (level) => {
     switch (level) {
-      case 'débutant': return 'success';
-      case 'intermédiaire': return 'warning';
-      case 'avancé': return 'error';
-      default: return 'muted';
+      case 'débutant': return 'level-beginner';
+      case 'intermédiaire': return 'level-intermediate';
+      case 'avancé': return 'level-advanced';
+      default: return 'level-beginner';
     }
   };
 
-  const filteredCourses = courses.filter(course => {
-    const matchesStatus = filterStatus === 'all' || course.status === filterStatus;
-    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.description.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesStatus && matchesSearch;
-  });
+  const getLevelIcon = (level) => {
+    switch (level) {
+      case 'débutant': return 'trendingUp';
+      case 'intermédiaire': return 'target';
+      case 'avancé': return 'star';
+      default: return 'trendingUp';
+    }
+  };
+
+  const filteredCourses = () => {
+    // S'assurer que courses est un tableau
+    if (!Array.isArray(courses)) {
+      console.warn('courses n\'est pas un tableau dans filteredCourses:', courses);
+      return [];
+    }
+    
+    return courses.filter(course => {
+      const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           course.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || course.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  };
+
+  const getStats = () => {
+    // S'assurer que courses est un tableau
+    if (!Array.isArray(courses)) {
+      console.warn('courses n\'est pas un tableau:', courses);
+      return { total: 0, published: 0, draft: 0, archived: 0 };
+    }
+    
+    const total = courses.length;
+    const published = courses.filter(c => c.status === 'published').length;
+    const draft = courses.filter(c => c.status === 'draft').length;
+    const archived = courses.filter(c => c.status === 'archived').length;
+    
+    return { total, published, draft, archived };
+  };
+
+  const stats = getStats();
 
   if (!user || user.role !== 'tuteur') {
     return (
@@ -115,7 +175,7 @@ const MyCourses = () => {
   return (
     <div className="my-courses-page">
       <div className="my-courses-container">
-        {/* En-tête */}
+        {/* En-tête de la page */}
         <div className="page-header">
           <div className="header-content">
             <h1>
@@ -126,40 +186,52 @@ const MyCourses = () => {
           </div>
           <button
             onClick={() => navigate('/tutor/create-course')}
-            className="btn btn-primary create-btn"
+            className="create-course-btn"
           >
             <Icon name="plus" size={IconSizes.sm} color={IconColors.white} />
             Créer un cours
           </button>
         </div>
 
-        {/* Statistiques rapides */}
+        {/* Grille de statistiques */}
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-icon">
+            <div className="stat-icon total">
               <Icon name="bookOpen" size={IconSizes.md} color={IconColors.primary} />
             </div>
             <div className="stat-content">
-              <h3>{courses.length}</h3>
+              <h3>{stats.total}</h3>
               <p>Total des cours</p>
             </div>
           </div>
+          
           <div className="stat-card">
-            <div className="stat-icon">
+            <div className="stat-icon published">
               <Icon name="checkCircle" size={IconSizes.md} color={IconColors.success} />
             </div>
             <div className="stat-content">
-              <h3>{courses.filter(c => c.status === 'published').length}</h3>
+              <h3>{stats.published}</h3>
               <p>Cours publiés</p>
             </div>
           </div>
+          
           <div className="stat-card">
-            <div className="stat-icon">
+            <div className="stat-icon draft">
               <Icon name="edit" size={IconSizes.md} color={IconColors.warning} />
             </div>
             <div className="stat-content">
-              <h3>{courses.filter(c => c.status === 'draft').length}</h3>
+              <h3>{stats.draft}</h3>
               <p>Brouillons</p>
+            </div>
+          </div>
+          
+          <div className="stat-card">
+            <div className="stat-icon archived">
+              <Icon name="archive" size={IconSizes.md} color={IconColors.muted} />
+            </div>
+            <div className="stat-content">
+              <h3>{stats.archived}</h3>
+              <p>Archivés</p>
             </div>
           </div>
         </div>
@@ -177,21 +249,27 @@ const MyCourses = () => {
             />
           </div>
           
-          <div className="filter-controls">
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="filter-select"
-            >
-              <option value="all">Tous les cours</option>
-              <option value="published">Publiés</option>
-              <option value="draft">Brouillons</option>
-              <option value="archived">Archivés</option>
-            </select>
-          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="filter-select"
+          >
+            <option value="all">Tous les statuts</option>
+            <option value="published">Publiés</option>
+            <option value="draft">Brouillons</option>
+            <option value="archived">Archivés</option>
+          </select>
         </div>
 
-        {/* Liste des cours */}
+        {/* Messages d'état */}
+        {error && (
+          <div className="alert alert-error">
+            <Icon name="error" size={IconSizes.sm} color={IconColors.white} />
+            {error}
+          </div>
+        )}
+
+        {/* Contenu principal */}
         {loading ? (
           <div className="loading-state">
             <Icon name="loader" size={IconSizes.xl} color={IconColors.primary} className="spin" />
@@ -200,22 +278,24 @@ const MyCourses = () => {
         ) : error ? (
           <div className="error-state">
             <Icon name="error" size={IconSizes.xl} color={IconColors.error} />
+            <h3>Erreur de chargement</h3>
             <p>{error}</p>
-            <button onClick={fetchCourses} className="btn btn-secondary">
+            <button onClick={fetchCourses} className="btn btn-primary">
+              <Icon name="refresh" size={IconSizes.sm} color={IconColors.white} />
               Réessayer
             </button>
           </div>
-        ) : filteredCourses.length === 0 ? (
+        ) : filteredCourses().length === 0 ? (
           <div className="empty-state">
             <Icon name="bookOpen" size={IconSizes.xl} color={IconColors.muted} />
             <h3>Aucun cours trouvé</h3>
             <p>
-              {searchTerm || filterStatus !== 'all' 
+              {searchTerm || statusFilter !== 'all' 
                 ? 'Aucun cours ne correspond à vos critères de recherche.'
                 : 'Vous n\'avez pas encore créé de cours. Commencez par en créer un !'
               }
             </p>
-            {!searchTerm && filterStatus === 'all' && (
+            {!searchTerm && statusFilter === 'all' && (
               <button
                 onClick={() => navigate('/tutor/create-course')}
                 className="btn btn-primary"
@@ -227,7 +307,7 @@ const MyCourses = () => {
           </div>
         ) : (
           <div className="courses-grid">
-            {filteredCourses.map(course => (
+            {filteredCourses().map(course => (
               <div key={course._id} className="course-card">
                 <div className="course-header">
                   <div className="course-status">
@@ -239,20 +319,17 @@ const MyCourses = () => {
                   </div>
                   <div className="course-level">
                     <span className={`level-badge ${getLevelColor(course.level)}`}>
+                      <Icon name={getLevelIcon(course.level)} size={IconSizes.xs} color={IconColors.white} />
                       {course.level}
                     </span>
                   </div>
                 </div>
-
+                
                 <div className="course-content">
                   <h3 className="course-title">{course.title}</h3>
                   <p className="course-description">{course.description}</p>
                   
                   <div className="course-meta">
-                    <div className="meta-item">
-                      <Icon name="clock" size={IconSizes.xs} color={IconColors.muted} />
-                      <span>{course.duration}</span>
-                    </div>
                     <div className="meta-item">
                       <Icon name="folder" size={IconSizes.xs} color={IconColors.muted} />
                       <span>{course.category}</span>
@@ -261,27 +338,36 @@ const MyCourses = () => {
                       <Icon name="globe" size={IconSizes.xs} color={IconColors.muted} />
                       <span>{course.language}</span>
                     </div>
+                    {course.duration && (
+                      <div className="meta-item">
+                        <Icon name="clock" size={IconSizes.xs} color={IconColors.muted} />
+                        <span>{course.duration}</span>
+                      </div>
+                    )}
                   </div>
-
+                  
                   {course.tags && course.tags.length > 0 && (
                     <div className="course-tags">
                       {course.tags.slice(0, 3).map((tag, index) => (
                         <span key={index} className="tag">
+                          <Icon name="hash" size={IconSizes.xs} color={IconColors.muted} />
                           {tag}
                         </span>
                       ))}
                       {course.tags.length > 3 && (
-                        <span className="tag-more">+{course.tags.length - 3}</span>
+                        <span className="tag-more">
+                          +{course.tags.length - 3} autres
+                        </span>
                       )}
                     </div>
                   )}
                 </div>
-
+                
                 <div className="course-actions">
                   {course.status === 'draft' && (
                     <button
                       onClick={() => handlePublish(course._id)}
-                      className="btn btn-success btn-sm"
+                      className="btn btn-success"
                       title="Publier le cours"
                     >
                       <Icon name="checkCircle" size={IconSizes.xs} color={IconColors.white} />
@@ -291,7 +377,7 @@ const MyCourses = () => {
                   
                   <button
                     onClick={() => handleEdit(course._id)}
-                    className="btn btn-secondary btn-sm"
+                    className="btn btn-secondary"
                     title="Modifier le cours"
                   >
                     <Icon name="edit" size={IconSizes.xs} color={IconColors.white} />
@@ -300,7 +386,7 @@ const MyCourses = () => {
                   
                   <button
                     onClick={() => handleDelete(course._id)}
-                    className="btn btn-danger btn-sm"
+                    className="btn btn-danger"
                     title="Supprimer le cours"
                   >
                     <Icon name="trash" size={IconSizes.xs} color={IconColors.white} />

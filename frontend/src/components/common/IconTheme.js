@@ -19,6 +19,7 @@ import {
   Rocket,
   Wrench,
   FolderOpen,
+  Folder,
   Palette,
   Smartphone,
   Upload,
@@ -244,7 +245,9 @@ import {
   Hash99,
   Hash100,
   LogOut,
-  Tag
+  Tag,
+  FileText,
+  Circle
 } from 'lucide-react';
 
 // Icon theme configuration
@@ -358,7 +361,25 @@ export const IconTheme = {
   
   // Additional icons for course creation
   settings: Settings,
-  tag: Tag
+  tag: Tag,
+  edit: Edit,
+  hash: Hash,
+  fileText: FileText,
+  bookOpen: BookOpen,
+  folder: Folder,
+  trendingUp: TrendingUp,
+  clock: Clock,
+  globe: Globe,
+  target: Target,
+  checkCircle: CheckCircle,
+  star: Star,
+  search: Search,
+  archive: Archive,
+  circle: Circle,
+  refresh: RefreshCw,
+  plus: Plus,
+  trash: Trash2,
+  loader: RefreshCw
 };
 
 // Icon component with consistent styling
