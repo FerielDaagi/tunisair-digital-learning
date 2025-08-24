@@ -65,25 +65,46 @@ const MyCourses = () => {
 
   const handlePublish = async (courseId) => {
     try {
+      setActionLoading(prev => ({ ...prev, publish: courseId }));
+      setError('');
+      setSuccess('');
+      
       await coursesAPI.publish(courseId);
       setSuccess('Cours publié avec succès !');
       fetchCourses(); // Recharger la liste
     } catch (error) {
       console.error('Erreur lors de la publication:', error);
-      setError('Erreur lors de la publication du cours');
+      const errorMessage = error.response?.data?.message || 'Erreur lors de la publication du cours';
+      setError(errorMessage);
+    } finally {
+      setActionLoading(prev => ({ ...prev, publish: null }));
     }
   };
 
-  const handleDelete = async (courseId) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce cours ? Cette action est irréversible.')) {
-      try {
-        await coursesAPI.delete(courseId);
-        setSuccess('Cours supprimé avec succès !');
-        fetchCourses(); // Recharger la liste
-      } catch (error) {
-        console.error('Erreur lors de la suppression:', error);
-        setError('Erreur lors de la suppression du cours');
-      }
+  const showDeleteConfirm = (courseId, courseTitle) => {
+    setDeleteConfirm({ show: true, courseId, courseTitle });
+  };
+
+  const hideDeleteConfirm = () => {
+    setDeleteConfirm({ show: false, courseId: null, courseTitle: '' });
+  };
+
+  const confirmDelete = async () => {
+    try {
+      setActionLoading(prev => ({ ...prev, delete: deleteConfirm.courseId }));
+      setError('');
+      setSuccess('');
+      
+      await coursesAPI.delete(deleteConfirm.courseId);
+      setSuccess('Cours supprimé avec succès !');
+      hideDeleteConfirm();
+      fetchCourses(); // Recharger la liste
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      const errorMessage = error.response?.data?.message || 'Erreur lors de la suppression du cours';
+      setError(errorMessage);
+    } finally {
+      setActionLoading(prev => ({ ...prev, delete: null }));
     }
   };
 
@@ -266,6 +287,27 @@ const MyCourses = () => {
           <div className="alert alert-error">
             <Icon name="error" size={IconSizes.sm} color={IconColors.white} />
             {error}
+            <button 
+              onClick={() => setError('')} 
+              className="alert-close"
+              title="Fermer"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
+        {success && (
+          <div className="alert alert-success">
+            <Icon name="checkCircle" size={IconSizes.sm} color={IconColors.white} />
+            {success}
+            <button 
+              onClick={() => setSuccess('')} 
+              className="alert-close"
+              title="Fermer"
+            >
+              ×
+            </button>
           </div>
         )}
 
@@ -369,9 +411,14 @@ const MyCourses = () => {
                       onClick={() => handlePublish(course._id)}
                       className="btn btn-success"
                       title="Publier le cours"
+                      disabled={actionLoading.publish === course._id}
                     >
-                      <Icon name="checkCircle" size={IconSizes.xs} color={IconColors.white} />
-                      Publier
+                      {actionLoading.publish === course._id ? (
+                        <Icon name="loader" size={IconSizes.xs} color={IconColors.white} className="spin" />
+                      ) : (
+                        <Icon name="checkCircle" size={IconSizes.xs} color={IconColors.white} />
+                      )}
+                      {actionLoading.publish === course._id ? 'Publication...' : 'Publier'}
                     </button>
                   )}
                   
@@ -385,12 +432,17 @@ const MyCourses = () => {
                   </button>
                   
                   <button
-                    onClick={() => handleDelete(course._id)}
+                    onClick={() => showDeleteConfirm(course._id, course.title)}
                     className="btn btn-danger"
                     title="Supprimer le cours"
+                    disabled={actionLoading.delete === course._id}
                   >
-                    <Icon name="trash" size={IconSizes.xs} color={IconColors.white} />
-                    Supprimer
+                    {actionLoading.delete === course._id ? (
+                      <Icon name="loader" size={IconSizes.xs} color={IconColors.white} className="spin" />
+                    ) : (
+                      <Icon name="trash" size={IconSizes.xs} color={IconColors.white} />
+                    )}
+                    {actionLoading.delete === course._id ? 'Suppression...' : 'Supprimer'}
                   </button>
                 </div>
               </div>
@@ -398,6 +450,52 @@ const MyCourses = () => {
           </div>
         )}
       </div>
+
+      {/* Modal de confirmation de suppression */}
+      {deleteConfirm.show && (
+        <div className="modal-overlay" onClick={hideDeleteConfirm}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <Icon name="alertTriangle" size={IconSizes.lg} color={IconColors.error} />
+              <h3>Confirmer la suppression</h3>
+            </div>
+            <div className="modal-body">
+              <p>
+                Êtes-vous sûr de vouloir supprimer le cours <strong>"{deleteConfirm.courseTitle}"</strong> ?
+              </p>
+              <p className="warning-text">
+                Cette action est irréversible et supprimera définitivement le cours et tout son contenu.
+              </p>
+            </div>
+            <div className="modal-actions">
+              <button
+                onClick={hideDeleteConfirm}
+                className="btn btn-secondary"
+                disabled={actionLoading.delete === deleteConfirm.courseId}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="btn btn-danger"
+                disabled={actionLoading.delete === deleteConfirm.courseId}
+              >
+                {actionLoading.delete === deleteConfirm.courseId ? (
+                  <>
+                    <Icon name="loader" size={IconSizes.xs} color={IconColors.white} className="spin" />
+                    Suppression...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="trash" size={IconSizes.xs} color={IconColors.white} />
+                    Supprimer définitivement
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
