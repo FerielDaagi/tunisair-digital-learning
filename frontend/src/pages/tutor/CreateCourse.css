@@ -101,9 +101,22 @@
 }
 
 .form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
   gap: 1rem;
+  align-items: flex-end;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.form-row .form-group input[type="number"] {
+  text-align: center;
+}
+
+.form-row .form-group input[type="number"]::-webkit-inner-spin-button,
+.form-row .form-group input[type="number"]::-webkit-outer-spin-button {
+  opacity: 1;
 }
 
 .array-input-group {

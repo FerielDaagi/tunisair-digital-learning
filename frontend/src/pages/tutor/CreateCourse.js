@@ -14,11 +14,12 @@ const CreateCourse = () => {
     description: '',
     longDescription: '',
     category: '',
-    level: 'débutant',
-    duration: '',
-    requirements: [''],
-    outcomes: [''],
-    tags: [''],
+    level: '',
+    hours: '',
+    minutes: '',
+    requirements: '',
+    outcomes: '',
+    tags: '',
     language: 'français'
   });
   
@@ -55,27 +56,6 @@ const CreateCourse = () => {
     }));
   };
 
-  const handleArrayChange = (index, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: prev[field].map((item, i) => i === index ? value : item)
-    }));
-  };
-
-  const addArrayItem = (field) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: [...prev[field], '']
-    }));
-  };
-
-  const removeArrayItem = (field, index) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: prev[field].filter((_, i) => i !== index)
-    }));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -83,25 +63,55 @@ const CreateCourse = () => {
     setSuccess('');
 
     try {
-      // Nettoyer les tableaux vides
-      const cleanedData = {
+      // Formater la durée en combinant heures et minutes
+      let duration = '';
+      if (formData.hours && formData.minutes) {
+        duration = `${formData.hours} heure${parseInt(formData.hours) > 1 ? 's' : ''} ${formData.minutes} minute${parseInt(formData.minutes) > 1 ? 's' : ''}`;
+      } else if (formData.hours) {
+        duration = `${formData.hours} heure${parseInt(formData.hours) > 1 ? 's' : ''}`;
+      } else if (formData.minutes) {
+        duration = `${formData.minutes} minute${parseInt(formData.minutes) > 1 ? 's' : ''}`;
+      } else {
+        setError('Veuillez spécifier au moins la durée en heures ou en minutes');
+        setLoading(false);
+        return;
+      }
+
+      // Traiter les tags et requirements/outcomes
+      const tags = formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
+      const requirements = formData.requirements ? formData.requirements.split('\n').map(req => req.trim()).filter(req => req) : [];
+      const outcomes = formData.outcomes ? formData.outcomes.split('\n').map(out => out.trim()).filter(out => out) : [];
+
+      const courseData = {
         ...formData,
-        requirements: formData.requirements.filter(req => req.trim() !== ''),
-        outcomes: formData.outcomes.filter(out => out.trim() !== ''),
-        tags: formData.tags.filter(tag => tag.trim() !== '')
+        duration,
+        tags,
+        requirements,
+        outcomes
       };
 
-      const response = await coursesAPI.create(cleanedData);
-      
-      if (response.data.success) {
-        setSuccess('Cours créé avec succès ! Redirection vers la gestion des cours...');
-        setTimeout(() => {
-          navigate('/tutor/my-courses');
-        }, 2000);
-      }
-    } catch (err) {
-      console.error('Erreur création cours:', err);
-      setError(err.response?.data?.message || 'Erreur lors de la création du cours');
+      // Supprimer les champs temporaires
+      delete courseData.hours;
+      delete courseData.minutes;
+
+      const response = await coursesAPI.create(courseData);
+      setSuccess('Cours créé avec succès !');
+      setFormData({
+        title: '',
+        description: '',
+        longDescription: '',
+        category: '',
+        level: '',
+        hours: '',
+        minutes: '',
+        requirements: '',
+        outcomes: '',
+        tags: '',
+        language: 'français'
+      });
+    } catch (error) {
+      console.error('Erreur création cours:', error);
+      setError('Erreur lors de la création du cours. Veuillez réessayer.');
     } finally {
       setLoading(false);
     }
@@ -228,7 +238,9 @@ const CreateCourse = () => {
                   value={formData.level}
                   onChange={handleChange}
                   required
+                  className="form-input"
                 >
+                  <option value="">Sélectionner un niveau</option>
                   <option value="débutant">Débutant</option>
                   <option value="intermédiaire">Intermédiaire</option>
                   <option value="avancé">Avancé</option>
@@ -236,17 +248,34 @@ const CreateCourse = () => {
               </div>
             </div>
 
+            {/* Durée - Heures et Minutes */}
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="duration">Durée estimée *</label>
+                <label htmlFor="hours">Heures</label>
                 <input
-                  type="text"
-                  id="duration"
-                  name="duration"
-                  value={formData.duration}
+                  type="number"
+                  id="hours"
+                  name="hours"
+                  value={formData.hours}
                   onChange={handleChange}
-                  required
-                  placeholder="Ex: 8 heures"
+                  min="0"
+                  max="999"
+                  placeholder="0"
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="minutes">Minutes</label>
+                <input
+                  type="number"
+                  id="minutes"
+                  name="minutes"
+                  value={formData.minutes}
+                  onChange={handleChange}
+                  min="0"
+                  max="59"
+                  placeholder="0"
+                  className="form-input"
                 />
               </div>
             </div>
@@ -272,67 +301,29 @@ const CreateCourse = () => {
             </h3>
             
             <div className="form-group">
-              <label>Prérequis</label>
-              {formData.requirements.map((req, index) => (
-                <div key={index} className="array-input-group">
-                  <input
-                    type="text"
-                    value={req}
-                    onChange={(e) => handleArrayChange(index, 'requirements', e.target.value)}
-                    placeholder="Ex: Connaissance de base en HTML et CSS"
-                  />
-                  {formData.requirements.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeArrayItem('requirements', index)}
-                      className="remove-btn"
-                      title="Supprimer ce prérequis"
-                    >
-                      <Icon name="trash" size={IconSizes.xs} color={IconColors.error} />
-                    </button>
-                  )}
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => addArrayItem('requirements')}
-                className="add-btn"
-              >
-                <Icon name="plus" size={IconSizes.xs} color={IconColors.primary} />
-                Ajouter un prérequis
-              </button>
+              <label htmlFor="requirements">Prérequis</label>
+              <textarea
+                id="requirements"
+                name="requirements"
+                value={formData.requirements}
+                onChange={handleChange}
+                rows={3}
+                placeholder="Ex: Connaissance de base en HTML et CSS&#10;Ex: Notions de JavaScript&#10;Ex: Aucun prérequis nécessaire"
+              />
+              <small>Séparez chaque prérequis par une nouvelle ligne</small>
             </div>
 
             <div className="form-group">
-              <label>Objectifs d'apprentissage</label>
-              {formData.outcomes.map((out, index) => (
-                <div key={index} className="array-input-group">
-                  <input
-                    type="text"
-                    value={out}
-                    onChange={(e) => handleArrayChange(index, 'outcomes', e.target.value)}
-                    placeholder="Ex: Créer des composants React réutilisables"
-                  />
-                  {formData.outcomes.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeArrayItem('outcomes', index)}
-                      className="remove-btn"
-                      title="Supprimer cet objectif"
-                    >
-                      <Icon name="trash" size={IconSizes.xs} color={IconColors.error} />
-                    </button>
-                  )}
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => addArrayItem('outcomes')}
-                className="add-btn"
-              >
-                <Icon name="plus" size={IconSizes.xs} color={IconColors.primary} />
-                Ajouter un objectif
-              </button>
+              <label htmlFor="outcomes">Objectifs d'apprentissage</label>
+              <textarea
+                id="outcomes"
+                name="outcomes"
+                value={formData.outcomes}
+                onChange={handleChange}
+                rows={3}
+                placeholder="Ex: Créer des composants React réutilisables&#10;Ex: Maîtriser les hooks React&#10;Ex: Déployer une application React"
+              />
+              <small>Séparez chaque objectif par une nouvelle ligne</small>
             </div>
           </div>
 
@@ -343,35 +334,16 @@ const CreateCourse = () => {
             </h3>
             
             <div className="form-group">
-              <label>Tags</label>
-              {formData.tags.map((tag, index) => (
-                <div key={index} className="array-input-group">
-                  <input
-                    type="text"
-                    value={tag}
-                    onChange={(e) => handleArrayChange(index, 'tags', e.target.value)}
-                    placeholder="Ex: React, JavaScript, Frontend"
-                  />
-                  {formData.tags.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeArrayItem('tags', index)}
-                      className="remove-btn"
-                      title="Supprimer ce tag"
-                    >
-                      <Icon name="trash" size={IconSizes.xs} color={IconColors.error} />
-                    </button>
-                  )}
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => addArrayItem('tags')}
-                className="add-btn"
-              >
-                <Icon name="plus" size={IconSizes.xs} color={IconColors.primary} />
-                Ajouter un tag
-              </button>
+              <label htmlFor="tags">Tags</label>
+              <input
+                type="text"
+                id="tags"
+                name="tags"
+                value={formData.tags}
+                onChange={handleChange}
+                placeholder="Ex: React, JavaScript, Frontend, Web Development"
+              />
+              <small>Séparez chaque tag par une virgule</small>
             </div>
           </div>
 
