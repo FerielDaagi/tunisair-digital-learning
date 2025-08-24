@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { coursesAPI } from '../../services/api';
 import { Icon, IconSizes, IconColors } from '../../components/common/IconTheme';
@@ -12,27 +12,25 @@ const MyCourses = () => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filter, setFilter] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    // Vérifier que l'utilisateur est un tuteur
     if (user && user.role !== 'tuteur') {
       navigate('/dashboard');
       return;
     }
     
-    loadCourses();
+    fetchCourses();
   }, [user, navigate]);
 
-  const loadCourses = async () => {
+  const fetchCourses = async () => {
     try {
       setLoading(true);
       const response = await coursesAPI.getTutorCourses();
-      if (response.data.success) {
-        setCourses(response.data.data);
-      }
-    } catch (err) {
-      console.error('Erreur chargement cours:', err);
+      setCourses(response.data.data || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des cours:', error);
       setError('Erreur lors du chargement des cours');
     } finally {
       setLoading(false);
@@ -41,79 +39,66 @@ const MyCourses = () => {
 
   const handlePublish = async (courseId) => {
     try {
-      const response = await coursesAPI.publish(courseId);
-      if (response.data.success) {
-        // Mettre à jour la liste des cours
-        setCourses(prev => prev.map(course => 
-          course._id === courseId 
-            ? { ...course, status: 'published', isPublished: true }
-            : course
-        ));
-      }
-    } catch (err) {
-      console.error('Erreur publication:', err);
+      await coursesAPI.publish(courseId);
+      setSuccess('Cours publié avec succès !');
+      fetchCourses(); // Recharger les cours
+    } catch (error) {
+      console.error('Erreur lors de la publication:', error);
       setError('Erreur lors de la publication du cours');
     }
   };
 
   const handleDelete = async (courseId) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce cours ? Cette action est irréversible.')) {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce cours ?')) {
       try {
         await coursesAPI.delete(courseId);
-        // Retirer le cours de la liste
-        setCourses(prev => prev.filter(course => course._id !== courseId));
-      } catch (err) {
-        console.error('Erreur suppression:', err);
+        setSuccess('Cours supprimé avec succès !');
+        fetchCourses(); // Recharger les cours
+      } catch (error) {
+        console.error('Erreur lors de la suppression:', error);
         setError('Erreur lors de la suppression du cours');
       }
     }
   };
 
-  const getFilteredCourses = () => {
-    switch (filter) {
-      case 'draft':
-        return courses.filter(course => course.status === 'draft');
-      case 'published':
-        return courses.filter(course => course.status === 'published');
-      case 'archived':
-        return courses.filter(course => course.status === 'archived');
-      default:
-        return courses;
+  const handleEdit = (courseId) => {
+    // TODO: Implémenter l'édition
+    alert('Fonctionnalité d\'édition à venir !');
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'published': return 'success';
+      case 'draft': return 'warning';
+      case 'archived': return 'muted';
+      default: return 'muted';
     }
   };
 
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      draft: { color: 'warning', text: 'Brouillon', icon: 'edit' },
-      published: { color: 'success', text: 'Publié', icon: 'check' },
-      archived: { color: 'secondary', text: 'Archivé', icon: 'archive' }
-    };
-    
-    const config = statusConfig[status] || statusConfig.draft;
-    
-    return (
-      <span className={`status-badge status-${config.color}`}>
-        <Icon name={config.icon} size={IconSizes.xs} color={IconColors.white} />
-        {config.text}
-      </span>
-    );
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'published': return 'checkCircle';
+      case 'draft': return 'edit';
+      case 'archived': return 'archive';
+      default: return 'circle';
+    }
   };
 
-  const getLevelBadge = (level) => {
-    const levelConfig = {
-      'débutant': { color: 'success', text: 'Débutant' },
-      'intermédiaire': { color: 'warning', text: 'Intermédiaire' },
-      'avancé': { color: 'error', text: 'Avancé' }
-    };
-    
-    const config = levelConfig[level] || levelConfig.débutant;
-    
-    return (
-      <span className={`level-badge level-${config.color}`}>
-        {config.text}
-      </span>
-    );
+  const getLevelColor = (level) => {
+    switch (level) {
+      case 'débutant': return 'success';
+      case 'intermédiaire': return 'warning';
+      case 'avancé': return 'error';
+      default: return 'muted';
+    }
   };
+
+  const filteredCourses = courses.filter(course => {
+    const matchesStatus = filterStatus === 'all' || course.status === filterStatus;
+    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         course.description.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
 
   if (!user || user.role !== 'tuteur') {
     return (
@@ -127,12 +112,11 @@ const MyCourses = () => {
     );
   }
 
-  const filteredCourses = getFilteredCourses();
-
   return (
     <div className="my-courses-page">
       <div className="my-courses-container">
-        <div className="my-courses-header">
+        {/* En-tête */}
+        <div className="page-header">
           <div className="header-content">
             <h1>
               <Icon name="bookOpen" size={IconSizes.lg} color={IconColors.primary} />
@@ -140,68 +124,105 @@ const MyCourses = () => {
             </h1>
             <p>Gérez et suivez vos cours créés</p>
           </div>
-          <Link to="/tutor/create-course" className="create-course-btn">
+          <button
+            onClick={() => navigate('/tutor/create-course')}
+            className="btn btn-primary create-btn"
+          >
             <Icon name="plus" size={IconSizes.sm} color={IconColors.white} />
-            Créer un nouveau cours
-          </Link>
+            Créer un cours
+          </button>
         </div>
 
-        {error && (
-          <div className="alert alert-error">
-            <Icon name="error" size={IconSizes.sm} color={IconColors.white} />
-            {error}
+        {/* Statistiques rapides */}
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-icon">
+              <Icon name="bookOpen" size={IconSizes.md} color={IconColors.primary} />
+            </div>
+            <div className="stat-content">
+              <h3>{courses.length}</h3>
+              <p>Total des cours</p>
+            </div>
           </div>
-        )}
+          <div className="stat-card">
+            <div className="stat-icon">
+              <Icon name="checkCircle" size={IconSizes.md} color={IconColors.success} />
+            </div>
+            <div className="stat-content">
+              <h3>{courses.filter(c => c.status === 'published').length}</h3>
+              <p>Cours publiés</p>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon">
+              <Icon name="edit" size={IconSizes.md} color={IconColors.warning} />
+            </div>
+            <div className="stat-content">
+              <h3>{courses.filter(c => c.status === 'draft').length}</h3>
+              <p>Brouillons</p>
+            </div>
+          </div>
+        </div>
 
-        <div className="courses-controls">
+        {/* Filtres et recherche */}
+        <div className="filters-section">
+          <div className="search-box">
+            <Icon name="search" size={IconSizes.sm} color={IconColors.muted} />
+            <input
+              type="text"
+              placeholder="Rechercher un cours..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+          </div>
+          
           <div className="filter-controls">
-            <button
-              className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
-              onClick={() => setFilter('all')}
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="filter-select"
             >
-              Tous ({courses.length})
-            </button>
-            <button
-              className={`filter-btn ${filter === 'draft' ? 'active' : ''}`}
-              onClick={() => setFilter('draft')}
-            >
-              Brouillons ({courses.filter(c => c.status === 'draft').length})
-            </button>
-            <button
-              className={`filter-btn ${filter === 'published' ? 'active' : ''}`}
-              onClick={() => setFilter('published')}
-            >
-              Publiés ({courses.filter(c => c.status === 'published').length})
-            </button>
-            <button
-              className={`filter-btn ${filter === 'archived' ? 'active' : ''}`}
-              onClick={() => setFilter('archived')}
-            >
-              Archivés ({courses.filter(c => c.status === 'archived').length})
-            </button>
+              <option value="all">Tous les cours</option>
+              <option value="published">Publiés</option>
+              <option value="draft">Brouillons</option>
+              <option value="archived">Archivés</option>
+            </select>
           </div>
         </div>
 
+        {/* Liste des cours */}
         {loading ? (
-          <div className="loading-container">
-            <Icon name="loader" size={IconSizes.xl} color={IconColors.primary} />
+          <div className="loading-state">
+            <Icon name="loader" size={IconSizes.xl} color={IconColors.primary} className="spin" />
             <p>Chargement de vos cours...</p>
+          </div>
+        ) : error ? (
+          <div className="error-state">
+            <Icon name="error" size={IconSizes.xl} color={IconColors.error} />
+            <p>{error}</p>
+            <button onClick={fetchCourses} className="btn btn-secondary">
+              Réessayer
+            </button>
           </div>
         ) : filteredCourses.length === 0 ? (
           <div className="empty-state">
-            <Icon name="bookOpen" size={IconSizes.xl} color={IconColors.secondary} />
+            <Icon name="bookOpen" size={IconSizes.xl} color={IconColors.muted} />
             <h3>Aucun cours trouvé</h3>
             <p>
-              {filter === 'all' 
-                ? "Vous n'avez pas encore créé de cours. Commencez par en créer un !"
-                : `Aucun cours avec le statut "${filter}" trouvé.`
+              {searchTerm || filterStatus !== 'all' 
+                ? 'Aucun cours ne correspond à vos critères de recherche.'
+                : 'Vous n\'avez pas encore créé de cours. Commencez par en créer un !'
               }
             </p>
-            {filter === 'all' && (
-              <Link to="/tutor/create-course" className="btn btn-primary">
+            {!searchTerm && filterStatus === 'all' && (
+              <button
+                onClick={() => navigate('/tutor/create-course')}
+                className="btn btn-primary"
+              >
                 <Icon name="plus" size={IconSizes.sm} color={IconColors.white} />
                 Créer votre premier cours
-              </Link>
+              </button>
             )}
           </div>
         ) : (
@@ -210,33 +231,16 @@ const MyCourses = () => {
               <div key={course._id} className="course-card">
                 <div className="course-header">
                   <div className="course-status">
-                    {getStatusBadge(course.status)}
-                    {getLevelBadge(course.level)}
+                    <span className={`status-badge ${getStatusColor(course.status)}`}>
+                      <Icon name={getStatusIcon(course.status)} size={IconSizes.xs} color={IconColors.white} />
+                      {course.status === 'published' ? 'Publié' : 
+                       course.status === 'draft' ? 'Brouillon' : 'Archivé'}
+                    </span>
                   </div>
-                  <div className="course-actions">
-                    <button
-                      onClick={() => navigate(`/tutor/edit-course/${course._id}`)}
-                      className="action-btn edit-btn"
-                      title="Modifier le cours"
-                    >
-                      <Icon name="edit" size={IconSizes.xs} color={IconColors.white} />
-                    </button>
-                    {course.status === 'draft' && (
-                      <button
-                        onClick={() => handlePublish(course._id)}
-                        className="action-btn publish-btn"
-                        title="Publier le cours"
-                      >
-                        <Icon name="check" size={IconSizes.xs} color={IconColors.white} />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleDelete(course._id)}
-                      className="action-btn delete-btn"
-                      title="Supprimer le cours"
-                    >
-                      <Icon name="trash" size={IconSizes.xs} color={IconColors.white} />
-                    </button>
+                  <div className="course-level">
+                    <span className={`level-badge ${getLevelColor(course.level)}`}>
+                      {course.level}
+                    </span>
                   </div>
                 </div>
 
@@ -246,16 +250,16 @@ const MyCourses = () => {
                   
                   <div className="course-meta">
                     <div className="meta-item">
-                      <Icon name="clock" size={IconSizes.xs} color={IconColors.secondary} />
+                      <Icon name="clock" size={IconSizes.xs} color={IconColors.muted} />
                       <span>{course.duration}</span>
                     </div>
                     <div className="meta-item">
-                      <Icon name="users" size={IconSizes.xs} color={IconColors.secondary} />
-                      <span>{course.enrolledStudents?.length || 0} étudiants</span>
+                      <Icon name="folder" size={IconSizes.xs} color={IconColors.muted} />
+                      <span>{course.category}</span>
                     </div>
                     <div className="meta-item">
-                      <Icon name="tag" size={IconSizes.xs} color={IconColors.secondary} />
-                      <span>{course.category?.name || 'Non catégorisé'}</span>
+                      <Icon name="globe" size={IconSizes.xs} color={IconColors.muted} />
+                      <span>{course.language}</span>
                     </div>
                   </div>
 
@@ -267,35 +271,41 @@ const MyCourses = () => {
                         </span>
                       ))}
                       {course.tags.length > 3 && (
-                        <span className="tag more-tags">
-                          +{course.tags.length - 3}
-                        </span>
+                        <span className="tag-more">+{course.tags.length - 3}</span>
                       )}
                     </div>
                   )}
                 </div>
 
-                <div className="course-footer">
-                  <div className="course-stats">
-                    <span className="stat">
-                      <Icon name="star" size={IconSizes.xs} color={IconColors.warning} />
-                      {course.rating?.average?.toFixed(1) || '0.0'}
-                    </span>
-                    <span className="stat">
-                      <Icon name="messageSquare" size={IconSizes.xs} color={IconColors.secondary} />
-                      {course.rating?.count || 0} avis
-                    </span>
-                  </div>
-                  
-                  <div className="course-actions-footer">
+                <div className="course-actions">
+                  {course.status === 'draft' && (
                     <button
-                      onClick={() => navigate(`/tutor/course/${course._id}/modules`)}
-                      className="btn btn-outline"
+                      onClick={() => handlePublish(course._id)}
+                      className="btn btn-success btn-sm"
+                      title="Publier le cours"
                     >
-                      <Icon name="folder" size={IconSizes.xs} color={IconColors.primary} />
-                      Gérer les modules
+                      <Icon name="checkCircle" size={IconSizes.xs} color={IconColors.white} />
+                      Publier
                     </button>
-                  </div>
+                  )}
+                  
+                  <button
+                    onClick={() => handleEdit(course._id)}
+                    className="btn btn-secondary btn-sm"
+                    title="Modifier le cours"
+                  >
+                    <Icon name="edit" size={IconSizes.xs} color={IconColors.white} />
+                    Modifier
+                  </button>
+                  
+                  <button
+                    onClick={() => handleDelete(course._id)}
+                    className="btn btn-danger btn-sm"
+                    title="Supprimer le cours"
+                  >
+                    <Icon name="trash" size={IconSizes.xs} color={IconColors.white} />
+                    Supprimer
+                  </button>
                 </div>
               </div>
             ))}

@@ -17,9 +17,9 @@ const CreateCourse = () => {
     level: '',
     hours: '',
     minutes: '',
-    requirements: '',
-    outcomes: '',
-    tags: '',
+    requirements: [''],
+    outcomes: [''],
+    tags: [''],
     language: 'français'
   });
   
@@ -56,6 +56,29 @@ const CreateCourse = () => {
     }));
   };
 
+  const handleArrayChange = (index, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: prev[field].map((item, i) => i === index ? value : item)
+    }));
+  };
+
+  const addArrayItem = (field) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: [...prev[field], '']
+    }));
+  };
+
+  const removeArrayItem = (field, index) => {
+    if (formData[field].length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        [field]: prev[field].filter((_, i) => i !== index)
+      }));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -78,9 +101,9 @@ const CreateCourse = () => {
       }
 
       // Traiter les tags et requirements/outcomes
-      const tags = formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
-      const requirements = formData.requirements ? formData.requirements.split('\n').map(req => req.trim()).filter(req => req) : [];
-      const outcomes = formData.outcomes ? formData.outcomes.split('\n').map(out => out.trim()).filter(out => out) : [];
+      const tags = formData.tags.filter(tag => tag.trim() !== '');
+      const requirements = formData.requirements.filter(req => req.trim() !== '');
+      const outcomes = formData.outcomes.filter(out => out.trim() !== '');
 
       const courseData = {
         ...formData,
@@ -104,9 +127,9 @@ const CreateCourse = () => {
         level: '',
         hours: '',
         minutes: '',
-        requirements: '',
-        outcomes: '',
-        tags: '',
+        requirements: [''],
+        outcomes: [''],
+        tags: [''],
         language: 'français'
       });
     } catch (error) {
@@ -155,14 +178,18 @@ const CreateCourse = () => {
         )}
 
         <form onSubmit={handleSubmit} className="create-course-form">
+          {/* Section 1: Informations de base */}
           <div className="form-section">
-            <h3>
-              <Icon name="info" size={IconSizes.sm} color={IconColors.primary} />
-              Informations de base
-            </h3>
+            <div className="section-header">
+              <Icon name="info" size={IconSizes.md} color={IconColors.primary} />
+              <h3>Informations de base</h3>
+            </div>
             
             <div className="form-group">
-              <label htmlFor="title">Titre du cours *</label>
+              <label htmlFor="title">
+                <Icon name="edit" size={IconSizes.xs} color={IconColors.primary} />
+                Titre du cours *
+              </label>
               <input
                 type="text"
                 id="title"
@@ -172,12 +199,21 @@ const CreateCourse = () => {
                 required
                 maxLength={100}
                 placeholder="Ex: Maîtrisez React en 30 jours"
+                className="form-input"
               />
-              <small>{formData.title.length}/100 caractères</small>
+              <div className="char-counter">
+                <Icon name="hash" size={IconSizes.xs} color={IconColors.muted} />
+                <span className={formData.title.length > 80 ? 'warning' : ''}>
+                  {formData.title.length}/100 caractères
+                </span>
+              </div>
             </div>
 
             <div className="form-group">
-              <label htmlFor="description">Description courte *</label>
+              <label htmlFor="description">
+                <Icon name="fileText" size={IconSizes.xs} color={IconColors.primary} />
+                Description courte *
+              </label>
               <textarea
                 id="description"
                 name="description"
@@ -187,12 +223,21 @@ const CreateCourse = () => {
                 maxLength={500}
                 rows={3}
                 placeholder="Une description concise de votre cours"
+                className="form-textarea"
               />
-              <small>{formData.description.length}/500 caractères</small>
+              <div className="char-counter">
+                <Icon name="hash" size={IconSizes.xs} color={IconColors.muted} />
+                <span className={formData.description.length > 400 ? 'warning' : ''}>
+                  {formData.description.length}/500 caractères
+                </span>
+              </div>
             </div>
 
             <div className="form-group">
-              <label htmlFor="longDescription">Description détaillée *</label>
+              <label htmlFor="longDescription">
+                <Icon name="bookOpen" size={IconSizes.xs} color={IconColors.primary} />
+                Description détaillée *
+              </label>
               <textarea
                 id="longDescription"
                 name="longDescription"
@@ -201,25 +246,31 @@ const CreateCourse = () => {
                 required
                 rows={6}
                 placeholder="Décrivez en détail ce que les étudiants apprendront dans votre cours"
+                className="form-textarea"
               />
             </div>
           </div>
 
+          {/* Section 2: Configuration du cours */}
           <div className="form-section">
-            <h3>
-              <Icon name="settings" size={IconSizes.sm} color={IconColors.primary} />
-              Configuration du cours
-            </h3>
+            <div className="section-header">
+              <Icon name="settings" size={IconSizes.md} color={IconColors.primary} />
+              <h3>Configuration du cours</h3>
+            </div>
             
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="category">Catégorie *</label>
+                <label htmlFor="category">
+                  <Icon name="folder" size={IconSizes.xs} color={IconColors.primary} />
+                  Catégorie *
+                </label>
                 <select
                   id="category"
                   name="category"
                   value={formData.category}
                   onChange={handleChange}
                   required
+                  className="form-select"
                 >
                   <option value="">Sélectionnez une catégorie</option>
                   {categories.map(cat => (
@@ -231,14 +282,17 @@ const CreateCourse = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="level">Niveau *</label>
+                <label htmlFor="level">
+                  <Icon name="trendingUp" size={IconSizes.xs} color={IconColors.primary} />
+                  Niveau *
+                </label>
                 <select
                   id="level"
                   name="level"
                   value={formData.level}
                   onChange={handleChange}
                   required
-                  className="form-input"
+                  className="form-select"
                 >
                   <option value="">Sélectionner un niveau</option>
                   <option value="débutant">Débutant</option>
@@ -249,44 +303,60 @@ const CreateCourse = () => {
             </div>
 
             {/* Durée - Heures et Minutes */}
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="hours">Heures</label>
-                <input
-                  type="number"
-                  id="hours"
-                  name="hours"
-                  value={formData.hours}
-                  onChange={handleChange}
-                  min="0"
-                  max="999"
-                  placeholder="0"
-                  className="form-input"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="minutes">Minutes</label>
-                <input
-                  type="number"
-                  id="minutes"
-                  name="minutes"
-                  value={formData.minutes}
-                  onChange={handleChange}
-                  min="0"
-                  max="59"
-                  placeholder="0"
-                  className="form-input"
-                />
+            <div className="duration-section">
+              <label className="duration-label">
+                <Icon name="clock" size={IconSizes.xs} color={IconColors.primary} />
+                Durée estimée
+              </label>
+              <div className="duration-inputs">
+                <div className="form-group">
+                  <label htmlFor="hours">Heures</label>
+                  <div className="number-input-wrapper">
+                    <input
+                      type="number"
+                      id="hours"
+                      name="hours"
+                      value={formData.hours}
+                      onChange={handleChange}
+                      min="0"
+                      max="999"
+                      placeholder="0"
+                      className="form-input number-input"
+                    />
+                    <span className="unit">h</span>
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="minutes">Minutes</label>
+                  <div className="number-input-wrapper">
+                    <input
+                      type="number"
+                      id="minutes"
+                      name="minutes"
+                      value={formData.minutes}
+                      onChange={handleChange}
+                      min="0"
+                      max="59"
+                      placeholder="0"
+                      className="form-input number-input"
+                    />
+                    <span className="unit">min</span>
+                  </div>
+                </div>
               </div>
             </div>
 
             <div className="form-group">
-              <label htmlFor="language">Langue du cours</label>
+              <label htmlFor="language">
+                <Icon name="globe" size={IconSizes.xs} color={IconColors.primary} />
+                Langue du cours
+              </label>
               <select
                 id="language"
                 name="language"
                 value={formData.language}
                 onChange={handleChange}
+                className="form-select"
               >
                 <option value="français">Français</option>
                 <option value="english">English</option>
@@ -294,59 +364,131 @@ const CreateCourse = () => {
             </div>
           </div>
 
+          {/* Section 3: Prérequis et objectifs */}
           <div className="form-section">
-            <h3>
-              <Icon name="target" size={IconSizes.sm} color={IconColors.primary} />
-              Prérequis et objectifs
-            </h3>
+            <div className="section-header">
+              <Icon name="target" size={IconSizes.md} color={IconColors.primary} />
+              <h3>Prérequis et objectifs</h3>
+            </div>
             
             <div className="form-group">
-              <label htmlFor="requirements">Prérequis</label>
-              <textarea
-                id="requirements"
-                name="requirements"
-                value={formData.requirements}
-                onChange={handleChange}
-                rows={3}
-                placeholder="Ex: Connaissance de base en HTML et CSS&#10;Ex: Notions de JavaScript&#10;Ex: Aucun prérequis nécessaire"
-              />
-              <small>Séparez chaque prérequis par une nouvelle ligne</small>
+              <label htmlFor="requirements">
+                <Icon name="checkCircle" size={IconSizes.xs} color={IconColors.primary} />
+                Prérequis
+              </label>
+              {formData.requirements.map((req, index) => (
+                <div key={index} className="array-input-group">
+                  <input
+                    type="text"
+                    value={req}
+                    onChange={(e) => handleArrayChange(index, 'requirements', e.target.value)}
+                    placeholder={`Prérequis ${index + 1} (ex: Connaissance de base en HTML et CSS)`}
+                    className="form-input"
+                  />
+                  {formData.requirements.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeArrayItem('requirements', index)}
+                      className="remove-btn"
+                      title="Supprimer ce prérequis"
+                    >
+                      <Icon name="trash" size={IconSizes.xs} color={IconColors.error} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => addArrayItem('requirements')}
+                className="add-btn"
+              >
+                <Icon name="plus" size={IconSizes.xs} color={IconColors.primary} />
+                Ajouter un prérequis
+              </button>
             </div>
 
             <div className="form-group">
-              <label htmlFor="outcomes">Objectifs d'apprentissage</label>
-              <textarea
-                id="outcomes"
-                name="outcomes"
-                value={formData.outcomes}
-                onChange={handleChange}
-                rows={3}
-                placeholder="Ex: Créer des composants React réutilisables&#10;Ex: Maîtriser les hooks React&#10;Ex: Déployer une application React"
-              />
-              <small>Séparez chaque objectif par une nouvelle ligne</small>
+              <label htmlFor="outcomes">
+                <Icon name="star" size={IconSizes.xs} color={IconColors.primary} />
+                Objectifs d'apprentissage
+              </label>
+              {formData.outcomes.map((out, index) => (
+                <div key={index} className="array-input-group">
+                  <input
+                    type="text"
+                    value={out}
+                    onChange={(e) => handleArrayChange(index, 'outcomes', e.target.value)}
+                    placeholder={`Objectif ${index + 1} (ex: Créer des composants React réutilisables)`}
+                    className="form-input"
+                  />
+                  {formData.outcomes.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeArrayItem('outcomes', index)}
+                      className="remove-btn"
+                      title="Supprimer cet objectif"
+                    >
+                      <Icon name="trash" size={IconSizes.xs} color={IconColors.error} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => addArrayItem('outcomes')}
+                className="add-btn"
+              >
+                <Icon name="plus" size={IconSizes.xs} color={IconColors.primary} />
+                Ajouter un objectif
+              </button>
             </div>
           </div>
 
+          {/* Section 4: Mots-clés */}
           <div className="form-section">
-            <h3>
-              <Icon name="tag" size={IconSizes.sm} color={IconColors.primary} />
-              Mots-clés
-            </h3>
+            <div className="section-header">
+              <Icon name="tag" size={IconSizes.md} color={IconColors.primary} />
+              <h3>Mots-clés</h3>
+            </div>
             
             <div className="form-group">
-              <label htmlFor="tags">Tags</label>
-              <input
-                type="text"
-                id="tags"
-                name="tags"
-                value={formData.tags}
-                onChange={handleChange}
-                placeholder="Ex: React, JavaScript, Frontend, Web Development"
-              />
-              <small>Séparez chaque tag par une virgule</small>
+              <label htmlFor="tags">
+                <Icon name="hash" size={IconSizes.xs} color={IconColors.primary} />
+                Tags
+              </label>
+              {formData.tags.map((tag, index) => (
+                <div key={index} className="array-input-group">
+                  <input
+                    type="text"
+                    value={tag}
+                    onChange={(e) => handleArrayChange(index, 'tags', e.target.value)}
+                    placeholder={`Tag ${index + 1} (ex: React, JavaScript, Frontend)`}
+                    className="form-input"
+                  />
+                  {formData.tags.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeArrayItem('tags', index)}
+                      className="remove-btn"
+                      title="Supprimer ce tag"
+                    >
+                      <Icon name="trash" size={IconSizes.xs} color={IconColors.error} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => addArrayItem('tags')}
+                className="add-btn"
+              >
+                <Icon name="plus" size={IconSizes.xs} color={IconColors.primary} />
+                Ajouter un tag
+              </button>
             </div>
           </div>
 
+          {/* Actions du formulaire */}
           <div className="form-actions">
             <button
               type="button"
