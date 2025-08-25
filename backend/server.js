@@ -47,7 +47,9 @@ const io = socketIo(server, {
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     methods: ['GET', 'POST'],
     credentials: true
-  }
+  },
+  pingTimeout: 25000,
+  pingInterval: 20000
 });
 
 // Security middleware (allow cross-origin images for uploads)
@@ -119,28 +121,18 @@ const maxActiveConnections = 30;
 
 server.on('connection', (socket) => {
   activeConnections = Math.max(0, activeConnections + 1);
-  
-  // Log seulement si trop de connexions
+
   if (activeConnections > maxActiveConnections * 0.8) {
     console.log(`⚠️ Connexions actives: ${activeConnections}/${maxActiveConnections}`);
   }
-  
-  // Timeout plus court pour les connexions inactives
-  socket.setTimeout(15000); // 15 secondes au lieu de 30
-  
-  socket.on('timeout', () => {
-    activeConnections = Math.max(0, activeConnections - 1);
-    socket.destroy();
-  });
-  
+
   socket.on('error', (error) => {
     activeConnections = Math.max(0, activeConnections - 1);
-    // Log seulement les erreurs importantes
     if (error.code !== 'ECONNRESET' && error.code !== 'EPIPE') {
       console.error(`❌ Erreur socket: ${error.message}`);
     }
   });
-  
+
   socket.on('close', () => {
     activeConnections = Math.max(0, activeConnections - 1);
   });

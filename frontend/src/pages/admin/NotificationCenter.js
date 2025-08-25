@@ -32,19 +32,26 @@ const NotificationCenter = () => {
 
     // Écouter les nouvelles notifications admin
     if (socket) {
-      socket.on('adminNotification', (data) => {
+      const handleAdminNotification = (data) => {
         console.log('🔔 Nouvelle notification admin reçue:', data);
-        setNotifications(prev => [data.notification, ...prev]);
-        loadStats(); // Recharger les stats
-      });
+        if (data?.notification) {
+          setNotifications(prev => [data.notification, ...prev]);
+          loadStats();
+        } else {
+          // fallback: recharger depuis l'API
+          loadNotifications();
+        }
+      };
 
-
+      // Compatibilité avec différents noms d'événements
+      socket.on('adminNotification', handleAdminNotification);
+      socket.on('notification', handleAdminNotification);
     }
 
     return () => {
       if (socket) {
         socket.off('adminNotification');
-  
+        socket.off('notification');
       }
     };
   }, [user, socket]);

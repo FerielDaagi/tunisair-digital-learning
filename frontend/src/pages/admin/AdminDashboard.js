@@ -788,18 +788,21 @@ const AdminDashboard = () => {
             backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
           }}>
             <div style={{
-              background: 'white', padding: '1.5rem', borderRadius: '12px', width: '90%', maxWidth: '520px'
+              background: 'white', padding: '1.25rem', borderRadius: '12px', width: '90%', maxWidth: '520px', boxShadow: '0 10px 30px rgba(0,0,0,0.15)'
             }}>
-              <h3 style={{ marginTop: 0, color: 'var(--danger)' }}>Rejeter la demande de tutorat</h3>
-              <p style={{ color: '#6c757d' }}>Vous pouvez indiquer une raison (optionnelle) :</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⚠️</div>
+                <h3 style={{ margin: 0, color: 'var(--danger)', fontSize: '1.1rem' }}>Rejeter la demande de tutorat</h3>
+              </div>
+              <p style={{ color: '#6c757d', fontSize: '0.9rem', margin: '0 0 0.5rem 0' }}>Motif du rejet (optionnel)</p>
               <textarea
-                rows="4"
+                rows="3"
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                style={{ width: '100%', padding: '0.75rem', border: '1px solid #ced4da', borderRadius: '6px' }}
-                placeholder="Raison du refus (optionnel)"
+                style={{ width: '100%', padding: '0.6rem', border: '1px solid #ced4da', borderRadius: '6px', fontSize: '0.95rem' }}
+                placeholder="Ex.: Profil incomplet, expérience insuffisante, etc."
               />
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.75rem' }}>
                 <button
                   onClick={() => { setShowRejectModal(false); setRejectUserId(null); setRejectReason(''); }}
                   className="btn btn-outline"

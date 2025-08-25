@@ -367,6 +367,24 @@ const requestTutor = async (req, res) => {
     user.tutorRequestAt = new Date();
     await user.save();
 
+    // Notifier les administrateurs de la nouvelle demande de tutorat
+    try {
+      const notificationService = req.app.get('notificationService');
+      if (notificationService) {
+        await notificationService.sendAdminNotification(
+          user._id,
+          'Demande de tutorat',
+          `${user.name || user.email} a soumis une demande pour devenir tuteur`,
+          'info',
+          'tutor_request',
+          { userId: user._id.toString(), requestedAt: user.tutorRequestAt }
+        );
+      }
+    } catch (notifyError) {
+      console.error('❌ Erreur notification demande tuteur:', notifyError);
+      // Ne pas bloquer la réponse utilisateur si la notification échoue
+    }
+
     res.json({ success: true, message: 'Votre demande de tutorat a été envoyée', user: user.toJSON() });
   } catch (error) {
     console.error('Erreur requestTutor:', error);

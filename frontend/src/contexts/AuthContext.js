@@ -49,9 +49,17 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
   };
 
-  const addNotification = (message, type = 'info') => {
+  const addNotification = (message, type = 'info', extras = {}) => {
     const id = Date.now();
-    const newNotification = { id, message, type, timestamp: new Date() };
+    const newNotification = { 
+      id, 
+      message, 
+      type, 
+      timestamp: extras.timestamp ? new Date(extras.timestamp) : new Date(),
+      title: extras.title || undefined,
+      image: extras.image || undefined,
+      category: extras.category || undefined,
+    };
     setNotifications(prev => [...prev, newNotification]);
   };
 

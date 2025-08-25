@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 import { Icon, IconSizes, IconColors } from './IconTheme';
 
 const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const { user, logout, notifications, removeNotification, clearAllNotifications, addNotification } = useAuth();
+  const { user, logout } = useAuth();
+  const { items: notifications, remove: removeNotification, clear: clearAllNotifications } = useNotifications();
   const location = useLocation();
   const navigate = useNavigate();
   const notificationsRef = useRef(null);
@@ -246,191 +248,7 @@ const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
                   </Link>
                 </li>
 
-                {/* Section Notifications */}
-                <li>
-                  <button 
-                    onClick={() => setShowNotifications(!showNotifications)}
-                    className="notification-button"
-                  >
-                    <Icon name="notifications" size={IconSizes.sm} color={IconColors.white} className="nav-icon" />
-                    {!isCollapsed && (
-                      <>
-                        <span>Notifications</span>
-                        {notifications && notifications.length > 0 && (
-                          <span className="notification-badge">
-                            {notifications.length > 9 ? '9+' : notifications.length}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </button>
-                  
-                  {/* Dropdown des notifications */}
-                  {showNotifications && !isCollapsed && (
-                    <div 
-                      ref={notificationsRef}
-                      style={{
-                        position: 'fixed',
-                        left: '280px',
-                        top: '120px',
-                        backgroundColor: 'var(--bg-primary)',
-                        borderRadius: '12px',
-                        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-                        width: '360px',
-                        maxHeight: '500px',
-                        overflow: 'hidden',
-                        zIndex: 1000,
-                        border: '1px solid var(--gray-200)',
-                        backdropFilter: 'blur(10px)'
-                      }}
-                    >
-                      <div style={{
-                        padding: '1.25rem',
-                        borderBottom: '1px solid var(--gray-200)',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        background: 'linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%)',
-                        color: 'white'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <Icon name="notifications" size={IconSizes.sm} color="white" />
-                          <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '600' }}>Notifications</h4>
-                        </div>
-                        {notifications && notifications.length > 0 && (
-                          <button
-                            onClick={clearAllNotifications}
-                            style={{
-                              background: 'rgba(255,255,255,0.2)',
-                              border: 'none',
-                              color: 'white',
-                              cursor: 'pointer',
-                              fontSize: '0.8rem',
-                              padding: '0.5rem 0.75rem',
-                              borderRadius: '6px',
-                              transition: 'all 0.2s ease',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.5rem'
-                            }}
-                            onMouseEnter={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
-                            onMouseLeave={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
-                          >
-                            <Icon name="trash2" size={IconSizes.xs} color="white" />
-                            Tout effacer
-                          </button>
-                        )}
-                      </div>
-                      
-                      <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                        {!notifications || notifications.length === 0 ? (
-                          <div style={{
-                            padding: '3rem 2rem',
-                            textAlign: 'center',
-                            color: 'var(--text-secondary)'
-                          }}>
-                            <Icon name="bell" size={IconSizes.xl} color={IconColors.light} />
-                            <p style={{ margin: '1rem 0 0 0', fontSize: '1rem' }}>Aucune notification</p>
-                            <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', opacity: 0.7 }}>Vous serez notifié ici des nouvelles activités</p>
-                          </div>
-                        ) : (
-                          notifications.map(notification => (
-                            <div
-                              key={notification.id}
-                              style={{
-                                padding: '1.25rem',
-                                borderBottom: '1px solid var(--gray-100)',
-                                backgroundColor: 'var(--bg-primary)',
-                                transition: 'all 0.2s ease',
-                                cursor: 'pointer'
-                              }}
-                              onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--gray-50)'}
-                              onMouseLeave={(e) => e.target.style.backgroundColor = 'var(--bg-primary)'}
-                            >
-                              <div style={{
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                gap: '1rem'
-                              }}>
-                                <div style={{
-                                  flexShrink: 0,
-                                  width: '40px',
-                                  height: '40px',
-                                  borderRadius: '50%',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  background: notification.type === 'success' ? 'var(--success)' : 
-                                             notification.type === 'error' ? 'var(--danger)' : 
-                                             notification.type === 'warning' ? 'var(--warning)' : 'var(--info)',
-                                  opacity: 0.1
-                                }}>
-                                  <Icon 
-                                    name={notification.type === 'success' ? 'success' : 
-                                          notification.type === 'error' ? 'error' : 
-                                          notification.type === 'warning' ? 'warning' : 'info'} 
-                                    size={IconSizes.sm} 
-                                    color={notification.type === 'success' ? 'var(--success)' : 
-                                           notification.type === 'error' ? 'var(--danger)' : 
-                                           notification.type === 'warning' ? 'var(--warning)' : 'var(--info)'} 
-                                  />
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{
-                                    color: 'var(--text-primary)',
-                                    fontSize: '0.95rem',
-                                    lineHeight: '1.4',
-                                    fontWeight: '500',
-                                    marginBottom: '0.5rem'
-                                  }}>
-                                    {notification.message}
-                                  </div>
-                                  <div style={{
-                                    color: 'var(--text-secondary)',
-                                    fontSize: '0.8rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem'
-                                  }}>
-                                    <Icon name="clock" size={IconSizes.xs} color="var(--gray-400)" />
-                                    {new Date(notification.timestamp).toLocaleTimeString('fr-FR', { 
-                                      hour: '2-digit', 
-                                      minute: '2-digit' 
-                                    })}
-                                  </div>
-                                </div>
-                                <button
-                                  onClick={() => removeNotification(notification.id)}
-                                  style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: 'var(--gray-400)',
-                                    cursor: 'pointer',
-                                    padding: '0.25rem',
-                                    borderRadius: '4px',
-                                    transition: 'all 0.2s ease',
-                                    opacity: 0.7
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.target.style.opacity = 1;
-                                    e.target.style.backgroundColor = 'var(--gray-100)';
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.target.style.opacity = 0.7;
-                                    e.target.style.backgroundColor = 'transparent';
-                                  }}
-                                  title="Supprimer la notification"
-                                >
-                                  <Icon name="close" size={IconSizes.xs} color="var(--gray-400)" />
-                                </button>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </li>
+                {/* Notification button removed as requested */}
 
                 <li>
                   <button 

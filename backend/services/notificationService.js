@@ -47,23 +47,30 @@ class NotificationService {
       });
 
       await notification.save();
-      await notification.populate('sender', 'name email role');
+      await notification.populate('sender', 'name email role profile.avatar');
 
       // Envoyer à tous les admins connectés comme notification régulière
       this.adminSockets.forEach((socket, adminId) => {
-        socket.emit('notification', {
+        const image = notification.sender?.profile?.avatar || null;
+        const finalTitle = notification.title || 'Notification';
+        const finalMessage = notification.message || finalTitle;
+        const payload = {
           notification: {
             id: notification._id,
-            title: notification.title,
-            message: `${notification.title}: ${notification.message}`,
+            title: finalTitle,
+            message: `${finalTitle}: ${finalMessage}`,
             type: notification.type,
             category: notification.category,
             sender: notification.sender,
             timestamp: notification.createdAt,
             isRead: notification.isRead,
-            isAdminNotification: true
+            isAdminNotification: true,
+            image
           }
-        });
+        };
+        // Emit both generic and admin-specific events for compatibility
+        socket.emit('notification', payload);
+        socket.emit('adminNotification', payload);
       });
 
       console.log(`🔔 Notification admin envoyée: ${title} - ${this.adminSockets.size} admins connectés`);
@@ -94,18 +101,23 @@ class NotificationService {
       // Envoyer au destinataire s'il est connecté
       const recipientSocket = this.userSockets.get(recipientId.toString());
       if (recipientSocket) {
-        recipientSocket.emit('userNotification', {
+        const image = notification.sender?.profile?.avatar || null;
+        const finalTitle = notification.title || 'Notification';
+        const finalMessage = notification.message || finalTitle;
+        const payload = {
           notification: {
             id: notification._id,
-            title: notification.title,
-            message: notification.message,
+            title: finalTitle,
+            message: finalMessage,
             type: notification.type,
             category: notification.category,
             sender: notification.sender,
             timestamp: notification.createdAt,
-            isRead: notification.isRead
+            isRead: notification.isRead,
+            image
           }
-        });
+        };
+        recipientSocket.emit('userNotification', payload);
       }
 
       console.log(`🔔 Notification utilisateur envoyée: ${title} à ${recipientId}`);

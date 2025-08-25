@@ -263,6 +263,7 @@ export const IconTheme = {
   sidebarToggleCollapsed: ChevronRight,
   menu: Menu,
   close: X,
+  x: X,
   
   // Actions & Controls
   add: Plus,
@@ -271,6 +272,7 @@ export const IconTheme = {
   edit: Edit,
   delete: Trash2,
   trash: Trash2,
+  trash2: Trash2,
   save: Save,
   upload: Upload,
   download: Download,
