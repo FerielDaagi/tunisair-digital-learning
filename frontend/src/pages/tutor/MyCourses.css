@@ -478,6 +478,7 @@
   line-height: 1.6;
   margin-bottom: 1rem;
   display: -webkit-box;
+  line-clamp: 3;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -636,6 +637,8 @@
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
   max-width: 500px;
   width: 100%;
+  max-height: 85vh;
+  overflow: auto;
   animation: modalSlideIn 0.3s ease-out;
 }
 
@@ -659,7 +662,7 @@
 .modal-header h3 {
   margin: 1rem 0 0 0;
   color: #1e293b;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
 }
 
@@ -670,7 +673,7 @@
 .modal-body p {
   margin: 0 0 1rem 0;
   color: #374151;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .modal-body p:last-child {
@@ -770,6 +773,26 @@
   .modal-actions .btn {
     width: 100%;
   }
+
+  .modal-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .modal-body {
+    padding: 1rem 1.25rem;
+  }
+
+  .info-text {
+    font-size: 13px;
+  }
+
+  .publication-checklist h4 {
+    font-size: 13px;
+  }
+
+  .publication-checklist li {
+    font-size: 12px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -835,7 +858,7 @@
 .publication-checklist h4 {
   color: #1e293b;
   margin: 0 0 12px 0;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -848,7 +871,7 @@
 .publication-checklist li {
   color: #475569;
   padding: 6px 0;
-  font-size: 14px;
+  font-size: 13px;
   display: flex;
   align-items: center;
   gap: 8px;

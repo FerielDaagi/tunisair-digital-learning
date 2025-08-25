@@ -108,7 +108,7 @@ const MyCourses = () => {
       if (error.response?.data?.requiresModules) {
         setStyledError({
           show: true,
-          message: 'Impossible de publier ce cours',
+          message: 'Publication du cours impossible',
           details: 'Ce cours ne contient aucun module. Vous devez ajouter du contenu avant de pouvoir le publier.',
           type: 'modules'
         });
@@ -117,7 +117,7 @@ const MyCourses = () => {
       } else if (error.response?.data?.requiresContent) {
         setStyledError({
           show: true,
-          message: 'Impossible de publier ce cours',
+          message: 'Publication du cours impossible',
           details: 'Vos modules sont vides. Ajoutez des leçons à vos modules avant la publication.',
           type: 'content'
         });
@@ -639,18 +639,17 @@ const MyCourses = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <Icon name="checkCircle" size={IconSizes.lg} color={IconColors.success} />
-              <h3>Confirmer la publication</h3>
+              <h3>Confirmation de publication</h3>
             </div>
             <div className="modal-body">
               <p>
-                Êtes-vous sûr de vouloir publier le cours <strong>"{publishConfirm.courseTitle}"</strong> ?
+                Publier le cours <strong>"{publishConfirm.courseTitle}"</strong> ?
               </p>
               <p className="info-text">
-                Une fois publié, votre cours sera visible par tous les apprentis de l'entreprise et pourront s'y inscrire. 
-                Assurez-vous que le contenu est adapté au contexte professionnel et de qualité avant la publication.
+                Après publication, le cours sera visible et accessible à l’inscription.
               </p>
               <div className="publication-checklist">
-                <h4>Vérification avant publication :</h4>
+                <h4>À vérifier :</h4>
                 <ul>
                   <li> Le cours contient au moins un module</li>
                   <li> Chaque module contient au moins une leçon</li>
