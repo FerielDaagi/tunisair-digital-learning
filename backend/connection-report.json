@@ -1,0 +1,17 @@
+{
+  "timestamp": "2025-08-25T02:44:38.654Z",
+  "uptime": 300020,
+  "stats": {
+    "startTime": 1756089578634,
+    "totalRequests": 19,
+    "activeConnections": 0,
+    "peakConnections": 5,
+    "errors": 10,
+    "timeouts": 0
+  },
+  "summary": {
+    "averageConnections": 0.2631578947368421,
+    "errorRate": "52.63",
+    "timeoutRate": "0.00"
+  }
+}

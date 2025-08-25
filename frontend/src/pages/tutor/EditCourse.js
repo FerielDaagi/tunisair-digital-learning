@@ -720,6 +720,78 @@ const EditCourse = () => {
             </div>
           </div>
 
+          {/* Section 5: Modules et Leçons */}
+          <div className="form-section">
+            <div className="section-header">
+              <Icon name="layers" size={IconSizes.md} color={IconColors.primary} />
+              <h3>Modules et Leçons</h3>
+            </div>
+            
+            <div className="modules-info">
+              <p>
+                <Icon name="info" size={IconSizes.sm} color={IconColors.primary} />
+                Gérez les modules et les leçons de votre cours. Vous pourrez les ajouter après avoir sauvegardé le cours.
+              </p>
+              
+              <div className="modules-preview">
+                {course?.modules && course.modules.length > 0 ? (
+                  <div className="modules-list">
+                    <h4>Modules existants ({course.modules.length})</h4>
+                    {course.modules.map((module, index) => (
+                      <div key={module._id} className="module-item">
+                        <div className="module-header">
+                          <Icon name="folder" size={IconSizes.sm} color={IconColors.primary} />
+                          <span className="module-title">{module.title}</span>
+                          <span className="module-lessons">
+                            {module.lessons?.length || 0} leçon{module.lessons?.length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        <div className="module-actions">
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/tutor/edit-module/${module._id}`)}
+                            className="btn btn-sm btn-secondary"
+                          >
+                            <Icon name="edit" size={IconSizes.xs} color={IconColors.white} />
+                            Modifier
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="no-modules">
+                    <Icon name="folderOpen" size={IconSizes.lg} color={IconColors.muted} />
+                    <p>Aucun module créé pour ce cours</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="modules-actions">
+                <button
+                  type="button"
+                  onClick={() => navigate(`/tutor/create-module/${courseId}`)}
+                  className="btn btn-primary"
+                  disabled={!course}
+                >
+                  <Icon name="plus" size={IconSizes.sm} color={IconColors.white} />
+                  Ajouter un module
+                </button>
+                
+                {course?.modules && course.modules.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/tutor/manage-modules/${courseId}`)}
+                    className="btn btn-secondary"
+                  >
+                    <Icon name="settings" size={IconSizes.sm} color={IconColors.white} />
+                    Gérer tous les modules
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Boutons d'action */}
           <div className="form-actions">
             <button

@@ -19,6 +19,8 @@ import UserStats from './pages/admin/UserStats';
 import TestNotification from './pages/user/TestNotification';
 import CreateCourse from './pages/tutor/CreateCourse';
 import EditCourse from './pages/tutor/EditCourse';
+import CreateModule from './pages/tutor/CreateModule';
+import ManageModules from './pages/tutor/ManageModules';
 import MyCourses from './pages/tutor/MyCourses';
 
 import './App.css';
@@ -84,21 +86,12 @@ const AppContent = () => {
               <TestNotification />
             </ProtectedRoute>
           } />
-          <Route path="/tutor/create-course" element={
-            <ProtectedRoute>
-              <CreateCourse />
-            </ProtectedRoute>
-          } />
-          <Route path="/tutor/edit-course/:courseId" element={
-            <ProtectedRoute>
-              <EditCourse />
-            </ProtectedRoute>
-          } />
-          <Route path="/tutor/my-courses" element={
-            <ProtectedRoute>
-              <MyCourses />
-            </ProtectedRoute>
-          } />
+          {/* Routes pour les tuteurs */}
+          <Route path="/tutor/create-course" element={<ProtectedRoute><CreateCourse /></ProtectedRoute>} />
+          <Route path="/tutor/edit-course/:courseId" element={<ProtectedRoute><EditCourse /></ProtectedRoute>} />
+          <Route path="/tutor/create-module/:courseId" element={<ProtectedRoute><CreateModule /></ProtectedRoute>} />
+          <Route path="/tutor/manage-modules/:courseId" element={<ProtectedRoute><ManageModules /></ProtectedRoute>} />
+          <Route path="/tutor/my-courses" element={<ProtectedRoute><MyCourses /></ProtectedRoute>} />
         </Routes>
       </div>
     </div>

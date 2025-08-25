@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { userAPI } from '../../services/api';
 import { Icon, IconSizes, IconColors } from '../../components/common/IconTheme';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -22,6 +23,7 @@ const AdminDashboard = () => {
   const [confirmTitle, setConfirmTitle] = useState('');
   const [confirmMessage, setConfirmMessage] = useState('');
   const [expandedRequestMessageId, setExpandedRequestMessageId] = useState(null);
+  const [confirmDeleteState, setConfirmDeleteState] = useState({ open: false, userId: null, userName: '' });
   
   // États de pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -175,14 +177,18 @@ const AdminDashboard = () => {
   };
 
   const handleDeleteUser = async (userId, userName) => {
-    if (window.confirm(`Êtes-vous sûr de vouloir supprimer l'utilisateur "${userName}" ? Cette action est irréversible.`)) {
-      try {
-        await userAPI.deleteUser(userId);
-        setSuccess('Utilisateur supprimé avec succès');
-        loadUsers(); // Recharger la liste
-      } catch (err) {
-        setError(err.response?.data?.message || 'Erreur lors de la suppression');
-      }
+    setConfirmDeleteState({ open: true, userId, userName });
+  };
+
+  const confirmDeleteUser = async () => {
+    const { userId } = confirmDeleteState;
+    setConfirmDeleteState({ open: false, userId: null, userName: '' });
+    try {
+      await userAPI.deleteUser(userId);
+      setSuccess('Utilisateur supprimé avec succès.');
+      loadUsers();
+    } catch (err) {
+      setError(err.response?.data?.message || 'La suppression a échoué. Veuillez réessayer.');
     }
   };
 
@@ -229,6 +235,15 @@ const AdminDashboard = () => {
   return (
     <div className="main-content">
       <div style={{ maxWidth: '1200px', margin: '0 auto', paddingTop: '2rem' }}>
+        <ConfirmModal
+          open={confirmDeleteState.open}
+          title="Supprimer l’utilisateur"
+          message={`Confirmez-vous la suppression de l’utilisateur « ${confirmDeleteState.userName} » ? Cette action est irréversible.`}
+          confirmLabel="Supprimer"
+          destructive
+          onConfirm={confirmDeleteUser}
+          onCancel={() => setConfirmDeleteState({ open: false, userId: null, userName: '' })}
+        />
         {/* En-tête */}
         <div className="card" style={{ marginBottom: '2rem' }}>
           <div className="card-header">

@@ -652,10 +652,10 @@ const MyCourses = () => {
               <div className="publication-checklist">
                 <h4>Vérification avant publication :</h4>
                 <ul>
-                  <li>✅ Le cours contient au moins un module</li>
-                  <li>✅ Chaque module contient au moins une leçon</li>
-                  <li>✅ Les descriptions sont complètes et adaptées au contexte professionnel</li>
-                  <li>✅ Le niveau et la catégorie correspondent aux besoins de l'entreprise</li>
+                  <li> Le cours contient au moins un module</li>
+                  <li> Chaque module contient au moins une leçon</li>
+                  <li> Les descriptions sont complètes et adaptées au contexte professionnel</li>
+                  <li> Le niveau et la catégorie correspondent aux besoins de l'entreprise</li>
                 </ul>
               </div>
             </div>

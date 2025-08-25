@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSocket } from '../../contexts/SocketContext';
 import axios from 'axios';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 const NotificationCenter = () => {
-  const { user } = useAuth();
+  const { user, addNotification } = useAuth();
   const { socket } = useSocket();
   const [notifications, setNotifications] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
+  const [confirmState, setConfirmState] = useState({ open: false, notificationId: null });
 
   const [selectedUser, setSelectedUser] = useState('');
   const [users, setUsers] = useState([]);
@@ -88,7 +90,7 @@ const NotificationCenter = () => {
     e.preventDefault();
     
     if (!notificationForm.title || !notificationForm.message) {
-      alert('Veuillez remplir tous les champs');
+      addNotification && addNotification('Veuillez compléter le titre et le message avant d’envoyer.', 'warning');
       return;
     }
 
@@ -98,20 +100,20 @@ const NotificationCenter = () => {
         await axios.post(`/api/notifications/user/${selectedUser}`, notificationForm, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
-        alert('Notification envoyée à l\'utilisateur');
+        addNotification && addNotification('La notification a été envoyée à l’utilisateur.', 'success');
       } else {
         // Envoyer une notification admin
         await axios.post('/api/notifications/admin', notificationForm, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
-        alert('Notification admin envoyée');
+        addNotification && addNotification('La notification administrateur a été envoyée.', 'success');
       }
       
       setNotificationForm({ title: '', message: '', type: 'info', category: 'general' });
       setSelectedUser('');
     } catch (error) {
       console.error('❌ Erreur envoi notification:', error);
-      alert('Erreur lors de l\'envoi de la notification');
+      addNotification && addNotification('L’envoi de la notification a échoué. Veuillez réessayer.', 'error');
     }
   };
 
@@ -132,15 +134,16 @@ const NotificationCenter = () => {
   };
 
   const handleDeleteNotification = async (notificationId) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette notification ?')) {
-      return;
-    }
+    setConfirmState({ open: true, notificationId });
+  };
 
+  const confirmDelete = async () => {
+    const notificationId = confirmState.notificationId;
+    setConfirmState({ open: false, notificationId: null });
     try {
       await axios.delete(`/api/notifications/${notificationId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
-      
       setNotifications(prev => prev.filter(notif => notif._id !== notificationId));
       loadStats();
     } catch (error) {
@@ -159,6 +162,15 @@ const NotificationCenter = () => {
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+      <ConfirmModal
+        open={confirmState.open}
+        title="Supprimer la notification"
+        message="Confirmez-vous la suppression de cette notification ?"
+        confirmLabel="Supprimer"
+        destructive
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmState({ open: false, notificationId: null })}
+      />
       <h1 style={{ marginBottom: '2rem', color: '#2c3e50' }}>
         🔔 Centre de Notifications Admin
       </h1>

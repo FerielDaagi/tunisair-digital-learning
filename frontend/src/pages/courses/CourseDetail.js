@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { useParams, Link } from 'react-router-dom';
 import { coursesAPI } from '../../services/api';
 
 const CourseDetail = () => {
   const { id } = useParams();
+  const { addNotification } = useAuth();
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
@@ -85,10 +87,14 @@ const CourseDetail = () => {
     setEnrolling(true);
     try {
       await coursesAPI.enroll(id);
-      alert('Inscription au cours réussie !');
+      if (addNotification) {
+        addNotification('Votre inscription au cours a été effectuée avec succès.', 'success');
+      }
     } catch (error) {
       console.error('Error enrolling:', error);
-      alert('Inscription réussie ! (Mode démo)');
+      if (addNotification) {
+        addNotification('Votre inscription a été enregistrée (mode démo).', 'info');
+      }
     } finally {
       setEnrolling(false);
     }

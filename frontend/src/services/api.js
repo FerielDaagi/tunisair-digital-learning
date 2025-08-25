@@ -1,28 +1,27 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
-// Create axios instance with base configuration
+// Configuration Axios améliorée pour éviter les connexions multiples
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: 'http://localhost:5000/api',
+  timeout: 10000, // 10 secondes de timeout
   headers: {
     'Content-Type': 'application/json',
   },
+  // Configuration pour éviter les connexions multiples
+  maxRedirects: 5,
+  maxContentLength: 50 * 1024 * 1024, // 50MB
+  // Désactiver le keep-alive pour éviter les connexions persistantes
+  httpAgent: false,
+  httpsAgent: false,
 });
 
-// Request interceptor to add auth token
+// Intercepteur pour les requêtes
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
-    // Si c'est FormData, ne pas définir Content-Type (laissé au navigateur)
-    if (config.data instanceof FormData) {
-      delete config.headers['Content-Type'];
-    }
-    
     return config;
   },
   (error) => {
@@ -30,13 +29,14 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle errors
+// Intercepteur pour les réponses
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
-      localStorage.removeItem('user');
       window.location.href = '/login';
     }
     return Promise.reject(error);
@@ -68,32 +68,66 @@ export const coursesAPI = {
 
 // Modules API
 export const modulesAPI = {
+  // Créer un module
+  create: (moduleData) => api.post('/modules', moduleData),
+  
+  // Récupérer tous les modules d'un cours
   getByCourse: (courseId) => api.get(`/modules/course/${courseId}`),
-  create: (courseId, moduleData) => api.post(`/modules/course/${courseId}`, moduleData),
-  update: (id, moduleData) => api.put(`/modules/${id}`, moduleData),
-  delete: (id) => api.delete(`/modules/${id}`),
+  
+  // Récupérer un module par ID
+  getById: (moduleId) => api.get(`/modules/${moduleId}`),
+  
+  // Modifier un module
+  update: (moduleId, moduleData) => api.put(`/modules/${moduleId}`, moduleData),
+  
+  // Supprimer un module
+  delete: (moduleId) => api.delete(`/modules/${moduleId}`),
+  
+  // Réorganiser les modules
+  reorder: (courseId, moduleIds) => api.put(`/modules/reorder/${courseId}`, { moduleIds })
+};
+
+// API pour les leçons
+export const lessonsAPI = {
+  // Créer une leçon
+  create: (lessonData) => api.post('/lessons', lessonData),
+  
+  // Récupérer toutes les leçons d'un module
+  getByModule: (moduleId) => api.get(`/lessons/module/${moduleId}`),
+  
+  // Récupérer une leçon par ID
+  getById: (lessonId) => api.get(`/lessons/${lessonId}`),
+  
+  // Modifier une leçon
+  update: (lessonId, lessonData) => api.put(`/lessons/${lessonId}`, lessonData),
+  
+  // Supprimer une leçon
+  delete: (lessonId) => api.delete(`/lessons/${lessonId}`),
+  
+  // Réorganiser les leçons
+  reorder: (moduleId, lessonIds) => api.put(`/lessons/reorder/${moduleId}`, { lessonIds })
 };
 
 // User API
 export const userAPI = {
-  getProfile: () => api.get('/user/profile'),
-  updateProfile: (data) => api.put('/user/profile', data),
-  updateAvatar: (formData) => api.put('/user/avatar', formData),
-  getAvatarHistory: () => api.get('/user/avatar/history'),
-  restoreAvatar: (avatarPath) => api.post('/user/avatar/restore', { avatarPath }),
-  deleteAvatarFromHistory: (avatarPath) => api.delete('/user/avatar/history', { 
+  getProfile: () => api.get('/users/profile'),
+  updateProfile: (data) => api.put('/users/profile', data),
+  updateAvatar: (formData) => api.put('/users/avatar', formData),
+  getAvatarHistory: () => api.get('/users/avatar/history'),
+  restoreAvatar: (avatarPath) => api.post('/users/avatar/restore', { avatarPath }),
+  deleteAvatarFromHistory: (avatarPath) => api.delete('/users/avatar/history', { 
     headers: { 'Content-Type': 'application/json' },
     data: { avatarPath } 
   }),
-  getProgress: () => api.get('/user/progress'),
-  requestTutor: (note) => api.post('/user/request-tutor', { message: note }),
+  getProgress: () => api.get('/users/progress'),
+  requestTutor: (note) => api.post('/users/request-tutor', { message: note }),
   // Admin functions
-  getAllUsers: () => api.get('/user/admin/all'),
-  toggleUserStatus: (userId, isActive) => api.put(`/user/admin/${userId}/status`, { isActive }),
-  promoteToTutor: (userId) => api.put(`/user/admin/${userId}/promote`),
-  rejectTutorRequest: (userId, reason) => api.put(`/user/admin/${userId}/reject-tutor`, { reason }),
-  demoteToApprentice: (userId) => api.put(`/user/admin/${userId}/demote`),
-  deleteUser: (userId) => api.delete(`/user/admin/${userId}`),
+  getAllUsers: () => api.get('/users/admin/all'),
+  toggleUserStatus: (userId, isActive) => api.put(`/users/admin/${userId}/status`, { isActive }),
+  promoteToTutor: (userId) => api.put(`/users/admin/${userId}/promote`),
+  rejectTutorRequest: (userId, reason) => api.put(`/users/admin/${userId}/reject-tutor`, { reason }),
+  demoteToApprentice: (userId) => api.put(`/users/admin/${userId}/demote`),
+  deleteUser: (userId) => api.delete(`/users/admin/${userId}`),
 };
 
 // Dashboard API

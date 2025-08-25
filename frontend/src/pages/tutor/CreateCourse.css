@@ -389,3 +389,293 @@
   transform: translateY(-1px);
   box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
 }
+
+/* Section Modules et Leçons */
+.modules-info {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 16px;
+}
+
+.modules-info p {
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modules-preview {
+  margin-bottom: 20px;
+}
+
+.modules-list h4 {
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.module-item {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.module-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.module-title {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.module-lessons {
+  background: var(--primary-color);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.module-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+.no-modules {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+}
+
+.no-modules p {
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+.modules-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.modules-actions .btn {
+  flex: 1;
+  min-width: 150px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .module-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .module-actions {
+    width: 100%;
+  }
+  
+  .modules-actions {
+    flex-direction: column;
+  }
+  
+  .modules-actions .btn {
+    min-width: auto;
+  }
+}
+
+/* Gestion des modules */
+.modules-management {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.modules-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.modules-info h3 {
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.modules-info p {
+  color: var(--text-muted);
+  margin: 0;
+  font-size: 14px;
+}
+
+.module-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.module-info {
+  flex: 1;
+}
+
+.module-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.module-order {
+  background: var(--primary-color);
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.module-title h4 {
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.module-title p {
+  color: var(--text-muted);
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.module-status {
+  margin-left: auto;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status.published {
+  background: var(--success-color);
+  color: white;
+}
+
+.status.draft {
+  background: var(--bg-muted);
+  color: var(--text-muted);
+}
+
+.module-stats {
+  display: flex;
+  gap: 16px;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.module-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-danger {
+  background: var(--error-color);
+  color: white;
+  border: 1px solid var(--error-color);
+}
+
+.btn-danger:hover {
+  background: var(--error-color-dark);
+  border-color: var(--error-color-dark);
+}
+
+.no-modules {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+
+.no-modules h3 {
+  margin: 16px 0 8px 0;
+  color: var(--text-primary);
+}
+
+.no-modules p {
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+
+/* Responsive pour la gestion des modules */
+@media (max-width: 768px) {
+  .modules-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .module-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .module-header {
+    flex-wrap: wrap;
+  }
+  
+  .module-status {
+    margin-left: 0;
+    margin-top: 8px;
+  }
+  
+  .module-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
