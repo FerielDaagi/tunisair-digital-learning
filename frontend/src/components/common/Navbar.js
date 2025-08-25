@@ -218,6 +218,34 @@ const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
             );
           })()}
 
+          {/* Notifications pour l'utilisateur (réponse à la demande de tutorat) */}
+          {user && user.role !== 'admin' && notifications.some(n => n.category === 'tutor_request_result') && (
+            <div className="nav-section">
+              <h3 className="nav-section-title">Notifications</h3>
+              <ul className="nav-links">
+                {notifications.filter(n => n.category === 'tutor_request_result').slice(0, 1).map((n) => (
+                  <li key={n.id}>
+                    <Link 
+                      to="/profile"
+                      className={isActive('/profile') ? 'active' : ''}
+                      onClick={closeMobileMenu}
+                    >
+                      <Icon name={n.type === 'success' ? 'checkCircle' : 'alertTriangle'} size={IconSizes.sm} color={IconColors.white} className="nav-icon" />
+                      {!isCollapsed && (
+                        <span style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <span style={{ fontWeight: 600 }}>{n.title || 'Notification'}</span>
+                          <span style={{ opacity: 0.85, fontSize: '0.8rem', maxWidth: '220px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {n.message}
+                          </span>
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Profil utilisateur avec accès direct */}
           {user && (
             <div className="nav-section">

@@ -32,12 +32,21 @@ export const SocketProvider = ({ children }) => {
       return;
     }
 
-    // Créer la connexion WebSocket
+    // Créer la connexion WebSocket (mode robuste)
     const newSocket = io(process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000', {
-      auth: {
-        token: token
-      },
-      transports: ['websocket', 'polling']
+      auth: { token },
+      // Forcer WebSocket (évite les soucis de polling/CORS/timeouts)
+      transports: ['websocket'],
+      // Reconnexion agressive et illimitée
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000,
+      // Timeout de connexion initiale
+      timeout: 20000,
+      // Empêcher la création d’une nouvelle instance inutile
+      forceNew: false,
+      autoConnect: true
     });
 
     // Gestion des événements de connexion

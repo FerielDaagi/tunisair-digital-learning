@@ -41,6 +41,12 @@ export const NotificationProvider = ({ children }) => {
     const handle = async (payload) => {
       // Debug: log raw payload and normalized item
       try { console.log('[Notifications] incoming payload:', payload); } catch (_) {}
+      try { console.log('[Notifications] event type check:', { 
+        hasNotification: !!payload.notification, 
+        category: payload.notification?.category,
+        recipientId: payload.notification?.recipientId,
+        currentUserId: user?.id 
+      }); } catch (_) {}
       const item = normalize(payload);
       try { console.log('[Notifications] normalized item:', item); } catch (_) {}
       setItems((prev) => {
@@ -64,9 +70,20 @@ export const NotificationProvider = ({ children }) => {
     };
 
     try { console.log('[Notifications] Subscribing to socket events'); } catch (_) {}
+    
+    // Debug: log all incoming socket events
+    const debugHandler = (eventName, data) => {
+      console.log(`[Notifications] Socket event received: ${eventName}`, data);
+    };
+    
     on('notification', handle);
     on('adminNotification', handle);
     on('userNotification', handle);
+    
+    // Debug listeners
+    on('notification', debugHandler);
+    on('adminNotification', debugHandler);
+    on('userNotification', debugHandler);
 
     return () => {
       try { console.log('[Notifications] Unsubscribing from socket events'); } catch (_) {}

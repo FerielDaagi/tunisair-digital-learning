@@ -31,6 +31,25 @@ class NotificationService {
     }
   }
 
+  // Déplacer un socket d'un map à l'autre (quand le rôle change)
+  moveSocket(userId, fromAdmin = false) {
+    if (fromAdmin) {
+      const socket = this.adminSockets.get(userId);
+      if (socket) {
+        this.adminSockets.delete(userId);
+        this.userSockets.set(userId, socket);
+        console.log(`🔔 Socket ${userId} déplacé de adminSockets vers userSockets`);
+      }
+    } else {
+      const socket = this.userSockets.get(userId);
+      if (socket) {
+        this.userSockets.delete(userId);
+        this.adminSockets.set(userId, socket);
+        console.log(`🔔 Socket ${userId} déplacé de userSockets vers adminSockets`);
+      }
+    }
+  }
+
   // Créer et envoyer une notification admin
   async sendAdminNotification(senderId, title, message, type = 'info', category = 'general', metadata = {}) {
     try {
@@ -96,10 +115,14 @@ class NotificationService {
       });
 
       await notification.save();
-      await notification.populate('sender', 'name email role');
+      await notification.populate('sender', 'name email role profile.avatar');
 
-      // Envoyer au destinataire s'il est connecté
-      const recipientSocket = this.userSockets.get(recipientId.toString());
+      // Envoyer au destinataire s'il est connecté (vérifier dans les deux maps)
+      let recipientSocket = this.userSockets.get(recipientId.toString());
+      if (!recipientSocket) {
+        recipientSocket = this.adminSockets.get(recipientId.toString());
+      }
+      console.log(`🔔 Debug: Socket pour ${recipientId}: ${recipientSocket ? 'TROUVÉ' : 'NON TROUVÉ'} (userSockets: ${this.userSockets.size}, adminSockets: ${this.adminSockets.size})`);
       if (recipientSocket) {
         const image = notification.sender?.profile?.avatar || null;
         const finalTitle = notification.title || 'Notification';
@@ -118,6 +141,8 @@ class NotificationService {
           }
         };
         recipientSocket.emit('userNotification', payload);
+        // Also emit as generic notification for compatibility
+        recipientSocket.emit('notification', payload);
       }
 
       console.log(`🔔 Notification utilisateur envoyée: ${title} à ${recipientId}`);

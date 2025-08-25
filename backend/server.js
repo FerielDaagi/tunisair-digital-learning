@@ -111,13 +111,13 @@ app.use('/api/categories', categoryRoutes);
 console.log('✅ Routes chargées avec succès !');
 
 // 🆕 NOUVEAU - Configuration avancée du serveur
-server.keepAliveTimeout = 65000; // 65 secondes
-server.headersTimeout = 66000; // 66 secondes
-server.maxConnections = 50; // Réduire le nombre max de connexions
+server.keepAliveTimeout = 120000; // 2 minutes
+server.headersTimeout = 121000; // 2 minutes + 1 seconde
+server.maxConnections = 100; // Augmenter le nombre max de connexions
 
 // 🆕 NOUVEAU - Gestion améliorée des connexions
 let activeConnections = 0;
-const maxActiveConnections = 30;
+const maxActiveConnections = 80; // Augmenter la limite
 
 server.on('connection', (socket) => {
   activeConnections = Math.max(0, activeConnections + 1);
@@ -126,24 +126,24 @@ server.on('connection', (socket) => {
     console.log(`⚠️ Connexions actives: ${activeConnections}/${maxActiveConnections}`);
   }
 
-  socket.on('error', (error) => {
-    activeConnections = Math.max(0, activeConnections - 1);
-    if (error.code !== 'ECONNRESET' && error.code !== 'EPIPE') {
-      console.error(`❌ Erreur socket: ${error.message}`);
-    }
-  });
+      socket.on('error', (error) => {
+      activeConnections = Math.max(0, activeConnections - 1);
+      // Ignorer les erreurs de déconnexion normale
+      if (error.code !== 'ECONNRESET' && error.code !== 'EPIPE' && error.code !== 'ECONNABORTED') {
+        console.error(`❌ Erreur socket: ${error.message} (code: ${error.code})`);
+      }
+    });
 
   socket.on('close', () => {
     activeConnections = Math.max(0, activeConnections - 1);
   });
 });
 
-// 🆕 NOUVEAU - Limitation des connexions simultanées
+// Assouplir la limitation des connexions pour éviter les coupures involontaires
 server.on('connection', (socket) => {
-  if (activeConnections > maxActiveConnections) {
-    console.warn(`🚫 Trop de connexions (${activeConnections}/${maxActiveConnections}) - Refus`);
+  if (activeConnections > maxActiveConnections * 1.2) {
+    console.warn(`🚫 Trop de connexions (${activeConnections}/${maxActiveConnections}) - Refus exceptionnel`);
     socket.destroy();
-    return;
   }
 });
 
@@ -225,11 +225,13 @@ connectDB().then(() => {
     console.log(`🔌 Utilisateur connecté: ${socket.user.name} (${socket.user.role})`);
 
     // Enregistrer le socket selon le rôle
+    console.log(`🔌 Debug: Enregistrement socket pour ${socket.user.id} (${socket.user.role})`);
     if (socket.user.role === 'admin') {
       notificationService.registerAdminSocket(socket.user.id, socket);
     } else {
       notificationService.registerUserSocket(socket.user.id, socket);
     }
+    console.log(`🔌 Debug: Socket enregistré. Admins: ${notificationService.adminSockets.size}, Users: ${notificationService.userSockets.size}`);
 
     // Événements de gestion des notifications
     socket.on('markAsRead', async (data) => {

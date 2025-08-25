@@ -136,4 +136,10 @@ export const dashboardAPI = {
   getRecentActivity: () => api.get('/dashboard/recent-activity'),
 };
 
+// Notifications API
+export const notificationsAPI = {
+  getUser: () => api.get('/notifications/user'),
+  getAdmin: () => api.get('/notifications/admin'),
+};
+
 export default api; 

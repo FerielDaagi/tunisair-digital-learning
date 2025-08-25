@@ -562,6 +562,34 @@ const promoteToTutor = async (req, res) => {
     user.tutorRequestStatus = 'approved';
     await user.save();
 
+    // Déplacer le socket de l'utilisateur vers adminSockets (car il est maintenant tuteur)
+    try {
+      const notificationService = req.app.get('notificationService');
+      if (notificationService) {
+        notificationService.moveSocket(user._id, false); // false = de userSockets vers adminSockets
+      }
+    } catch (moveErr) {
+      console.warn('Déplacement socket échoué:', moveErr?.message);
+    }
+
+    // Notifier l'utilisateur de l'acceptation
+    try {
+      const notificationService = req.app.get('notificationService');
+      if (notificationService) {
+        await notificationService.sendUserNotification(
+          req.user.id,
+          user._id,
+          'Demande de tutorat acceptée',
+          'Votre demande de tutorat a été acceptée. Vous êtes désormais tuteur.',
+          'success',
+          'tutor_request_result',
+          { status: 'approved' }
+        );
+      }
+    } catch (notifyErr) {
+      console.warn('Notification acceptation tutorat échouée:', notifyErr?.message);
+    }
+
     res.json({
       success: true,
       message: 'Utilisateur promu tuteur avec succès',
@@ -599,6 +627,27 @@ const rejectTutorRequest = async (req, res) => {
     user.tutorRequestMessage = reason || user.tutorRequestMessage;
     await user.save();
 
+    // Notifier l'utilisateur du rejet avec raison éventuelle
+    try {
+      const notificationService = req.app.get('notificationService');
+      if (notificationService) {
+        const msg = reason
+          ? `Votre demande de tutorat a été refusée. Raison: ${reason}`
+          : 'Votre demande de tutorat a été refusée.';
+        await notificationService.sendUserNotification(
+          req.user.id,
+          user._id,
+          'Demande de tutorat refusée',
+          msg,
+          'warning',
+          'tutor_request_result',
+          { status: 'rejected', reason: reason || '' }
+        );
+      }
+    } catch (notifyErr) {
+      console.warn('Notification rejet tutorat échouée:', notifyErr?.message);
+    }
+
     res.json({ success: true, message: 'Demande de tuteur rejetée', user: user.toJSON() });
   } catch (error) {
     console.error('Erreur rejectTutorRequest:', error);
@@ -627,6 +676,16 @@ const demoteToApprentice = async (req, res) => {
     user.role = 'apprenti';
     user.tutorRequestStatus = 'none';
     await user.save();
+
+    // Déplacer le socket de l'utilisateur vers userSockets (car il est maintenant apprenti)
+    try {
+      const notificationService = req.app.get('notificationService');
+      if (notificationService) {
+        notificationService.moveSocket(user._id, true); // true = de adminSockets vers userSockets
+      }
+    } catch (moveErr) {
+      console.warn('Déplacement socket échoué:', moveErr?.message);
+    }
 
     res.json({ success: true, message: 'Utilisateur rétrogradé au rôle d\'apprenti', user: user.toJSON() });
   } catch (error) {
