@@ -789,3 +789,173 @@
     padding-right: 1.5rem;
   }
 }
+
+.status-badge.status-warning {
+  background-color: #f59e0b;
+  color: white;
+  border: 1px solid #d97706;
+}
+
+.btn-warning {
+  background-color: #f59e0b;
+  color: white;
+  border: 1px solid #d97706;
+  transition: all 0.3s ease;
+}
+
+.btn-warning:hover {
+  background-color: #d97706;
+  border-color: #b45309;
+  transform: translateY(-1px);
+}
+
+.btn-warning:active {
+  transform: translateY(0);
+}
+
+.info-text {
+  color: #059669;
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 16px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.publication-checklist {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.publication-checklist h4 {
+  color: #1e293b;
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.publication-checklist ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.publication-checklist li {
+  color: #475569;
+  padding: 6px 0;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.publication-checklist li::before {
+  content: "✅";
+  font-size: 16px;
+}
+
+/* Modal d'erreur stylé */
+.error-modal {
+  max-width: 600px;
+}
+
+.error-header {
+  background-color: #fef2f2;
+  border-bottom: 2px solid #fecaca;
+}
+
+.error-header h3 {
+  color: #dc2626;
+}
+
+.error-details {
+  color: #dc2626;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  font-size: 16px;
+  line-height: 1.5;
+  text-align: center;
+  font-weight: 500;
+}
+
+.error-solution {
+  background-color: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.error-solution h4 {
+  color: #0369a1;
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.solution-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+  background-color: white;
+  border-radius: 8px;
+  border: 1px solid #e0f2fe;
+}
+
+.step-number {
+  background-color: #0369a1;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.step-content h5 {
+  color: #0369a1;
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.step-content p {
+  color: #475569;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Responsive design pour les étapes */
+@media (max-width: 768px) {
+  .step {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+  }
+  
+  .step-number {
+    margin-bottom: 8px;
+  }
+}

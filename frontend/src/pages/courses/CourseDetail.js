@@ -149,7 +149,7 @@ const CourseDetail = () => {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
               <span>⭐ {course.rating}</span>
-              <span>{course.students} étudiants inscrits</span>
+                              <span>{course.students} apprentis inscrits</span>
               <span>{course.duration}</span>
             </div>
             <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--danger)' }}>

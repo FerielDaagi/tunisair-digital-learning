@@ -14,9 +14,11 @@ const MyCourses = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, courseId: null, courseTitle: '' });
+  const [publishConfirm, setPublishConfirm] = useState({ show: false, courseId: null, courseTitle: '' });
   const [actionLoading, setActionLoading] = useState({ publish: null, delete: null });
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+  const [styledError, setStyledError] = useState({ show: false, message: '', details: '', type: '' });
 
   useEffect(() => {
     // Vérifier que l'utilisateur est un tuteur
@@ -89,6 +91,9 @@ const MyCourses = () => {
         setSuccess(response.data.message);
         setTimeout(() => setSuccess(''), 5000);
         
+        // Fermer le modal de confirmation
+        hidePublishConfirm();
+        
         // Recharger la liste des cours
         fetchCourses();
       } else {
@@ -99,19 +104,62 @@ const MyCourses = () => {
     } catch (error) {
       console.error('❌ Erreur lors de la publication:', error);
       
-      // Gestion des erreurs de validation
-      if (error.response?.data?.errors) {
+      // Gestion des erreurs spécifiques avec messages stylés
+      if (error.response?.data?.requiresModules) {
+        setStyledError({
+          show: true,
+          message: 'Impossible de publier ce cours',
+          details: 'Ce cours ne contient aucun module. Vous devez ajouter du contenu avant de pouvoir le publier.',
+          type: 'modules'
+        });
+        // Fermer le modal de confirmation
+        hidePublishConfirm();
+      } else if (error.response?.data?.requiresContent) {
+        setStyledError({
+          show: true,
+          message: 'Impossible de publier ce cours',
+          details: 'Vos modules sont vides. Ajoutez des leçons à vos modules avant la publication.',
+          type: 'content'
+        });
+        // Fermer le modal de confirmation
+        hidePublishConfirm();
+      } else if (error.response?.data?.errors) {
         const validationErrors = error.response.data.errors.join(', ');
-        setError(`Erreurs de validation: ${validationErrors}`);
+        setStyledError({
+          show: true,
+          message: 'Erreurs de validation',
+          details: validationErrors,
+          type: 'validation'
+        });
+        // Fermer le modal de confirmation
+        hidePublishConfirm();
       } else if (error.response?.data?.message) {
-        setError(error.response.data.message);
+        setStyledError({
+          show: true,
+          message: 'Erreur lors de la publication',
+          details: error.response.data.message,
+          type: 'general'
+        });
+        // Fermer le modal de confirmation
+        hidePublishConfirm();
       } else {
-        setError('Erreur lors de la publication du cours. Veuillez réessayer.');
+        setStyledError({
+          show: true,
+          message: 'Erreur lors de la publication',
+          details: 'Une erreur inattendue s\'est produite. Veuillez réessayer.',
+          type: 'general'
+        });
+        // Fermer le modal de confirmation
+        hidePublishConfirm();
       }
-      
-      setTimeout(() => setError(''), 5000);
     } finally {
       setActionLoading(prev => ({ ...prev, publish: null }));
+    }
+  };
+
+  const confirmPublish = async () => {
+    if (publishConfirm.courseId) {
+      await handlePublish(publishConfirm.courseId);
     }
   };
 
@@ -121,6 +169,18 @@ const MyCourses = () => {
 
   const hideDeleteConfirm = () => {
     setDeleteConfirm({ show: false, courseId: null, courseTitle: '' });
+  };
+
+  const showPublishConfirm = (courseId, courseTitle) => {
+    setPublishConfirm({ show: true, courseId, courseTitle });
+  };
+
+  const hidePublishConfirm = () => {
+    setPublishConfirm({ show: false, courseId: null, courseTitle: '' });
+  };
+
+  const hideStyledError = () => {
+    setStyledError({ show: false, message: '', details: '', type: '' });
   };
 
   const confirmDelete = async () => {
@@ -389,6 +449,14 @@ const MyCourses = () => {
                       {course.status === 'published' ? 'Publié' : 
                        course.status === 'draft' ? 'Brouillon' : 'Archivé'}
                     </span>
+                    
+                    {/* Indicateur pour les cours vides */}
+                    {course.status === 'draft' && (!course.modules || course.modules.length === 0) && (
+                      <span className="status-badge status-warning" title="Ce cours ne peut pas être publié sans modules">
+                        <Icon name="alertTriangle" size={IconSizes.xs} color={IconColors.white} />
+                        Contenu requis
+                      </span>
+                    )}
                   </div>
                   <div className="course-level">
                     <span className={`level-badge ${getLevelColor(course.level)}`}>
@@ -444,19 +512,34 @@ const MyCourses = () => {
                 
                 <div className="course-actions">
                   {course.status === 'draft' && (
-                    <button
-                      onClick={() => handlePublish(course._id)}
-                      className="btn btn-success"
-                      title="Publier le cours"
-                      disabled={actionLoading.publish === course._id}
-                    >
-                      {actionLoading.publish === course._id ? (
-                        <Icon name="loader" size={IconSizes.xs} color={IconColors.white} className="spin" />
-                      ) : (
-                        <Icon name="checkCircle" size={IconSizes.xs} color={IconColors.white} />
+                    <>
+                      {/* Bouton de publication */}
+                      <button
+                        onClick={() => showPublishConfirm(course._id, course.title)}
+                        className="btn btn-success"
+                        title="Publier le cours"
+                        disabled={actionLoading.publish === course._id}
+                      >
+                        {actionLoading.publish === course._id ? (
+                          <Icon name="loader" size={IconSizes.xs} color={IconColors.white} className="spin" />
+                        ) : (
+                          <Icon name="checkCircle" size={IconSizes.xs} color={IconColors.white} />
+                        )}
+                        {actionLoading.publish === course._id ? 'Publication...' : 'Publier'}
+                      </button>
+                      
+                      {/* Bouton d'ajout de modules si le cours est vide */}
+                      {(!course.modules || course.modules.length === 0) && (
+                        <button
+                          onClick={() => handleAddModules(course._id)}
+                          className="btn btn-warning"
+                          title="Ajouter des modules (requis pour publication)"
+                        >
+                          <Icon name="plus" size={IconSizes.xs} color={IconColors.white} />
+                          Ajouter des modules
+                        </button>
                       )}
-                      {actionLoading.publish === course._id ? 'Publication...' : 'Publier'}
-                    </button>
+                    </>
                   )}
                   
                   {course.status === 'published' && (!course.modules || course.modules.length === 0) && (
@@ -540,6 +623,150 @@ const MyCourses = () => {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmation de publication */}
+      {publishConfirm.show && (
+        <div className="modal-overlay" onClick={hidePublishConfirm}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <Icon name="checkCircle" size={IconSizes.lg} color={IconColors.success} />
+              <h3>Confirmer la publication</h3>
+            </div>
+            <div className="modal-body">
+              <p>
+                Êtes-vous sûr de vouloir publier le cours <strong>"{publishConfirm.courseTitle}"</strong> ?
+              </p>
+              <p className="info-text">
+                Une fois publié, votre cours sera visible par tous les apprentis de l'entreprise et pourront s'y inscrire. 
+                Assurez-vous que le contenu est adapté au contexte professionnel et de qualité avant la publication.
+              </p>
+              <div className="publication-checklist">
+                <h4>Vérification avant publication :</h4>
+                <ul>
+                  <li>✅ Le cours contient au moins un module</li>
+                  <li>✅ Chaque module contient au moins une leçon</li>
+                  <li>✅ Les descriptions sont complètes et adaptées au contexte professionnel</li>
+                  <li>✅ Le niveau et la catégorie correspondent aux besoins de l'entreprise</li>
+                </ul>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button
+                onClick={hidePublishConfirm}
+                className="btn btn-secondary"
+                disabled={actionLoading.publish === publishConfirm.courseId}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmPublish}
+                className="btn btn-success"
+                disabled={actionLoading.publish === publishConfirm.courseId}
+              >
+                {actionLoading.publish === publishConfirm.courseId ? (
+                  <>
+                    <Icon name="loader" size={IconSizes.xs} color={IconColors.white} className="spin" />
+                    Publication...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="checkCircle" size={IconSizes.xs} color={IconColors.white} />
+                    Publier le cours
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal d'erreur stylé */}
+      {styledError.show && (
+        <div className="modal-overlay" onClick={hideStyledError}>
+          <div className="modal-content error-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header error-header">
+              <Icon name="alertTriangle" size={IconSizes.lg} color={IconColors.error} />
+              <h3>{styledError.message}</h3>
+            </div>
+            <div className="modal-body">
+              <p className="error-details">{styledError.details}</p>
+              
+              {styledError.type === 'modules' && (
+                <div className="error-solution">
+                  <h4>🚀 Comment résoudre ce problème :</h4>
+                  <div className="solution-steps">
+                    <div className="step">
+                      <span className="step-number">1</span>
+                      <div className="step-content">
+                        <h5>Créer des modules</h5>
+                        <p>Ajoutez au moins un module à votre cours pour organiser le contenu de formation professionnelle.</p>
+                      </div>
+                    </div>
+                    <div className="step">
+                      <span className="step-number">2</span>
+                      <div className="step-content">
+                        <h5>Ajouter des leçons</h5>
+                        <p>Remplissez chaque module avec des leçons et du contenu professionnel adapté au travail en entreprise.</p>
+                      </div>
+                    </div>
+                    <div className="step">
+                      <span className="step-number">3</span>
+                      <div className="step-content">
+                        <h5>Vérifier la qualité</h5>
+                        <p>Assurez-vous que le contenu est complet, professionnel et adapté au contexte de l'entreprise avant publication.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {styledError.type === 'content' && (
+                <div className="error-solution">
+                  <h4>📚 Comment enrichir votre contenu :</h4>
+                  <div className="solution-steps">
+                    <div className="step">
+                      <span className="step-number">1</span>
+                      <div className="step-content">
+                        <h5>Remplir les modules</h5>
+                        <p>Ajoutez des leçons, vidéos, documents ou quiz professionnels à vos modules existants.</p>
+                      </div>
+                    </div>
+                    <div className="step">
+                      <span className="step-number">2</span>
+                      <div className="step-content">
+                        <h5>Structurer le contenu</h5>
+                        <p>Organisez votre contenu de manière logique et progressive, adapté aux besoins de formation en entreprise.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="modal-actions">
+              <button
+                onClick={hideStyledError}
+                className="btn btn-primary"
+              >
+                <Icon name="checkCircle" size={IconSizes.xs} color={IconColors.white} />
+                Compris
+              </button>
+              {styledError.type === 'modules' && (
+                <button
+                  onClick={() => {
+                    hideStyledError();
+                    // Ici vous pouvez ajouter la logique pour rediriger vers la page d'ajout de modules
+                    console.log('Redirection vers ajout de modules...');
+                  }}
+                  className="btn btn-success"
+                >
+                  <Icon name="plus" size={IconSizes.xs} color={IconColors.white} />
+                  Ajouter des modules
+                </button>
+              )}
             </div>
           </div>
         </div>

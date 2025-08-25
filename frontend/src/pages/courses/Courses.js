@@ -165,7 +165,7 @@ const Courses = () => {
                   color: 'var(--text-secondary)'
                 }}>
                   <span>⭐ {course.rating}</span>
-                  <span>{course.students} étudiants</span>
+                  <span>{course.students} apprentis</span>
                 </div>
                 <div style={{ 
                   marginTop: '0.5rem',

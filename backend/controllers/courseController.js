@@ -317,7 +317,7 @@ const deleteCourse = async (req, res) => {
     if (course.enrolledStudents.length > 0) {
       return res.status(400).json({
         success: false,
-        message: 'Impossible de supprimer un cours avec des étudiants inscrits'
+        message: 'Impossible de supprimer un cours avec des apprentis inscrits'
       });
     }
     
@@ -388,10 +388,36 @@ const publishCourse = async (req, res) => {
       });
     }
     
-    // Vérifier que le cours a au moins un module et une leçon
+    // Vérifier que le cours a au moins un module
     if (!course.modules || course.modules.length === 0) {
-      // Au lieu de bloquer, permettre la publication mais avertir
-      console.log(`⚠️ Cours ${course.title} publié sans modules - l'instructeur pourra les ajouter plus tard`);
+      console.log(`❌ Cours ${course.title} ne peut pas être publié - aucun module`);
+      return res.status(400).json({
+        success: false,
+        message: 'Impossible de publier un cours vide',
+        details: 'Vous devez ajouter au moins un module avant de pouvoir publier ce cours',
+        requiresModules: true,
+        courseId: course._id
+      });
+    }
+    
+    // Vérifier que chaque module a au moins une leçon
+    let hasValidContent = false;
+    for (const module of course.modules) {
+      if (module.lessons && module.lessons.length > 0) {
+        hasValidContent = true;
+        break;
+      }
+    }
+    
+    if (!hasValidContent) {
+      console.log(`❌ Cours ${course.title} ne peut pas être publié - modules vides`);
+      return res.status(400).json({
+        success: false,
+        message: 'Impossible de publier un cours sans contenu',
+        details: 'Vos modules doivent contenir au moins une leçon avant publication',
+        requiresContent: true,
+        courseId: course._id
+      });
     }
     
     // Publier le cours
@@ -403,17 +429,12 @@ const publishCourse = async (req, res) => {
     await course.save();
     console.log('✅ Cours publié avec succès!');
     
-    // Message conditionnel selon la présence de modules
-    let message = 'Cours publié avec succès';
-    if (!course.modules || course.modules.length === 0) {
-      message = 'Cours publié avec succès ! Vous pouvez maintenant ajouter des modules et leçons pour enrichir votre contenu.';
-    }
-    
     res.json({
       success: true,
-      message: message,
+              message: 'Cours publié avec succès ! Vos apprentis peuvent maintenant s\'inscrire.',
       data: course,
-      hasModules: course.modules && course.modules.length > 0
+      hasModules: true,
+      hasContent: true
     });
   } catch (error) {
     console.error('❌ Erreur publishCourse:', error);

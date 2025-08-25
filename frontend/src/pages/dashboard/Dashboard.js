@@ -83,7 +83,7 @@ const Dashboard = () => {
       
       <div className="card">
         <div className="card-header">
-          <h1 className="card-title">Bon retour, {user?.name || 'Étudiant'} !</h1>
+          <h1 className="card-title">Bon retour, {user?.name || 'Apprenti'} !</h1>
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
             Voici votre progression d'apprentissage et votre activité récente
           </p>

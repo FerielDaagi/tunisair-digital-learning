@@ -321,7 +321,7 @@ const CreateCourse = () => {
                 onChange={handleChange}
                 required
                 rows={6}
-                placeholder="Décrivez en détail ce que les étudiants apprendront dans votre cours"
+                placeholder="Décrivez en détail ce que les apprentis apprendront dans votre cours"
                 className="form-textarea"
               />
             </div>
