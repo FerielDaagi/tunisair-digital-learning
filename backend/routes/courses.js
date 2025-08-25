@@ -11,7 +11,7 @@ const {
   enrollInCourse, 
   getEnrolledCourses 
 } = require('../controllers/courseController');
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 
 // Public routes
 router.get('/', getAllCourses);

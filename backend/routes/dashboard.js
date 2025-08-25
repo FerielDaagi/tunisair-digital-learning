@@ -6,7 +6,7 @@ const {
   getLearningProgress, 
   getAchievements 
 } = require('../controllers/dashboardController');
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 
 // All routes require authentication
 router.use(auth);

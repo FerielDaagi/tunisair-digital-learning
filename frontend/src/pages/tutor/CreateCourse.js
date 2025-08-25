@@ -27,6 +27,8 @@ const CreateCourse = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   useEffect(() => {
     // Vérifier que l'utilisateur est un tuteur
@@ -35,17 +37,32 @@ const CreateCourse = () => {
       return;
     }
     
-    // Charger les catégories (pour l'instant, catégories statiques)
-    setCategories([
-      { _id: 'frontend', name: 'Frontend' },
-      { _id: 'backend', name: 'Backend' },
-      { _id: 'database', name: 'Base de données' },
-      { _id: 'mobile', name: 'Développement mobile' },
-      { _id: 'devops', name: 'DevOps' },
-      { _id: 'ai-ml', name: 'IA & Machine Learning' },
-      { _id: 'cybersecurity', name: 'Cybersécurité' },
-      { _id: 'other', name: 'Autre' }
-    ]);
+    // Charger les catégories depuis l'API
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/categories');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setCategories(data.data);
+          }
+        }
+      } catch (error) {
+        console.error('Erreur chargement catégories:', error);
+        // Fallback vers les catégories statiques en cas d'erreur
+        setCategories([
+          { _id: 'frontend', name: 'Frontend' },
+          { _id: 'backend', name: 'Backend' },
+          { _id: 'database', name: 'Base de données' },
+          { _id: 'mobile', name: 'Développement mobile' },
+          { _id: 'devops', name: 'DevOps' },
+          { _id: 'ai-ml', name: 'IA & Machine Learning' },
+          { _id: 'cybersecurity', name: 'Cybersécurité' }
+        ]);
+      }
+    };
+    
+    fetchCategories();
   }, [user, navigate]);
 
   const handleChange = (e) => {
@@ -54,6 +71,17 @@ const CreateCourse = () => {
       ...prev,
       [name]: value
     }));
+    
+    // Gérer l'affichage du champ de nouvelle catégorie
+    if (name === 'category') {
+      if (value === 'other') {
+        setShowNewCategoryInput(true);
+        setNewCategoryName('');
+      } else {
+        setShowNewCategoryInput(false);
+        setNewCategoryName('');
+      }
+    }
   };
 
   const handleArrayChange = (index, field, value) => {
@@ -110,6 +138,13 @@ const CreateCourse = () => {
         setLoading(false);
         return;
       }
+      
+      // Validation spéciale pour la nouvelle catégorie
+      if (formData.category === 'other' && !newCategoryName.trim()) {
+        setError('Veuillez saisir le nom de la nouvelle catégorie');
+        setLoading(false);
+        return;
+      }
 
       if (!formData.level) {
         setError('Veuillez sélectionner un niveau');
@@ -163,7 +198,7 @@ const CreateCourse = () => {
         title: formData.title.trim(),
         description: formData.description.trim(),
         longDescription: formData.longDescription.trim(),
-        category: formData.category,
+        category: formData.category === 'other' ? newCategoryName.trim() : formData.category,
         level: formData.level,
         duration,
         tags,
@@ -192,6 +227,10 @@ const CreateCourse = () => {
           language: 'français'
         });
         
+        // Réinitialiser les champs de nouvelle catégorie
+        setShowNewCategoryInput(false);
+        setNewCategoryName('');
+
         // Rediriger vers la liste des cours après 2 secondes
         setTimeout(() => {
           navigate('/tutor/my-courses');
@@ -350,11 +389,39 @@ const CreateCourse = () => {
                 >
                   <option value="">Sélectionnez une catégorie</option>
                   {categories.map(cat => (
-                    <option key={cat._id} value={cat._id}>
+                    <option key={cat._id} value={cat.name}>
                       {cat.name}
                     </option>
                   ))}
+                  <option value="other">Autre (nouvelle catégorie)</option>
                 </select>
+                
+                {/* Champ de saisie pour la nouvelle catégorie */}
+                {showNewCategoryInput && (
+                  <div className="form-group" style={{ marginTop: '12px' }}>
+                    <label htmlFor="newCategoryName">
+                      <Icon name="plus" size={IconSizes.xs} color={IconColors.primary} />
+                      Nom de la nouvelle catégorie *
+                    </label>
+                    <input
+                      type="text"
+                      id="newCategoryName"
+                      name="newCategoryName"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      required
+                      maxLength={50}
+                      placeholder="Ex: Intelligence Artificielle, Blockchain, Cloud Computing..."
+                      className="form-input"
+                    />
+                    <div className="char-counter">
+                      <Icon name="hash" size={IconSizes.xs} color={IconColors.muted} />
+                      <span className={newCategoryName.length > 40 ? 'warning' : ''}>
+                        {newCategoryName.length}/50 caractères
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="form-group">

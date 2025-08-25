@@ -28,4 +28,28 @@ const auth = async (req, res, next) => {
   }
 };
 
-module.exports = auth; 
+// Middleware pour protéger les routes
+const protect = auth;
+
+// Middleware pour autoriser certains rôles
+const authorize = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Accès non autorisé' 
+      });
+    }
+
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Permissions insuffisantes' 
+      });
+    }
+
+    next();
+  };
+};
+
+module.exports = { auth, protect, authorize }; 

@@ -457,6 +457,5 @@ module.exports = {
   logout,
   getCurrentUser,
   updateAvatar, // Nouvelle fonction exportée
-  uploadAvatar,  // Middleware exporté pour utilisation dans les routes
   deleteAccount  // Fonction pour supprimer le compte
 };

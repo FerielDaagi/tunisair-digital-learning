@@ -18,7 +18,7 @@ const {
   demoteToApprentice,
   deleteUser
 } = require('../controllers/userController');
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 
 // All routes require authentication
 router.use(auth);

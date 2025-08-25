@@ -1,5 +1,6 @@
 const Course = require('../models/Course');
 const User = require('../models/User');
+const Category = require('../models/Category');
 
 // Obtenir tous les cours publiés
 const getAllCourses = async (req, res) => {
@@ -144,61 +145,45 @@ const createCourse = async (req, res) => {
       });
     }
     
+    // Validation de la catégorie
     if (!category) {
       return res.status(400).json({
         success: false,
         message: 'La catégorie est requise'
       });
     }
-    
-    if (!level) {
-      return res.status(400).json({
-        success: false,
-        message: 'Le niveau est requis'
-      });
+
+    // Vérifier si la catégorie existe, sinon la créer
+    let categoryDoc = await Category.findOne({ 
+      name: { $regex: new RegExp(`^${category}$`, 'i') } 
+    });
+
+    if (!categoryDoc) {
+      // Créer une nouvelle catégorie
+      try {
+        categoryDoc = new Category({
+          name: category,
+          description: `Catégorie créée automatiquement lors de la création du cours "${title}"`,
+          createdBy: req.user._id
+        });
+        await categoryDoc.save();
+        console.log('✅ Nouvelle catégorie créée:', categoryDoc.name);
+      } catch (categoryError) {
+        console.error('❌ Erreur création catégorie:', categoryError);
+        return res.status(500).json({
+          success: false,
+          message: 'Erreur lors de la création de la catégorie'
+        });
+      }
     }
-    
-    if (!duration || !duration.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: 'La durée est requise'
-      });
-    }
-    
-    // Vérifier que la catégorie est valide (catégories statiques)
-    const validCategories = ['frontend', 'backend', 'database', 'mobile', 'devops', 'ai-ml', 'cybersecurity', 'other'];
-    if (!validCategories.includes(category)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Catégorie invalide'
-      });
-    }
-    
-    // Vérifier que le niveau est valide
-    const validLevels = ['débutant', 'intermédiaire', 'avancé'];
-    if (!validLevels.includes(level)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Niveau invalide'
-      });
-    }
-    
-    // Vérifier que la langue est valide
-    const validLanguages = ['français', 'english'];
-    if (language && !validLanguages.includes(language)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Langue invalide'
-      });
-    }
-    
-    // Créer le cours
-    const newCourse = new Course({
+
+    // Utiliser le nom de la catégorie (pas l'ID)
+    const courseData = {
       title: title.trim(),
       description: description.trim(),
       longDescription: longDescription.trim(),
       instructor: req.user.id,
-      category: category,
+      category: category.trim(), // Sauvegarder le nom de la catégorie
       level,
       duration: duration.trim(),
       price: price || 0,
@@ -207,9 +192,10 @@ const createCourse = async (req, res) => {
       tags: tags?.filter(tag => tag && tag.trim() !== '') || [],
       language: language || 'français',
       status: 'draft'
-    });
+    };
     
     console.log('💾 Sauvegarde du cours...');
+    const newCourse = new Course(courseData);
     await newCourse.save();
     console.log('✅ Cours créé avec succès:', newCourse._id);
     

@@ -6,7 +6,7 @@ const {
   deleteModule,
   getCourseModules
 } = require('../controllers/moduleController');
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 
 // Toutes les routes nécessitent une authentification
 router.use(auth);

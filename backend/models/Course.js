@@ -24,9 +24,15 @@ const courseSchema = new mongoose.Schema({
     required: [true, 'L\'instructeur est requis']
   },
   category: {
-    type: String,
+    type: mongoose.Schema.Types.Mixed, // Peut être String ou ObjectId
     required: [true, 'La catégorie est requise'],
-    enum: ['frontend', 'backend', 'database', 'mobile', 'devops', 'ai-ml', 'cybersecurity', 'other']
+    validate: {
+      validator: function(v) {
+        // Accepter soit une String soit un ObjectId
+        return typeof v === 'string' || mongoose.Types.ObjectId.isValid(v);
+      },
+      message: 'La catégorie doit être une chaîne de caractères ou un ID valide'
+    }
   },
   level: {
     type: String,
