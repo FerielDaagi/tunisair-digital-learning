@@ -86,55 +86,131 @@ const CreateCourse = () => {
     setSuccess('');
 
     try {
-      // Formater la durée en combinant heures et minutes
-      let duration = '';
-      if (formData.hours && formData.minutes) {
-        duration = `${formData.hours} heure${parseInt(formData.hours) > 1 ? 's' : ''} ${formData.minutes} minute${parseInt(formData.minutes) > 1 ? 's' : ''}`;
-      } else if (formData.hours) {
-        duration = `${formData.hours} heure${parseInt(formData.hours) > 1 ? 's' : ''}`;
-      } else if (formData.minutes) {
-        duration = `${formData.minutes} minute${parseInt(formData.minutes) > 1 ? 's' : ''}`;
-      } else {
+      // Validation des champs requis
+      if (!formData.title.trim()) {
+        setError('Le titre du cours est requis');
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.description.trim()) {
+        setError('La description du cours est requise');
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.longDescription.trim()) {
+        setError('La description détaillée du cours est requise');
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.category) {
+        setError('Veuillez sélectionner une catégorie');
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.level) {
+        setError('Veuillez sélectionner un niveau');
+        setLoading(false);
+        return;
+      }
+
+      // Validation de la durée
+      if (!formData.hours && !formData.minutes) {
         setError('Veuillez spécifier au moins la durée en heures ou en minutes');
         setLoading(false);
         return;
       }
 
-      // Traiter les tags et requirements/outcomes
+      // Formater la durée en combinant heures et minutes
+      let duration = '';
+      if (formData.hours && formData.minutes) {
+        const hours = parseInt(formData.hours);
+        const minutes = parseInt(formData.minutes);
+        if (hours > 0 && minutes > 0) {
+          duration = `${hours} heure${hours > 1 ? 's' : ''} ${minutes} minute${minutes > 1 ? 's' : ''}`;
+        } else if (hours > 0) {
+          duration = `${hours} heure${hours > 1 ? 's' : ''}`;
+        } else if (minutes > 0) {
+          duration = `${minutes} minute${minutes > 1 ? 's' : ''}`;
+        }
+      } else if (formData.hours) {
+        const hours = parseInt(formData.hours);
+        if (hours > 0) {
+          duration = `${hours} heure${hours > 1 ? 's' : ''}`;
+        }
+      } else if (formData.minutes) {
+        const minutes = parseInt(formData.minutes);
+        if (minutes > 0) {
+          duration = `${minutes} minute${minutes > 1 ? 's' : ''}`;
+        }
+      }
+
+      if (!duration) {
+        setError('Veuillez spécifier une durée valide');
+        setLoading(false);
+        return;
+      }
+
+      // Traiter les tags et requirements/outcomes - filtrer les chaînes vides
       const tags = formData.tags.filter(tag => tag.trim() !== '');
       const requirements = formData.requirements.filter(req => req.trim() !== '');
       const outcomes = formData.outcomes.filter(out => out.trim() !== '');
 
       const courseData = {
-        ...formData,
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        longDescription: formData.longDescription.trim(),
+        category: formData.category,
+        level: formData.level,
         duration,
         tags,
         requirements,
-        outcomes
+        outcomes,
+        language: formData.language
       };
 
-      // Supprimer les champs temporaires
-      delete courseData.hours;
-      delete courseData.minutes;
+      console.log('Données du cours à envoyer:', courseData);
 
       const response = await coursesAPI.create(courseData);
-      setSuccess('Cours créé avec succès !');
-      setFormData({
-        title: '',
-        description: '',
-        longDescription: '',
-        category: '',
-        level: '',
-        hours: '',
-        minutes: '',
-        requirements: [''],
-        outcomes: [''],
-        tags: [''],
-        language: 'français'
-      });
+      
+      if (response.data.success) {
+        setSuccess('Cours créé avec succès !');
+        setFormData({
+          title: '',
+          description: '',
+          longDescription: '',
+          category: '',
+          level: '',
+          hours: '',
+          minutes: '',
+          requirements: [''],
+          outcomes: [''],
+          tags: [''],
+          language: 'français'
+        });
+        
+        // Rediriger vers la liste des cours après 2 secondes
+        setTimeout(() => {
+          navigate('/tutor/my-courses');
+        }, 2000);
+      } else {
+        setError(response.data.message || 'Erreur lors de la création du cours');
+      }
     } catch (error) {
       console.error('Erreur création cours:', error);
-      setError('Erreur lors de la création du cours. Veuillez réessayer.');
+      
+      // Gestion des erreurs de validation
+      if (error.response?.data?.errors) {
+        const validationErrors = error.response.data.errors.map(err => err.message).join(', ');
+        setError(`Erreurs de validation: ${validationErrors}`);
+      } else if (error.response?.data?.message) {
+        setError(error.response.data.message);
+      } else {
+        setError('Erreur lors de la création du cours. Veuillez réessayer.');
+      }
     } finally {
       setLoading(false);
     }

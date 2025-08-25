@@ -103,11 +103,65 @@ const createCourse = async (req, res) => {
   try {
     const { title, description, longDescription, category, level, duration, price, requirements, outcomes, tags, language } = req.body;
     
+    console.log('📝 Tentative de création de cours:', {
+      title,
+      category,
+      level,
+      duration,
+      requirements: requirements?.length || 0,
+      outcomes: outcomes?.length || 0,
+      tags: tags?.length || 0
+    });
+    
     // Vérifier que l'utilisateur est un tuteur
     if (req.user.role !== 'tuteur') {
+      console.log('🚫 Tentative de création par un non-tuteur:', req.user.role);
       return res.status(403).json({
         success: false,
         message: 'Seuls les tuteurs peuvent créer des cours'
+      });
+    }
+    
+    // Validation des champs requis
+    if (!title || !title.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le titre du cours est requis'
+      });
+    }
+    
+    if (!description || !description.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'La description du cours est requise'
+      });
+    }
+    
+    if (!longDescription || !longDescription.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'La description détaillée du cours est requise'
+      });
+    }
+    
+    if (!category) {
+      return res.status(400).json({
+        success: false,
+        message: 'La catégorie est requise'
+      });
+    }
+    
+    if (!level) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le niveau est requis'
+      });
+    }
+    
+    if (!duration || !duration.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'La durée est requise'
       });
     }
     
@@ -120,26 +174,46 @@ const createCourse = async (req, res) => {
       });
     }
     
+    // Vérifier que le niveau est valide
+    const validLevels = ['débutant', 'intermédiaire', 'avancé'];
+    if (!validLevels.includes(level)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Niveau invalide'
+      });
+    }
+    
+    // Vérifier que la langue est valide
+    const validLanguages = ['français', 'english'];
+    if (language && !validLanguages.includes(language)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Langue invalide'
+      });
+    }
+    
     // Créer le cours
     const newCourse = new Course({
-      title,
-      description,
-      longDescription,
+      title: title.trim(),
+      description: description.trim(),
+      longDescription: longDescription.trim(),
       instructor: req.user.id,
-      category: category, // Stocker l'ID de la catégorie comme string
+      category: category,
       level,
-      duration,
+      duration: duration.trim(),
       price: price || 0,
-      requirements: requirements || [],
-      outcomes: outcomes || [],
-      tags: tags || [],
+      requirements: requirements?.filter(req => req && req.trim() !== '') || [],
+      outcomes: outcomes?.filter(out => out && out.trim() !== '') || [],
+      tags: tags?.filter(tag => tag && tag.trim() !== '') || [],
       language: language || 'français',
       status: 'draft'
     });
     
+    console.log('💾 Sauvegarde du cours...');
     await newCourse.save();
+    console.log('✅ Cours créé avec succès:', newCourse._id);
     
-    // Populate les références (sans category car c'est un string)
+    // Populate les références
     await newCourse.populate('instructor', 'name profile.avatar');
     
     res.status(201).json({
@@ -148,7 +222,26 @@ const createCourse = async (req, res) => {
       data: newCourse
     });
   } catch (error) {
-    console.error('Erreur createCourse:', error);
+    console.error('❌ Erreur createCourse:', error);
+    
+    // Gestion des erreurs de validation Mongoose
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Erreurs de validation',
+        errors: validationErrors
+      });
+    }
+    
+    // Gestion des erreurs de duplication
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Un cours avec ce titre existe déjà'
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Erreur interne du serveur'
@@ -247,29 +340,58 @@ const deleteCourse = async (req, res) => {
 const publishCourse = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log('🔍 Tentative de publication du cours:', id);
+    console.log('👤 Utilisateur connecté:', req.user.id);
+    
+    // Validation de l'ID
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de cours invalide'
+      });
+    }
     
     const course = await Course.findById(id);
     if (!course) {
+      console.log('❌ Cours introuvable:', id);
       return res.status(404).json({
         success: false,
         message: 'Cours introuvable'
       });
     }
     
+    console.log('📚 Cours trouvé:', {
+      id: course._id,
+      title: course.title,
+      instructor: course.instructor,
+      status: course.status,
+      modules: course.modules?.length || 0
+    });
+    
     // Vérifier que l'utilisateur est le propriétaire du cours
     if (course.instructor.toString() !== req.user.id) {
+      console.log('🚫 Utilisateur non autorisé:', {
+        courseInstructor: course.instructor.toString(),
+        currentUser: req.user.id
+      });
       return res.status(403).json({
         success: false,
         message: 'Vous n\'êtes pas autorisé à publier ce cours'
       });
     }
     
-    // Vérifier que le cours a au moins un module et une leçon
-    if (!course.modules || course.modules.length === 0) {
+    // Vérifier que le cours n'est pas déjà publié
+    if (course.status === 'published' && course.isPublished) {
       return res.status(400).json({
         success: false,
-        message: 'Le cours doit avoir au moins un module pour être publié'
+        message: 'Ce cours est déjà publié'
       });
+    }
+    
+    // Vérifier que le cours a au moins un module et une leçon
+    if (!course.modules || course.modules.length === 0) {
+      // Au lieu de bloquer, permettre la publication mais avertir
+      console.log(`⚠️ Cours ${course.title} publié sans modules - l'instructeur pourra les ajouter plus tard`);
     }
     
     // Publier le cours
@@ -277,15 +399,40 @@ const publishCourse = async (req, res) => {
     course.isPublished = true;
     course.publishedAt = new Date();
     
+    console.log('💾 Sauvegarde du cours avec statut publié...');
     await course.save();
+    console.log('✅ Cours publié avec succès!');
+    
+    // Message conditionnel selon la présence de modules
+    let message = 'Cours publié avec succès';
+    if (!course.modules || course.modules.length === 0) {
+      message = 'Cours publié avec succès ! Vous pouvez maintenant ajouter des modules et leçons pour enrichir votre contenu.';
+    }
     
     res.json({
       success: true,
-      message: 'Cours publié avec succès',
-      data: course
+      message: message,
+      data: course,
+      hasModules: course.modules && course.modules.length > 0
     });
   } catch (error) {
-    console.error('Erreur publishCourse:', error);
+    console.error('❌ Erreur publishCourse:', error);
+    console.error('📋 Détails de l\'erreur:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
+    // Gestion des erreurs de validation Mongoose
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Erreurs de validation',
+        errors: validationErrors
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Erreur interne du serveur'

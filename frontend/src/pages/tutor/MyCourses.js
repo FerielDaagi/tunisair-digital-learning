@@ -11,12 +11,12 @@ const MyCourses = () => {
   
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, courseId: null, courseTitle: '' });
   const [actionLoading, setActionLoading] = useState({ publish: null, delete: null });
+  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     // Vérifier que l'utilisateur est un tuteur
@@ -31,6 +31,8 @@ const MyCourses = () => {
   const fetchCourses = async () => {
     try {
       setLoading(true);
+      setError(''); // Réinitialiser les erreurs
+      
       const response = await coursesAPI.getTutorCourses();
       
       // S'assurer que courses est un tableau
@@ -56,7 +58,17 @@ const MyCourses = () => {
       setCourses(coursesData);
     } catch (error) {
       console.error('Erreur lors de la récupération des cours:', error);
-      setError('Erreur lors de la récupération de vos cours');
+      
+      // Gestion des erreurs de validation
+      if (error.response?.data?.errors) {
+        const validationErrors = error.response.data.errors.join(', ');
+        setError(`Erreurs de validation: ${validationErrors}`);
+      } else if (error.response?.data?.message) {
+        setError(error.response.data.message);
+      } else {
+        setError('Erreur lors de la récupération des cours. Veuillez réessayer.');
+      }
+      
       setCourses([]); // S'assurer que courses est un tableau vide en cas d'erreur
     } finally {
       setLoading(false);
@@ -66,16 +78,38 @@ const MyCourses = () => {
   const handlePublish = async (courseId) => {
     try {
       setActionLoading(prev => ({ ...prev, publish: courseId }));
-      setError('');
-      setSuccess('');
       
-      await coursesAPI.publish(courseId);
-      setSuccess('Cours publié avec succès !');
-      fetchCourses(); // Recharger la liste
+      console.log('🚀 Tentative de publication du cours:', courseId);
+      const response = await coursesAPI.publish(courseId);
+      
+      if (response.data.success) {
+        console.log('✅ Cours publié avec succès:', response.data.message);
+        
+        // Afficher un message de succès temporaire
+        setSuccess(response.data.message);
+        setTimeout(() => setSuccess(''), 5000);
+        
+        // Recharger la liste des cours
+        fetchCourses();
+      } else {
+        console.error('❌ Erreur lors de la publication:', response.data.message);
+        setError(response.data.message || 'Erreur lors de la publication');
+        setTimeout(() => setError(''), 5000);
+      }
     } catch (error) {
-      console.error('Erreur lors de la publication:', error);
-      const errorMessage = error.response?.data?.message || 'Erreur lors de la publication du cours';
-      setError(errorMessage);
+      console.error('❌ Erreur lors de la publication:', error);
+      
+      // Gestion des erreurs de validation
+      if (error.response?.data?.errors) {
+        const validationErrors = error.response.data.errors.join(', ');
+        setError(`Erreurs de validation: ${validationErrors}`);
+      } else if (error.response?.data?.message) {
+        setError(error.response.data.message);
+      } else {
+        setError('Erreur lors de la publication du cours. Veuillez réessayer.');
+      }
+      
+      setTimeout(() => setError(''), 5000);
     } finally {
       setActionLoading(prev => ({ ...prev, publish: null }));
     }
@@ -92,17 +126,32 @@ const MyCourses = () => {
   const confirmDelete = async () => {
     try {
       setActionLoading(prev => ({ ...prev, delete: deleteConfirm.courseId }));
-      setError('');
-      setSuccess('');
       
-      await coursesAPI.delete(deleteConfirm.courseId);
-      setSuccess('Cours supprimé avec succès !');
-      hideDeleteConfirm();
-      fetchCourses(); // Recharger la liste
+      const response = await coursesAPI.delete(deleteConfirm.courseId);
+      
+      if (response.data.success) {
+        setSuccess('Cours supprimé avec succès');
+        setTimeout(() => setSuccess(''), 5000);
+        hideDeleteConfirm();
+        fetchCourses(); // Recharger la liste
+      } else {
+        setError(response.data.message || 'Erreur lors de la suppression');
+        setTimeout(() => setError(''), 5000);
+      }
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
-      const errorMessage = error.response?.data?.message || 'Erreur lors de la suppression du cours';
-      setError(errorMessage);
+      
+      // Gestion des erreurs de validation
+      if (error.response?.data?.errors) {
+        const validationErrors = error.response.data.errors.join(', ');
+        setError(`Erreurs de validation: ${validationErrors}`);
+      } else if (error.response?.data?.message) {
+        setError(error.response.data.message);
+      } else {
+        setError('Erreur lors de la suppression du cours. Veuillez réessayer.');
+      }
+      
+      setTimeout(() => setError(''), 5000);
     } finally {
       setActionLoading(prev => ({ ...prev, delete: null }));
     }
@@ -111,6 +160,12 @@ const MyCourses = () => {
   const handleEdit = (courseId) => {
     // TODO: Implémenter la navigation vers la page d'édition
     console.log('Éditer le cours:', courseId);
+  };
+
+  const handleAddModules = (courseId) => {
+    // TODO: Implémenter la navigation vers la page d'ajout de modules
+    console.log('Ajouter des modules au cours:', courseId);
+    // Pas de message ici, géré par la navbar
   };
 
   const getStatusColor = (status) => {
@@ -282,32 +337,18 @@ const MyCourses = () => {
           </select>
         </div>
 
-        {/* Messages d'état */}
-        {error && (
-          <div className="alert alert-error">
-            <Icon name="error" size={IconSizes.sm} color={IconColors.white} />
-            {error}
-            <button 
-              onClick={() => setError('')} 
-              className="alert-close"
-              title="Fermer"
-            >
-              ×
-            </button>
-          </div>
-        )}
-
+        {/* Messages de succès et d'erreur */}
         {success && (
           <div className="alert alert-success">
             <Icon name="checkCircle" size={IconSizes.sm} color={IconColors.white} />
             {success}
-            <button 
-              onClick={() => setSuccess('')} 
-              className="alert-close"
-              title="Fermer"
-            >
-              ×
-            </button>
+          </div>
+        )}
+
+        {error && (
+          <div className="alert alert-error">
+            <Icon name="error" size={IconSizes.sm} color={IconColors.white} />
+            {error}
           </div>
         )}
 
@@ -316,16 +357,6 @@ const MyCourses = () => {
           <div className="loading-state">
             <Icon name="loader" size={IconSizes.xl} color={IconColors.primary} className="spin" />
             <p>Chargement de vos cours...</p>
-          </div>
-        ) : error ? (
-          <div className="error-state">
-            <Icon name="error" size={IconSizes.xl} color={IconColors.error} />
-            <h3>Erreur de chargement</h3>
-            <p>{error}</p>
-            <button onClick={fetchCourses} className="btn btn-primary">
-              <Icon name="refresh" size={IconSizes.sm} color={IconColors.white} />
-              Réessayer
-            </button>
           </div>
         ) : filteredCourses().length === 0 ? (
           <div className="empty-state">
@@ -386,6 +417,12 @@ const MyCourses = () => {
                         <span>{course.duration}</span>
                       </div>
                     )}
+                    {course.modules && course.modules.length > 0 && (
+                      <div className="meta-item">
+                        <Icon name="fileText" size={IconSizes.xs} color={IconColors.muted} />
+                        <span>{course.modules.length} modules</span>
+                      </div>
+                    )}
                   </div>
                   
                   {course.tags && course.tags.length > 0 && (
@@ -419,6 +456,17 @@ const MyCourses = () => {
                         <Icon name="checkCircle" size={IconSizes.xs} color={IconColors.white} />
                       )}
                       {actionLoading.publish === course._id ? 'Publication...' : 'Publier'}
+                    </button>
+                  )}
+                  
+                  {course.status === 'published' && (!course.modules || course.modules.length === 0) && (
+                    <button
+                      onClick={() => handleAddModules(course._id)}
+                      className="btn btn-primary"
+                      title="Ajouter des modules"
+                    >
+                      <Icon name="plus" size={IconSizes.xs} color={IconColors.white} />
+                      Ajouter des modules
                     </button>
                   )}
                   
