@@ -959,3 +959,122 @@
     margin-bottom: 8px;
   }
 }
+
+/* Boutons d'action uniformes */
+.course-actions .btn {
+  min-width: 140px;
+  height: 40px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* Styles spécifiques pour chaque type de bouton */
+.course-actions .btn-success {
+  background-color: #10b981;
+  color: white;
+  border: 1px solid #059669;
+}
+
+.course-actions .btn-success:hover {
+  background-color: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.course-actions .btn-warning {
+  background-color: #f59e0b;
+  color: white;
+  border: 1px solid #d97706;
+}
+
+.course-actions .btn-warning:hover {
+  background-color: #d97706;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.course-actions .btn-primary {
+  background-color: #3b82f6;
+  color: white;
+  border: 1px solid #2563eb;
+}
+
+.course-actions .btn-primary:hover {
+  background-color: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.course-actions .btn-danger {
+  background-color: #ef4444;
+  color: white;
+  border: 1px solid #dc2626;
+}
+
+.course-actions .btn-danger:hover {
+  background-color: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* État désactivé pour tous les boutons */
+.course-actions .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Responsive design pour les boutons */
+@media (max-width: 768px) {
+  .course-actions {
+    grid-template-columns: 1fr; /* Une seule colonne sur mobile */
+    gap: 8px;
+  }
+  
+  .course-actions .btn {
+    min-width: 120px;
+    height: 36px;
+    font-size: 13px;
+    padding: 6px 12px;
+    width: 100%;
+  }
+}
+
+/* Amélioration de l'espacement et de l'alignement des boutons */
+.course-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+  width: 100%;
+}
+
+/* Ajustement pour les boutons avec texte long */
+.course-actions .btn-warning {
+  min-width: 160px; /* Un peu plus large pour "Ajouter des modules" */
+}
+
+/* Animation de chargement pour les boutons */
+.course-actions .btn .spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
