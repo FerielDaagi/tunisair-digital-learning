@@ -18,6 +18,7 @@ import NotificationCenter from './pages/admin/NotificationCenter';
 import UserStats from './pages/admin/UserStats';
 import TestNotification from './pages/user/TestNotification';
 import CreateCourse from './pages/tutor/CreateCourse';
+import EditCourse from './pages/tutor/EditCourse';
 import MyCourses from './pages/tutor/MyCourses';
 
 import './App.css';
@@ -86,6 +87,11 @@ const AppContent = () => {
           <Route path="/tutor/create-course" element={
             <ProtectedRoute>
               <CreateCourse />
+            </ProtectedRoute>
+          } />
+          <Route path="/tutor/edit-course/:courseId" element={
+            <ProtectedRoute>
+              <EditCourse />
             </ProtectedRoute>
           } />
           <Route path="/tutor/my-courses" element={

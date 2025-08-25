@@ -16,6 +16,14 @@ console.log('🔍 Debug - FRONTEND_URL:', process.env.FRONTEND_URL);
 // 🆕 AJOUTE CETTE LIGNE - Importer la connexion MongoDB
 const connectDB = require('./config/database');
 
+// 🆕 NOUVEAU - Charger tous les modèles Mongoose
+require('./models/User');
+require('./models/Course');
+require('./models/Module');
+require('./models/Lesson');
+require('./models/Category');
+require('./models/Notification');
+
 const authRoutes = require('./routes/auth');
 const courseRoutes = require('./routes/courses');
 const moduleRoutes = require('./routes/modules');

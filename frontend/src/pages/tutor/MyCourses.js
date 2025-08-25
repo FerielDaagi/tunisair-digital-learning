@@ -218,8 +218,9 @@ const MyCourses = () => {
   };
 
   const handleEdit = (courseId) => {
-    // TODO: Implémenter la navigation vers la page d'édition
-    console.log('Éditer le cours:', courseId);
+    console.log('🔍 handleEdit appelé avec courseId:', courseId);
+    console.log('🔍 Navigation vers:', `/tutor/edit-course/${courseId}`);
+    navigate(`/tutor/edit-course/${courseId}`);
   };
 
   const handleAddModules = (courseId) => {
@@ -453,7 +454,7 @@ const MyCourses = () => {
                     {/* Indicateur pour les cours vides */}
                     {course.status === 'draft' && (!course.modules || course.modules.length === 0) && (
                       <span className="status-badge status-warning" title="Ce cours ne peut pas être publié sans modules">
-                        <Icon name="alertTriangle" size={IconSizes.xs} color={IconColors.white} />
+                        <Icon name="AlertTriangle" size={IconSizes.xs} color={IconColors.white} />
                         Contenu requis
                       </span>
                     )}
@@ -554,7 +555,11 @@ const MyCourses = () => {
                   )}
                   
                   <button
-                    onClick={() => handleEdit(course._id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleEdit(course._id);
+                    }}
                     className="btn btn-secondary"
                     title="Modifier le cours"
                   >
@@ -587,7 +592,7 @@ const MyCourses = () => {
         <div className="modal-overlay" onClick={hideDeleteConfirm}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <Icon name="alertTriangle" size={IconSizes.lg} color={IconColors.error} />
+              <Icon name="AlertTriangle" size={IconSizes.lg} color={IconColors.error} />
               <h3>Confirmer la suppression</h3>
             </div>
             <div className="modal-body">
@@ -689,7 +694,7 @@ const MyCourses = () => {
         <div className="modal-overlay" onClick={hideStyledError}>
           <div className="modal-content error-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header error-header">
-              <Icon name="alertTriangle" size={IconSizes.lg} color={IconColors.error} />
+              <Icon name="AlertTriangle" size={IconSizes.lg} color={IconColors.error} />
               <h3>{styledError.message}</h3>
             </div>
             <div className="modal-body">
