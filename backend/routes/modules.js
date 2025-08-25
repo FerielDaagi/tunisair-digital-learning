@@ -4,7 +4,8 @@ const {
   createModule,
   updateModule,
   deleteModule,
-  getCourseModules
+  getCourseModules,
+  getModuleById
 } = require('../controllers/moduleController');
 const { auth } = require('../middleware/auth');
 
@@ -13,6 +14,7 @@ router.use(auth);
 
 // Routes pour les modules
 router.get('/course/:courseId', getCourseModules);
+router.get('/:id', getModuleById);
 router.post('/course/:courseId', createModule);
 router.put('/:id', updateModule);
 router.delete('/:id', deleteModule);

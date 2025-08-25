@@ -69,7 +69,7 @@ export const coursesAPI = {
 // Modules API
 export const modulesAPI = {
   // Créer un module
-  create: (moduleData) => api.post('/modules', moduleData),
+  create: (moduleData) => api.post(`/modules/course/${moduleData.course}`, moduleData),
   
   // Récupérer tous les modules d'un cours
   getByCourse: (courseId) => api.get(`/modules/course/${courseId}`),
@@ -90,7 +90,7 @@ export const modulesAPI = {
 // API pour les leçons
 export const lessonsAPI = {
   // Créer une leçon
-  create: (lessonData) => api.post('/lessons', lessonData),
+  create: (lessonData) => api.post(`/lessons/module/${lessonData.moduleId}`, lessonData),
   
   // Récupérer toutes les leçons d'un module
   getByModule: (moduleId) => api.get(`/lessons/module/${moduleId}`),

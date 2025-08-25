@@ -42,11 +42,19 @@ const CreateModule = () => {
           const data = await response.json();
           if (data.success) {
             setCourse(data.data);
-            // Définir l'ordre du nouveau module
+            
+            // Calculer le prochain ordre disponible
+            const existingModules = data.data.modules || [];
+            const maxOrder = existingModules.length > 0 
+              ? Math.max(...existingModules.map(m => m.order || 0))
+              : 0;
+            
             setFormData(prev => ({
               ...prev,
-              order: (data.data.modules?.length || 0) + 1
+              order: maxOrder + 1
             }));
+            
+            console.log('📊 Ordre calculé:', maxOrder + 1, 'pour', existingModules.length, 'modules existants');
           }
         }
       } catch (error) {
@@ -95,18 +103,9 @@ const CreateModule = () => {
 
       console.log('Données du module à créer:', moduleData);
 
-      const response = await fetch('http://localhost:5000/api/modules', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(moduleData)
-      });
-
-      const data = await response.json();
+      const response = await modulesAPI.create(moduleData);
       
-      if (response.ok && data.success) {
+      if (response.data.success) {
         setSuccess('Module créé avec succès !');
         
         // Rediriger vers la gestion des modules après 2 secondes
@@ -114,11 +113,25 @@ const CreateModule = () => {
           navigate(`/tutor/manage-modules/${courseId}`);
         }, 2000);
       } else {
-        setError(data.message || 'Erreur lors de la création du module');
+        setError(response.data.message || 'Erreur lors de la création du module');
       }
     } catch (error) {
       console.error('Erreur création module:', error);
-      setError('Erreur lors de la création du module. Veuillez réessayer.');
+      
+      // Afficher l'erreur spécifique si disponible
+      if (error.response) {
+        // Erreur de réponse du serveur
+        console.error('Détails erreur serveur:', error.response.data);
+        setError(error.response.data.message || `Erreur serveur: ${error.response.status}`);
+      } else if (error.request) {
+        // Erreur de requête (pas de réponse)
+        console.error('Pas de réponse du serveur');
+        setError('Le serveur ne répond pas. Vérifiez votre connexion.');
+      } else {
+        // Autre erreur
+        console.error('Erreur inconnue:', error.message);
+        setError(`Erreur: ${error.message}`);
+      }
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,6 @@
 const Module = require('../models/Module');
 const Course = require('../models/Course');
+const Lesson = require('../models/Lesson');
 
 // Créer un nouveau module
 const createModule = async (req, res) => {
@@ -24,11 +25,32 @@ const createModule = async (req, res) => {
       });
     }
     
+    // Calculer l'ordre automatiquement si non fourni ou en conflit
+    let finalOrder = order;
+    if (!finalOrder || finalOrder < 1) {
+      const existingModules = await Module.find({ course: courseId }).sort({ order: -1 }).limit(1);
+      finalOrder = existingModules.length > 0 ? existingModules[0].order + 1 : 1;
+    }
+    
+    // Vérifier qu'il n'y a pas de conflit d'ordre
+    const conflictingModule = await Module.findOne({ 
+      course: courseId, 
+      order: finalOrder 
+    });
+    
+    if (conflictingModule) {
+      // Réorganiser les modules existants
+      await Module.updateMany(
+        { course: courseId, order: { $gte: finalOrder } },
+        { $inc: { order: 1 } }
+      );
+    }
+    
     // Créer le module
     const newModule = new Module({
       title,
       description,
-      order,
+      order: finalOrder,
       course: courseId,
       estimatedDuration: estimatedDuration || '0 heure',
       objectives: objectives || [],
@@ -37,9 +59,9 @@ const createModule = async (req, res) => {
     
     await newModule.save();
     
-    // Ajouter le module au cours
+    // Ajouter le module au cours (sans validation pour éviter les conflits)
     course.modules.push(newModule._id);
-    await course.save();
+    await course.save({ validateBeforeSave: false });
     
     res.status(201).json({
       success: true,
@@ -121,11 +143,15 @@ const deleteModule = async (req, res) => {
       });
     }
     
+    // Supprimer toutes les leçons associées au module
+    await Lesson.deleteMany({ module: id });
+    
     // Supprimer le module du cours
     course.modules = course.modules.filter(m => m.toString() !== id);
     await course.save();
     
     // Supprimer le module
+    await Module.findByIdAndUpdate(id, { lessons: [] });
     await Module.findByIdAndDelete(id);
     
     res.json({
@@ -163,9 +189,38 @@ const getCourseModules = async (req, res) => {
   }
 };
 
+// Obtenir un module par ID
+const getModuleById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const module = await Module.findById(id)
+      .populate('lessons', 'title description duration type isPublished order');
+    
+    if (!module) {
+      return res.status(404).json({
+        success: false,
+        message: 'Module introuvable'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: module
+    });
+  } catch (error) {
+    console.error('Erreur getModuleById:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur interne du serveur'
+    });
+  }
+};
+
 module.exports = {
   createModule,
   updateModule,
   deleteModule,
-  getCourseModules
+  getCourseModules,
+  getModuleById
 };

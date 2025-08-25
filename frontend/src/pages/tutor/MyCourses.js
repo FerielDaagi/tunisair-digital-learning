@@ -224,9 +224,8 @@ const MyCourses = () => {
   };
 
   const handleAddModules = (courseId) => {
-    // TODO: Implémenter la navigation vers la page d'ajout de modules
-    console.log('Ajouter des modules au cours:', courseId);
-    // Pas de message ici, géré par la navbar
+    console.log('🚀 Navigation ultra-rapide vers la création de module pour le cours:', courseId);
+    navigate(`/tutor/quick-create-module/${courseId}`);
   };
 
   const getStatusColor = (status) => {

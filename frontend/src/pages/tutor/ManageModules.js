@@ -29,32 +29,9 @@ const ManageModules = () => {
       return;
     }
     
-    // Charger les données
-    const fetchData = async () => {
-      try {
-        // Charger le cours
-        const courseResponse = await fetch(`http://localhost:5000/api/courses/${courseId}`);
-        if (courseResponse.ok) {
-          const courseData = await courseResponse.json();
-          if (courseData.success) {
-            setCourse(courseData.data);
-          }
-        }
-        
-        // Charger les modules
-        const modulesResponse = await modulesAPI.getByCourse(courseId);
-        if (modulesResponse.data.success) {
-          setModules(modulesResponse.data.data);
-        }
-      } catch (error) {
-        console.error('Erreur chargement données:', error);
-        setError('Erreur lors du chargement des données');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchData();
+    // Redirection directe vers la création de module
+    console.log('🚀 Redirection directe vers la création de module pour le cours:', courseId);
+    navigate(`/tutor/create-module/${courseId}`);
   }, [user, navigate, courseId]);
 
   const handleDeleteModule = async (moduleId) => {
@@ -104,16 +81,7 @@ const ManageModules = () => {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="create-course-page">
-        <div className="loading">
-          <Icon name="loader" size={IconSizes.xl} color={IconColors.primary} />
-          <h2>Chargement des modules...</h2>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="create-course-page">

@@ -22,6 +22,10 @@ const moduleSchema = new mongoose.Schema({
     ref: 'Course',
     required: [true, 'Le cours est requis']
   },
+  lessons: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Lesson'
+  }],
   isPublished: {
     type: Boolean,
     default: false

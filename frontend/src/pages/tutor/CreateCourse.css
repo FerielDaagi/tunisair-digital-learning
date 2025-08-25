@@ -679,3 +679,235 @@
     flex-wrap: wrap;
   }
 }
+
+/* Lesson Management Styles */
+.lessons-management {
+  margin-top: 2rem;
+}
+
+.lessons-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--surface-color);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.lessons-info h3 {
+  margin: 0 0 0.5rem 0;
+  color: var(--text-primary);
+}
+
+.lessons-info p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.no-lessons {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: var(--surface-color);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.no-lessons h3 {
+  margin: 1rem 0;
+  color: var(--text-primary);
+}
+
+.no-lessons p {
+  margin-bottom: 1.5rem;
+  color: var(--text-secondary);
+}
+
+.lessons-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.lesson-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  background: var(--surface-color);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.lesson-card:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.lesson-info {
+  flex: 1;
+}
+
+.lesson-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.lesson-order {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.lesson-title h4 {
+  margin: 0 0 0.25rem 0;
+  color: var(--text-primary);
+  font-size: 1.125rem;
+}
+
+.lesson-title p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.lesson-status .status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.lesson-status .status.published {
+  background: var(--success-color);
+  color: white;
+}
+
+.lesson-status .status.draft {
+  background: var(--muted-color);
+  color: var(--text-secondary);
+}
+
+.lesson-stats {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.lesson-stats .stat {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--surface-secondary);
+  color: var(--text-secondary);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.lesson-stats .stat.free {
+  background: var(--success-color);
+  color: white;
+}
+
+.lesson-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.reorder-buttons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.reorder-buttons .btn {
+  padding: 0.25rem;
+  min-width: auto;
+}
+
+/* Checkbox styles for lesson creation */
+.checkbox-group {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+  display: none;
+}
+
+.checkmark {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border-color);
+  border-radius: 4px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkmark {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkmark::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 6px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Responsive for lessons */
+@media (max-width: 768px) {
+  .lessons-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .lesson-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .lesson-header {
+    flex-wrap: wrap;
+  }
+  
+  .lesson-status {
+    margin-left: 0;
+    margin-top: 8px;
+  }
+  
+  .lesson-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+  }
+}
