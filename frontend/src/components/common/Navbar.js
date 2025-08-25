@@ -180,6 +180,44 @@ const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
             </ul>
           </div>
 
+          {/* Notifications de demandes de tutorat pour les admins */}
+          {user?.role === 'admin' && (() => {
+            const note = notifications.find(n => n.id === 'tutor-requests-pending' || n.category === 'tutor_request');
+            const pendingTutorCount = note?.count ?? notifications.filter(n => n.category === 'tutor_request').length;
+            if (pendingTutorCount === 0) return null;
+            return (
+              <div className="nav-section">
+                <h3 className="nav-section-title">Notifications</h3>
+                <ul className="nav-links">
+                  <li>
+                    <Link 
+                      to="/admin"
+                      className={isActive('/admin') ? 'active' : ''}
+                      onClick={closeMobileMenu}
+                    >
+                      <Icon name="graduation" size={IconSizes.sm} color={IconColors.white} className="nav-icon" />
+                      {!isCollapsed && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          Demandes de tutorat
+                          <span style={{
+                            backgroundColor: 'rgba(255,255,255,0.15)',
+                            color: 'white',
+                            padding: '0 8px',
+                            borderRadius: '999px',
+                            fontSize: '0.75rem',
+                            fontWeight: 700
+                          }}>
+                            {pendingTutorCount}
+                          </span>
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+            );
+          })()}
+
           {/* Profil utilisateur avec accès direct */}
           {user && (
             <div className="nav-section">

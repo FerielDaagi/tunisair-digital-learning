@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../contexts/NotificationContext';
+import { useLocation } from 'react-router-dom';
 import { userAPI } from '../../services/api';
 import { Icon, IconSizes, IconColors } from '../../components/common/IconTheme';
 import ConfirmModal from '../../components/common/ConfirmModal';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const { items: notifItems, addTutorRequestNotification, removeTutorRequestNotification } = useNotifications();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -29,9 +33,22 @@ const AdminDashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [usersPerPage, setUsersPerPage] = useState(3);
 
+
   useEffect(() => {
     loadUsers();
   }, []);
+
+  // Lire une notification passée depuis la sidebar et l'afficher en haut
+  useEffect(() => {
+    if (location?.state?.notif && location.state.notif.category === 'tutor_request') {
+      const note = location.state.notif;
+      setSuccess(note.message || note.title || 'Notification');
+      // Nettoyer l'état d'historique pour éviter la réaffichage au back/forward
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
+
+  // Ancien effet de pulse de bannière supprimé
 
   const loadUsers = async () => {
     try {
@@ -45,6 +62,9 @@ const AdminDashboard = () => {
       if (response.data && response.data.users) {
         setUsers(response.data.users);
         console.log('Utilisateurs chargés:', response.data.users.length);
+        // Mettre à jour le badge des demandes de tutorat dans la sidebar
+        const count = (response.data.users || []).filter(u => u.role === 'apprenti' && u.tutorRequestStatus === 'pending').length;
+        if (count > 0) addTutorRequestNotification(count); else removeTutorRequestNotification();
       } else {
         console.warn('Réponse invalide:', response);
         setError('Format de réponse invalide du serveur');
@@ -98,8 +118,31 @@ const AdminDashboard = () => {
     return filtered;
   };
   
-  const currentUsers = getFilteredUsers().slice(indexOfFirstUser, indexOfLastUser);
+  // Ordonner: demandes de tutorat en attente épinglées en haut
+  const sortedFilteredUsers = (() => {
+    const list = getFilteredUsers();
+    return [...list].sort((a, b) => {
+      const ap = a.role === 'apprenti' && a.tutorRequestStatus === 'pending' ? 1 : 0;
+      const bp = b.role === 'apprenti' && b.tutorRequestStatus === 'pending' ? 1 : 0;
+      // Éléments avec ap=1 doivent venir AVANT → trier desc
+      if (ap !== bp) return bp - ap;
+      // Sinon trier par date de création desc
+      const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bt - at;
+    });
+  })();
+  const currentUsers = sortedFilteredUsers.slice(indexOfFirstUser, indexOfLastUser);
   const totalPages = Math.ceil(getFilteredUsers().length / usersPerPage);
+
+  // Demandes de tutorat en attente
+  const pendingTutorRequests = users.filter(
+    (u) => u.role === 'apprenti' && u.tutorRequestStatus === 'pending'
+  );
+
+  // Notification de demandes de tutorat gérée globalement dans NotificationContext
+
+
   
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
@@ -143,7 +186,7 @@ const AdminDashboard = () => {
       setShowRejectModal(false);
       setRejectUserId(null);
       setRejectReason('');
-      loadUsers();
+      await loadUsers();
     } catch (err) {
       setError(err.response?.data?.message || 'Erreur lors du rejet');
     }
@@ -170,7 +213,7 @@ const AdminDashboard = () => {
       setShowConfirmModal(false);
       setConfirmAction(null);
       setTargetUserId(null);
-      loadUsers();
+      await loadUsers();
     } catch (err) {
       setError(err.response?.data?.message || 'Action échouée');
     }
@@ -235,6 +278,7 @@ const AdminDashboard = () => {
   return (
     <div className="main-content">
       <div style={{ maxWidth: '1200px', margin: '0 auto', paddingTop: '2rem' }}>
+
         <ConfirmModal
           open={confirmDeleteState.open}
           title="Supprimer l’utilisateur"
