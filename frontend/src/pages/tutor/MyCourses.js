@@ -54,8 +54,9 @@ const MyCourses = () => {
         }
       }
       
-      console.log('Données reçues de l\'API:', response);
-      console.log('Cours extraits:', coursesData);
+
+      
+
       
       setCourses(coursesData);
     } catch (error) {
@@ -224,8 +225,8 @@ const MyCourses = () => {
   };
 
   const handleAddModules = (courseId) => {
-    console.log('🚀 Navigation ultra-rapide vers la création de module pour le cours:', courseId);
-    navigate(`/tutor/quick-create-module/${courseId}`);
+    console.log('🚀 Navigation vers la gestion des modules du cours:', courseId);
+    navigate(`/tutor/manage-modules/${courseId}`);
   };
 
   const getStatusColor = (status) => {
@@ -485,10 +486,10 @@ const MyCourses = () => {
                         <span>{course.duration}</span>
                       </div>
                     )}
-                    {course.modules && course.modules.length > 0 && (
+                    {course.moduleCount > 0 && (
                       <div className="meta-item">
                         <Icon name="fileText" size={IconSizes.xs} color={IconColors.muted} />
-                        <span>{course.modules.length} modules</span>
+                        <span>{course.moduleCount} modules</span>
                       </div>
                     )}
                   </div>
@@ -528,30 +529,21 @@ const MyCourses = () => {
                         {actionLoading.publish === course._id ? 'Publication...' : 'Publier'}
                       </button>
                       
-                      {/* Bouton d'ajout de modules si le cours est vide */}
-                      {(!course.modules || course.modules.length === 0) && (
-                        <button
-                          onClick={() => handleAddModules(course._id)}
-                          className="btn btn-warning"
-                          title="Ajouter des modules (requis pour publication)"
-                        >
-                          <Icon name="plus" size={IconSizes.xs} color={IconColors.white} />
-                          Ajouter des modules
-                        </button>
-                      )}
+
                     </>
                   )}
                   
-                  {course.status === 'published' && (!course.modules || course.modules.length === 0) && (
-                    <button
-                      onClick={() => handleAddModules(course._id)}
-                      className="btn btn-primary"
-                      title="Ajouter des modules"
-                    >
-                      <Icon name="plus" size={IconSizes.xs} color={IconColors.white} />
-                      Ajouter des modules
-                    </button>
-                  )}
+                  {/* Bouton Modules - TOUJOURS visible */}
+                  <button
+                    onClick={() => handleAddModules(course._id)}
+                    className="btn btn-primary"
+                    title="Gérer les modules du cours"
+                  >
+                    <Icon name="layers" size={IconSizes.xs} color={IconColors.white} />
+                    Modules {course.moduleCount > 0 && `(${course.moduleCount})`}
+                  </button>
+                  
+
                   
                   <button
                     onClick={(e) => {
@@ -766,8 +758,8 @@ const MyCourses = () => {
                   }}
                   className="btn btn-success"
                 >
-                  <Icon name="plus" size={IconSizes.xs} color={IconColors.white} />
-                  Ajouter des modules
+                  <Icon name="layers" size={IconSizes.xs} color={IconColors.white} />
+                  Modules
                 </button>
               )}
             </div>

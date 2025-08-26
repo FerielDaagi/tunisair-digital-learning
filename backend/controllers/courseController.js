@@ -177,6 +177,38 @@ const createCourse = async (req, res) => {
       }
     }
 
+    // Parser les champs JSON reçus via FormData
+    let parsedRequirements = [];
+    let parsedOutcomes = [];
+    let parsedTags = [];
+    
+    try {
+      if (requirements) {
+        parsedRequirements = JSON.parse(requirements).filter(req => req && req.trim() !== '');
+      }
+    } catch (e) {
+      console.log('⚠️ Erreur parsing requirements:', e.message);
+      parsedRequirements = [];
+    }
+    
+    try {
+      if (outcomes) {
+        parsedOutcomes = JSON.parse(outcomes).filter(out => out && out.trim() !== '');
+      }
+    } catch (e) {
+      console.log('⚠️ Erreur parsing outcomes:', e.message);
+      parsedOutcomes = [];
+    }
+    
+    try {
+      if (tags) {
+        parsedTags = JSON.parse(tags).filter(tag => tag && tag.trim() !== '');
+      }
+    } catch (e) {
+      console.log('⚠️ Erreur parsing tags:', e.message);
+      parsedTags = [];
+    }
+
     // Utiliser le nom de la catégorie (pas l'ID)
     const courseData = {
       title: title.trim(),
@@ -187,12 +219,17 @@ const createCourse = async (req, res) => {
       level,
       duration: duration.trim(),
       price: price || 0,
-      requirements: requirements?.filter(req => req && req.trim() !== '') || [],
-      outcomes: outcomes?.filter(out => out && out.trim() !== '') || [],
-      tags: tags?.filter(tag => tag && tag.trim() !== '') || [],
+      requirements: parsedRequirements,
+      outcomes: parsedOutcomes,
+      tags: parsedTags,
       language: language || 'français',
       status: 'draft'
     };
+
+    // Ajouter l'image de couverture si elle existe
+    if (req.file) {
+      courseData.thumbnail = `/uploads/thumbnails/${req.file.filename}`;
+    }
     
     console.log('💾 Sauvegarde du cours...');
     const newCourse = new Course(courseData);
@@ -239,7 +276,32 @@ const createCourse = async (req, res) => {
 const updateCourse = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    let updateData = { ...req.body };
+    
+    // Traiter les champs JSON
+    if (updateData.tags) {
+      try {
+        updateData.tags = JSON.parse(updateData.tags);
+      } catch (e) {
+        updateData.tags = [];
+      }
+    }
+    
+    if (updateData.requirements) {
+      try {
+        updateData.requirements = JSON.parse(updateData.requirements);
+      } catch (e) {
+        updateData.requirements = [];
+      }
+    }
+    
+    if (updateData.outcomes) {
+      try {
+        updateData.outcomes = JSON.parse(updateData.outcomes);
+      } catch (e) {
+        updateData.outcomes = [];
+      }
+    }
     
     const course = await Course.findById(id);
     if (!course) {
@@ -255,6 +317,11 @@ const updateCourse = async (req, res) => {
         success: false,
         message: 'Vous n\'êtes pas autorisé à modifier ce cours'
       });
+    }
+    
+    // Ajouter l'image de couverture si elle existe
+    if (req.file) {
+      updateData.thumbnail = `/uploads/thumbnails/${req.file.filename}`;
     }
     
     // Mettre à jour le cours
@@ -466,9 +533,46 @@ const getTutorCourses = async (req, res) => {
     const courses = await Course.find(query)
       .sort(sortOptions);
     
+    console.log('🔍 Debug - Cours trouvés:', courses.length);
+    
+    // Debug: afficher la structure complète du premier cours
+    if (courses.length > 0) {
+      const firstCourse = courses[0].toObject();
+      console.log('🔍 Debug - Structure complète du premier cours:', {
+        _id: firstCourse._id,
+        title: firstCourse.title,
+        allKeys: Object.keys(firstCourse),
+        hasModules: 'modules' in firstCourse,
+        modulesValue: firstCourse.modules
+      });
+    }
+    
+    // Calculer le nombre correct de modules pour chaque cours
+    const coursesWithModuleCount = courses.map(course => {
+      const courseObj = course.toObject();
+      
+      // Debug détaillé pour chaque cours
+      console.log(`🔍 Debug - Cours "${courseObj.title}":`, {
+        modules: courseObj.modules,
+        modulesType: typeof courseObj.modules,
+        isArray: Array.isArray(courseObj.modules),
+        modulesLength: courseObj.modules?.length,
+        modulesKeys: courseObj.modules ? Object.keys(courseObj.modules[0] || {}) : 'no modules',
+        allKeys: Object.keys(courseObj)
+      });
+      
+      // Les modules sont maintenant des références populées
+      courseObj.moduleCount = Array.isArray(courseObj.modules) ? courseObj.modules.length : 0;
+      
+      // Debug: afficher le nombre de modules pour vérification
+      console.log(`📚 Cours "${courseObj.title}": ${courseObj.moduleCount} modules`);
+      
+      return courseObj;
+    });
+    
     res.json({
       success: true,
-      data: courses
+      data: coursesWithModuleCount
     });
   } catch (error) {
     console.error('Erreur getTutorCourses:', error);

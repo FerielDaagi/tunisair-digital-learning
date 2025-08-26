@@ -113,7 +113,12 @@ const CreateModule = () => {
           navigate(`/tutor/manage-modules/${courseId}`);
         }, 2000);
       } else {
-        setError(response.data.message || 'Erreur lors de la création du module');
+        // Gérer les erreurs spécifiques
+        if (response.data.message.includes('ordre existe déjà')) {
+          setError('Un module avec cet ordre existe déjà dans ce cours. Veuillez choisir un ordre différent.');
+        } else {
+          setError(response.data.message || 'Erreur lors de la création du module');
+        }
       }
     } catch (error) {
       console.error('Erreur création module:', error);
@@ -270,12 +275,12 @@ const CreateModule = () => {
           <div className="form-actions">
             <button
               type="button"
-              onClick={() => navigate(`/tutor/edit-course/${courseId}`)}
+              onClick={() => navigate(`/tutor/manage-modules/${courseId}`)}
               className="btn btn-secondary"
               disabled={loading}
             >
               <Icon name="arrowLeft" size={IconSizes.sm} color={IconColors.white} />
-              Annuler
+              Retour aux modules
             </button>
             
             <button

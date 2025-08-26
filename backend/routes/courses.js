@@ -12,6 +12,7 @@ const {
   getEnrolledCourses 
 } = require('../controllers/courseController');
 const { auth } = require('../middleware/auth');
+const upload = require('../middleware/upload');
 
 // Public routes
 router.get('/', getAllCourses);
@@ -22,9 +23,9 @@ router.get('/enrolled', auth, getEnrolledCourses);
 router.post('/:id/enroll', auth, enrollInCourse);
 
 // Tutor-only routes
-router.post('/', auth, createCourse);
+router.post('/', auth, upload.single('thumbnail'), createCourse);
 router.get('/tutor/my-courses', auth, getTutorCourses);
-router.put('/:id', auth, updateCourse);
+router.put('/:id', auth, upload.single('thumbnail'), updateCourse);
 router.delete('/:id', auth, deleteCourse);
 router.patch('/:id/publish', auth, publishCourse);
 

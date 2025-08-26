@@ -29,10 +29,35 @@ const ManageModules = () => {
       return;
     }
     
-    // Redirection directe vers la création de module
-    console.log('🚀 Redirection directe vers la création de module pour le cours:', courseId);
-    navigate(`/tutor/create-module/${courseId}`);
+    // Charger les données du cours et des modules
+    loadCourseAndModules();
   }, [user, navigate, courseId]);
+
+  const loadCourseAndModules = async () => {
+    try {
+      setLoading(true);
+      
+      // Charger le cours
+      const courseResponse = await fetch(`http://localhost:5000/api/courses/${courseId}`);
+      if (courseResponse.ok) {
+        const courseData = await courseResponse.json();
+        if (courseData.success) {
+          setCourse(courseData.data);
+        }
+      }
+      
+      // Charger les modules
+      const modulesResponse = await modulesAPI.getByCourse(courseId);
+      if (modulesResponse.data.success) {
+        setModules(modulesResponse.data.data);
+      }
+    } catch (error) {
+      console.error('Erreur chargement données:', error);
+      setError('Erreur lors du chargement des données');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDeleteModule = async (moduleId) => {
     setConfirmState({ open: true, moduleId });
@@ -44,16 +69,13 @@ const ManageModules = () => {
     try {
       const response = await modulesAPI.delete(moduleId);
       if (response.data.success) {
-        const modulesResponse = await modulesAPI.getByCourse(courseId);
-        if (modulesResponse.data.success) {
-          setModules(modulesResponse.data.data);
-        }
+        addNotification('Module supprimé avec succès', 'success');
+        // Recharger les modules
+        await loadCourseAndModules();
       }
     } catch (error) {
       console.error('Erreur suppression module:', error);
-      if (addNotification) {
-        addNotification('La suppression du module a échoué. Veuillez réessayer.', 'error');
-      }
+      addNotification('La suppression du module a échoué. Veuillez réessayer.', 'error');
     }
   };
 
@@ -81,7 +103,18 @@ const ManageModules = () => {
     );
   }
 
-
+  if (loading) {
+    return (
+      <div className="create-course-page">
+        <div className="create-course-container">
+          <div className="loading-container">
+            <Icon name="loader" size={IconSizes.xl} color={IconColors.primary} />
+            <h2>Chargement des modules...</h2>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="create-course-page">
@@ -95,10 +128,11 @@ const ManageModules = () => {
           onConfirm={confirmDelete}
           onCancel={() => setConfirmState({ open: false, moduleId: null })}
         />
+        
         <div className="create-course-header">
           <h1>
             <Icon name="layers" size={IconSizes.lg} color={IconColors.primary} />
-            Gérer les modules
+            Gestion des modules
           </h1>
           <p>Cours : {course?.title || '...'}</p>
         </div>
@@ -110,47 +144,80 @@ const ManageModules = () => {
           </div>
         )}
 
-        <div className="modules-management">
-          <div className="modules-header">
-            <div className="modules-info">
-              <h3>Modules ({modules.length})</h3>
-              <p>Organisez les modules de votre cours</p>
+        {/* En-tête avec statistiques */}
+        <div className="modules-overview">
+          <div className="overview-stats">
+            <div className="stat-card">
+              <Icon name="layers" size={IconSizes.lg} color={IconColors.primary} />
+              <div className="stat-content">
+                <span className="stat-number">{modules.length}</span>
+                <span className="stat-label">Modules</span>
+              </div>
             </div>
+            
+            <div className="stat-card">
+              <Icon name="book" size={IconSizes.lg} color={IconColors.success} />
+              <div className="stat-content">
+                <span className="stat-number">
+                  {modules.reduce((total, module) => total + (module.lessons?.length || 0), 0)}
+                </span>
+                <span className="stat-label">Leçons totales</span>
+              </div>
+            </div>
+            
+            <div className="stat-card">
+              <Icon name="globe" size={IconSizes.lg} color={IconColors.warning} />
+              <div className="stat-content">
+                <span className="stat-number">
+                  {modules.filter(m => m.isPublished).length}
+                </span>
+                <span className="stat-label">Publiés</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="overview-actions">
             <button
               onClick={handleCreateModule}
-              className="btn btn-primary"
+              className="btn btn-primary btn-lg"
             >
-              <Icon name="plus" size={IconSizes.sm} color={IconColors.white} />
-              Ajouter un module
+              <Icon name="plus" size={IconSizes.md} color={IconColors.white} />
+              Nouveau module
+            </button>
+            
+            <button
+              onClick={() => navigate(`/tutor/edit-course/${courseId}`)}
+              className="btn btn-outline"
+            >
+              <Icon name="arrowLeft" size={IconSizes.sm} color={IconColors.muted} />
+              Retour au cours
             </button>
           </div>
+        </div>
 
+        {/* Liste des modules */}
+        <div className="modules-list">
+          <h3>
+            <Icon name="list" size={IconSizes.md} color={IconColors.primary} />
+            Modules du cours ({modules.length})
+          </h3>
+          
           {modules.length === 0 ? (
-            <div className="no-modules">
-              <Icon name="folderOpen" size={IconSizes.xl} color={IconColors.muted} />
-              <h3>Aucun module créé</h3>
-              <p>Commencez par créer votre premier module</p>
-              <button
-                onClick={handleCreateModule}
-                className="btn btn-primary"
-              >
-                <Icon name="plus" size={IconSizes.sm} color={IconColors.white} />
-                Créer le premier module
-              </button>
+            <div className="empty-state">
+              <Icon name="layers" size={IconSizes.xl} color={IconColors.muted} />
+              <p>Aucun module créé pour ce cours</p>
+              <small>Commencez par créer votre premier module</small>
             </div>
           ) : (
-            <div className="modules-list">
-              {modules.map((module, index) => (
-                <div key={module._id} className="module-card">
-                  <div className="module-info">
+            <div className="modules-grid">
+              {modules
+                .sort((a, b) => a.order - b.order)
+                .map((module) => (
+                  <div key={module._id} className="module-card">
                     <div className="module-header">
                       <div className="module-order">
                         <Icon name="hash" size={IconSizes.sm} color={IconColors.primary} />
-                        <span>{module.order}</span>
-                      </div>
-                      <div className="module-title">
-                        <h4>{module.title}</h4>
-                        <p>{module.description}</p>
+                        {module.order}
                       </div>
                       <div className="module-status">
                         {module.isPublished ? (
@@ -160,63 +227,49 @@ const ManageModules = () => {
                           </span>
                         ) : (
                           <span className="status draft">
-                            <Icon name="eyeOff" size={IconSizes.xs} color={IconColors.muted} />
+                            <Icon name="edit" size={IconSizes.xs} color={IconColors.muted} />
                             Brouillon
                           </span>
                         )}
                       </div>
                     </div>
                     
-                    <div className="module-stats">
-                      <span className="stat">
-                        <Icon name="play" size={IconSizes.xs} color={IconColors.primary} />
-                        {module.lessons?.length || 0} leçon{module.lessons?.length !== 1 ? 's' : ''}
-                      </span>
+                    <div className="module-content">
+                      <h4 className="module-title">{module.title}</h4>
+                      <p className="module-description">{module.description}</p>
+                      
+                      <div className="module-stats">
+                        <span className="stat">
+                          <Icon name="clock" size={IconSizes.xs} color={IconColors.muted} />
+                          {module.estimatedDuration || 'Non définie'}
+                        </span>
+                        <span className="stat">
+                          <Icon name="book" size={IconSizes.xs} color={IconColors.muted} />
+                          {module.lessons?.length || 0} leçon(s)
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="module-actions">
+                      <button className="action-card lessons-card" onClick={() => handleManageLessons(module._id)}>
+                        <Icon name="book" size={IconSizes.sm} color={IconColors.white} />
+                        Leçons
+                      </button>
+                      
+                      <button className="action-card edit-card" onClick={() => handleEditModule(module._id)}>
+                        <Icon name="edit" size={IconSizes.sm} color={IconColors.white} />
+                        Modifier
+                      </button>
+                      
+                      <button className="action-card delete-card" onClick={() => handleDeleteModule(module._id)}>
+                        <Icon name="trash" size={IconSizes.sm} color={IconColors.white} />
+                        Supprimer
+                      </button>
                     </div>
                   </div>
-                  
-                  <div className="module-actions">
-                    <button
-                      onClick={() => handleManageLessons(module._id)}
-                      className="btn btn-sm btn-primary"
-                      title="Gérer les leçons"
-                    >
-                      <Icon name="list" size={IconSizes.xs} color={IconColors.white} />
-                      Leçons
-                    </button>
-                    
-                    <button
-                      onClick={() => handleEditModule(module._id)}
-                      className="btn btn-sm btn-secondary"
-                      title="Modifier le module"
-                    >
-                      <Icon name="edit" size={IconSizes.xs} color={IconColors.white} />
-                      Modifier
-                    </button>
-                    
-                    <button
-                      onClick={() => handleDeleteModule(module._id)}
-                      className="btn btn-sm btn-danger"
-                      title="Supprimer le module"
-                    >
-                      <Icon name="trash" size={IconSizes.xs} color={IconColors.white} />
-                      Supprimer
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
           )}
-        </div>
-
-        <div className="form-actions">
-          <button
-            onClick={() => navigate(`/tutor/edit-course/${courseId}`)}
-            className="btn btn-secondary"
-          >
-            <Icon name="arrowLeft" size={IconSizes.sm} color={IconColors.white} />
-            Retour au cours
-          </button>
         </div>
       </div>
     </div>

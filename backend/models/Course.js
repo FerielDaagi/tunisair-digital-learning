@@ -73,23 +73,8 @@ const courseSchema = new mongoose.Schema({
     trim: true
   }],
   modules: [{
-    title: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    description: {
-      type: String,
-      trim: true
-    },
-    duration: {
-      type: String,
-      required: true
-    },
-    lessons: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Lesson'
-    }]
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Module'
   }],
   enrolledStudents: [{
     student: {

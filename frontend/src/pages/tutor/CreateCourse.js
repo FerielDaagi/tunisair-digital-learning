@@ -23,6 +23,9 @@ const CreateCourse = () => {
     language: 'français'
   });
   
+  const [thumbnail, setThumbnail] = useState(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState('');
+  
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -105,6 +108,38 @@ const CreateCourse = () => {
         [field]: prev[field].filter((_, i) => i !== index)
       }));
     }
+  };
+
+  const handleThumbnailChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validation du type de fichier
+      if (!file.type.startsWith('image/')) {
+        setError('Veuillez sélectionner une image valide (JPG, PNG, GIF)');
+        return;
+      }
+      
+      // Validation de la taille (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('L\'image ne doit pas dépasser 5MB');
+        return;
+      }
+      
+      setThumbnail(file);
+      setError(''); // Effacer les erreurs précédentes
+      
+      // Créer un aperçu
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setThumbnailPreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeThumbnail = () => {
+    setThumbnail(null);
+    setThumbnailPreview('');
   };
 
   const handleSubmit = async (e) => {
@@ -194,18 +229,23 @@ const CreateCourse = () => {
       const requirements = formData.requirements.filter(req => req.trim() !== '');
       const outcomes = formData.outcomes.filter(out => out.trim() !== '');
 
-      const courseData = {
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        longDescription: formData.longDescription.trim(),
-        category: formData.category === 'other' ? newCategoryName.trim() : formData.category,
-        level: formData.level,
-        duration,
-        tags,
-        requirements,
-        outcomes,
-        language: formData.language
-      };
+      // Créer un FormData pour inclure l'image
+      const courseData = new FormData();
+      courseData.append('title', formData.title.trim());
+      courseData.append('description', formData.description.trim());
+      courseData.append('longDescription', formData.longDescription.trim());
+      courseData.append('category', formData.category === 'other' ? newCategoryName.trim() : formData.category);
+      courseData.append('level', formData.level);
+      courseData.append('duration', duration);
+      courseData.append('tags', JSON.stringify(tags));
+      courseData.append('requirements', JSON.stringify(requirements));
+      courseData.append('outcomes', JSON.stringify(outcomes));
+      courseData.append('language', formData.language);
+      
+      // Ajouter l'image si elle existe
+      if (thumbnail) {
+        courseData.append('thumbnail', thumbnail);
+      }
 
       console.log('Données du cours à envoyer:', courseData);
 
@@ -226,6 +266,10 @@ const CreateCourse = () => {
           tags: [''],
           language: 'français'
         });
+        
+        // Réinitialiser l'image
+        setThumbnail(null);
+        setThumbnailPreview('');
         
         // Réinitialiser les champs de nouvelle catégorie
         setShowNewCategoryInput(false);
@@ -363,6 +407,44 @@ const CreateCourse = () => {
                 placeholder="Décrivez en détail ce que les apprentis apprendront dans votre cours"
                 className="form-textarea"
               />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="thumbnail">
+                <Icon name="image" size={IconSizes.xs} color={IconColors.primary} />
+                Image de couverture
+              </label>
+              <div className="thumbnail-upload">
+                <input
+                  type="file"
+                  id="thumbnail"
+                  name="thumbnail"
+                  accept="image/*"
+                  onChange={handleThumbnailChange}
+                  className="thumbnail-input"
+                />
+                <div className="thumbnail-preview">
+                  {thumbnailPreview ? (
+                    <div className="preview-container">
+                      <img src={thumbnailPreview} alt="Aperçu de l'image" className="preview-image" />
+                      <button
+                        type="button"
+                        onClick={removeThumbnail}
+                        className="remove-thumbnail"
+                        title="Supprimer l'image"
+                      >
+                        <Icon name="x" size={IconSizes.sm} color={IconColors.white} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="upload-placeholder">
+                      <Icon name="upload" size={IconSizes.lg} color={IconColors.muted} />
+                      <p>Cliquez pour sélectionner une image</p>
+                      <span className="upload-hint">JPG, PNG, GIF - Max 5MB</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
