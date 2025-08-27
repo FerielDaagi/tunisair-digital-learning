@@ -9,6 +9,9 @@ const MyCourses = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
+  // URL du backend pour les images
+  const BACKEND_URL = 'http://localhost:5000';
+  
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -466,6 +469,21 @@ const MyCourses = () => {
                     </span>
                   </div>
                 </div>
+                
+                {/* Image de couverture */}
+                {course.thumbnail && (
+                  <div className="course-thumbnail">
+                    <img 
+                      src={`${BACKEND_URL}${course.thumbnail}`} 
+                      alt={`Couverture du cours ${course.title}`}
+                      className="course-thumbnail-image"
+                      onError={(e) => {
+                        console.error('❌ Erreur chargement image:', course.thumbnail);
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
                 
                 <div className="course-content">
                   <h3 className="course-title">{course.title}</h3>

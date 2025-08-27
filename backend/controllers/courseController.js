@@ -227,8 +227,15 @@ const createCourse = async (req, res) => {
     };
 
     // Ajouter l'image de couverture si elle existe
+    console.log('🔍 Debug - req.file:', req.file);
+    console.log('🔍 Debug - req.body:', req.body);
+    console.log('🔍 Debug - req.files:', req.files);
+    
     if (req.file) {
       courseData.thumbnail = `/uploads/thumbnails/${req.file.filename}`;
+      console.log('✅ Image ajoutée au cours:', courseData.thumbnail);
+    } else {
+      console.log('❌ Aucune image reçue (req.file est undefined)');
     }
     
     console.log('💾 Sauvegarde du cours...');

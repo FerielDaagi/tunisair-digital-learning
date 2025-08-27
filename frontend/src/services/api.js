@@ -59,8 +59,14 @@ export const coursesAPI = {
   enroll: (courseId) => api.post(`/courses/${courseId}/enroll`),
   getEnrolled: () => api.get('/courses/enrolled'),
   // Tutor functions
-  create: (courseData) => api.post('/courses', courseData),
-  update: (id, courseData) => api.put(`/courses/${id}`, courseData),
+  create: (courseData) => {
+    const isFormData = typeof FormData !== 'undefined' && courseData instanceof FormData;
+    return api.post('/courses', courseData, isFormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined);
+  },
+  update: (id, courseData) => {
+    const isFormData = typeof FormData !== 'undefined' && courseData instanceof FormData;
+    return api.put(`/courses/${id}`, courseData, isFormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined);
+  },
   delete: (id) => api.delete(`/courses/${id}`),
   publish: (id) => api.patch(`/courses/${id}/publish`),
   getTutorCourses: () => api.get('/courses/tutor/my-courses'),

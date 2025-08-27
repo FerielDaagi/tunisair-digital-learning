@@ -93,6 +93,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', (req, res, next) => {
   // Ensure images are loadable from the frontend origin
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:3000');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  // Handle preflight requests for images
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  
   next();
 }, express.static(path.join(__dirname, 'uploads')));
 
@@ -169,6 +179,25 @@ app.get('/api/health', (req, res) => {
   };
   
   res.json(health);
+});
+
+// 🆕 NOUVEAU - Route spécifique pour les images avec CORS
+app.get('/uploads/thumbnails/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(__dirname, 'uploads', 'thumbnails', filename);
+  
+  // Set CORS headers for images
+  res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:3000');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+  
+  // Serve the image file
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.error('❌ Erreur envoi image:', err);
+      res.status(404).send('Image non trouvée');
+    }
+  });
 });
 
 // 🆕 NOUVEAU - Route de diagnostic

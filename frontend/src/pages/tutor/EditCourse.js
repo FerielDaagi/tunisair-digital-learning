@@ -10,6 +10,9 @@ const EditCourse = () => {
   const navigate = useNavigate();
   const { courseId } = useParams();
   
+  // URL du backend pour les images
+  const BACKEND_URL = 'http://localhost:5000';
+  
   console.log('🔍 EditCourse - user:', user);
   console.log('🔍 EditCourse - courseId:', courseId);
   
@@ -178,7 +181,7 @@ const EditCourse = () => {
           // Gérer l'image de couverture
           if (courseData.thumbnail) {
             setCurrentThumbnail(courseData.thumbnail);
-            setThumbnailPreview(courseData.thumbnail);
+            setThumbnailPreview(`${BACKEND_URL}${courseData.thumbnail}`);
           }
         } else {
           console.error('Cours non trouvé:', courseResponse.data);
