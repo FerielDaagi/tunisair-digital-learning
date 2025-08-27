@@ -103,19 +103,6 @@ const ManageModules = () => {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="create-course-page">
-        <div className="create-course-container">
-          <div className="loading-container">
-            <Icon name="loader" size={IconSizes.xl} color={IconColors.primary} />
-            <h2>Chargement des modules...</h2>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="create-course-page">
       <div className="create-course-container">
@@ -132,7 +119,7 @@ const ManageModules = () => {
         <div className="create-course-header">
           <h1>
             <Icon name="layers" size={IconSizes.lg} color={IconColors.primary} />
-            Gestion des modules
+            Gestion des modules {loading && <Icon name="loader" size={IconSizes.sm} color={IconColors.muted} className="spin" />}
           </h1>
           <p>Cours : {course?.title || '...'}</p>
         </div>
@@ -204,9 +191,18 @@ const ManageModules = () => {
           
           {modules.length === 0 ? (
             <div className="empty-state">
-              <Icon name="layers" size={IconSizes.xl} color={IconColors.muted} />
-              <p>Aucun module créé pour ce cours</p>
-              <small>Commencez par créer votre premier module</small>
+              {loading ? (
+                <>
+                  <Icon name="loader" size={IconSizes.lg} color={IconColors.muted} className="spin" />
+                  <p>Chargement...</p>
+                </>
+              ) : (
+                <>
+                  <Icon name="layers" size={IconSizes.xl} color={IconColors.muted} />
+                  <p>Aucun module créé pour ce cours</p>
+                  <small>Commencez par créer votre premier module</small>
+                </>
+              )}
             </div>
           ) : (
             <div className="modules-grid">
