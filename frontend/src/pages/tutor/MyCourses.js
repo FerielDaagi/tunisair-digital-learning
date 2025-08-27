@@ -268,6 +268,14 @@ const MyCourses = () => {
     }
   };
 
+  // Always compute module count, defaulting to 0
+  const getModuleCount = (course) => {
+    const hasNumericCount = typeof course?.moduleCount === 'number' && Number.isFinite(course.moduleCount);
+    if (hasNumericCount) return course.moduleCount;
+    if (Array.isArray(course?.modules)) return course.modules.length;
+    return 0;
+  };
+
   const filteredCourses = () => {
     // S'assurer que courses est un tableau
     if (!Array.isArray(courses)) {
@@ -504,12 +512,10 @@ const MyCourses = () => {
                         <span>{course.duration}</span>
                       </div>
                     )}
-                    {course.moduleCount > 0 && (
-                      <div className="meta-item">
-                        <Icon name="fileText" size={IconSizes.xs} color={IconColors.muted} />
-                        <span>{course.moduleCount} modules</span>
-                      </div>
-                    )}
+                    <div className="meta-item">
+                      <Icon name="fileText" size={IconSizes.xs} color={IconColors.muted} />
+                      <span>{getModuleCount(course)} modules</span>
+                    </div>
                   </div>
                   
                   {course.tags && course.tags.length > 0 && (
@@ -558,7 +564,7 @@ const MyCourses = () => {
                     title="Gérer les modules du cours"
                   >
                     <Icon name="layers" size={IconSizes.xs} color={IconColors.white} />
-                    Modules {course.moduleCount > 0 && `(${course.moduleCount})`}
+                    Modules ({getModuleCount(course)})
                   </button>
                   
 
