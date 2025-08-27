@@ -528,12 +528,25 @@ const getTutorCourses = async (req, res) => {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 8));
     const skip = (page - 1) * limit;
+    const q = (req.query.q || '').toString().trim();
     
     let query = { instructor: req.user.id };
     
     // Filtre par statut
     if (status) {
       query.status = status;
+    }
+    
+    // Recherche texte (title, description, tags)
+    if (q) {
+      const safe = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(safe, 'i');
+      query.$or = [
+        { title: regex },
+        { description: regex },
+        { longDescription: regex },
+        { tags: regex }
+      ];
     }
     
     // Tri

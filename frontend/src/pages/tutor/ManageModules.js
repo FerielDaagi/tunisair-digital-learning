@@ -22,6 +22,7 @@ const ManageModules = () => {
   const [pages, setPages] = useState(1);
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
+  const [q, setQ] = useState('');
 
   useEffect(() => {
     // Vérifier que l'utilisateur est un tuteur
@@ -37,11 +38,11 @@ const ManageModules = () => {
     
     // Charger les données du cours et des modules
     loadCourseAndModules();
-  }, [user, navigate, courseId, page, limit]);
+  }, [user, navigate, courseId, page, limit, q]);
 
   useEffect(() => {
     setPage(1);
-  }, [courseId]);
+  }, [courseId, q]);
 
   const loadCourseAndModules = async () => {
     try {
@@ -57,7 +58,7 @@ const ManageModules = () => {
       }
       
       // Charger les modules (paginés)
-      const modulesResponse = await modulesAPI.getByCourse(courseId, { page, limit });
+      const modulesResponse = await modulesAPI.getByCourse(courseId, { page, limit, q: q || undefined });
       if (modulesResponse.data.success) {
         setModules(modulesResponse.data.data);
         setTotal(modulesResponse.data.total ?? modulesResponse.data.data.length);
@@ -204,8 +205,18 @@ const ManageModules = () => {
         <div className="modules-list">
           <h3>
             <Icon name="list" size={IconSizes.md} color={IconColors.primary} />
-            Modules du cours ({total})
+            Modules du cours ({modules.length})
           </h3>
+          <div className="search-box" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <Icon name="search" size={IconSizes.sm} color={IconColors.muted} />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              className="search-input"
+              placeholder="Rechercher dans les modules..."
+              style={{ flex: 1, minWidth: 0 }}
+            />
+          </div>
           
           {modules.length === 0 ? (
             <div className="empty-state">

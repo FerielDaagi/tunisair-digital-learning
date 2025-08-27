@@ -174,8 +174,20 @@ const getCourseModules = async (req, res) => {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
     const skip = (page - 1) * limit;
+    const q = (req.query.q || '').toString().trim();
     
     const query = { course: courseId };
+    if (q) {
+      const safe = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(safe, 'i');
+      query.$or = [
+        { title: regex },
+        { description: regex },
+        { objectives: regex },
+        { resources: regex }
+      ];
+    }
+    
     const total = await Module.countDocuments(query);
     const modules = await Module.find(query)
       .populate('lessons', 'title description duration type isPublished')

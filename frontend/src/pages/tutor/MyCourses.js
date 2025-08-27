@@ -39,6 +39,10 @@ const MyCourses = () => {
     fetchCourses();
   }, [user, navigate, page, limit, statusFilter, searchTerm]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter]);
+
   const fetchCourses = async () => {
     try {
       setLoading(true);
@@ -299,12 +303,13 @@ const MyCourses = () => {
       return { total: 0, published: 0, draft: 0, archived: 0 };
     }
     
-    const total = courses.length;
+    // Utiliser le total renvoyé par le backend (toutes pages confondues)
+    const overallTotal = typeof total === 'number' && Number.isFinite(total) ? total : courses.length;
     const published = courses.filter(c => c.status === 'published').length;
     const draft = courses.filter(c => c.status === 'draft').length;
     const archived = courses.filter(c => c.status === 'archived').length;
     
-    return { total, published, draft, archived };
+    return { total: overallTotal, published, draft, archived };
   };
 
   const stats = getStats();
