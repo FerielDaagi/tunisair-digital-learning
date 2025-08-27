@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { modulesAPI } from '../../services/api';
 import { Icon, IconSizes, IconColors } from '../../components/common/IconTheme';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import './CreateCourse.css';
 
 const CreateModule = () => {
@@ -21,6 +22,8 @@ const CreateModule = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [course, setCourse] = useState(null);
+  const [existingOrders, setExistingOrders] = useState([]);
+  const [confirmConflict, setConfirmConflict] = useState({ open: false, desiredOrder: null });
 
   useEffect(() => {
     // Vérifier que l'utilisateur est un tuteur
@@ -34,7 +37,7 @@ const CreateModule = () => {
       return;
     }
     
-    // Charger les informations du cours
+    // Charger les informations du cours et modules
     const fetchCourse = async () => {
       try {
         const response = await fetch(`http://localhost:5000/api/courses/${courseId}`);
@@ -42,19 +45,13 @@ const CreateModule = () => {
           const data = await response.json();
           if (data.success) {
             setCourse(data.data);
-            
-            // Calculer le prochain ordre disponible
-            const existingModules = data.data.modules || [];
-            const maxOrder = existingModules.length > 0 
-              ? Math.max(...existingModules.map(m => m.order || 0))
-              : 0;
-            
-            setFormData(prev => ({
-              ...prev,
-              order: maxOrder + 1
-            }));
-            
-            console.log('📊 Ordre calculé:', maxOrder + 1, 'pour', existingModules.length, 'modules existants');
+            const existingModules = Array.isArray(data.data.modules) ? data.data.modules : [];
+            const orders = existingModules
+              .map(m => m?.order)
+              .filter(o => typeof o === 'number' && Number.isFinite(o));
+            setExistingOrders(orders);
+            const maxOrder = orders.length > 0 ? Math.max(...orders) : 0;
+            setFormData(prev => ({ ...prev, order: maxOrder + 1 }));
           }
         }
       } catch (error) {
@@ -73,26 +70,8 @@ const CreateModule = () => {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    setSuccess('');
-
+  const actuallyCreate = async () => {
     try {
-      // Validation
-      if (!formData.title.trim()) {
-        setError('Le titre du module est requis');
-        setLoading(false);
-        return;
-      }
-
-      if (!formData.description.trim()) {
-        setError('La description du module est requise');
-        setLoading(false);
-        return;
-      }
-
       const moduleData = {
         title: formData.title.trim(),
         description: formData.description.trim(),
@@ -101,45 +80,54 @@ const CreateModule = () => {
         course: courseId
       };
 
-      console.log('Données du module à créer:', moduleData);
-
       const response = await modulesAPI.create(moduleData);
-      
       if (response.data.success) {
         setSuccess('Module créé avec succès !');
-        
-        // Rediriger vers la gestion des modules après 2 secondes
-        setTimeout(() => {
-          navigate(`/tutor/manage-modules/${courseId}`);
-        }, 2000);
+        setTimeout(() => navigate(`/tutor/manage-modules/${courseId}`), 1200);
       } else {
-        // Gérer les erreurs spécifiques
-        if (response.data.message.includes('ordre existe déjà')) {
-          setError('Un module avec cet ordre existe déjà dans ce cours. Veuillez choisir un ordre différent.');
-        } else {
-          setError(response.data.message || 'Erreur lors de la création du module');
-        }
+        setError(response.data.message || 'Erreur lors de la création du module');
       }
     } catch (error) {
-      console.error('Erreur création module:', error);
-      
-      // Afficher l'erreur spécifique si disponible
-      if (error.response) {
-        // Erreur de réponse du serveur
-        console.error('Détails erreur serveur:', error.response.data);
-        setError(error.response.data.message || `Erreur serveur: ${error.response.status}`);
-      } else if (error.request) {
-        // Erreur de requête (pas de réponse)
-        console.error('Pas de réponse du serveur');
-        setError('Le serveur ne répond pas. Vérifiez votre connexion.');
+      if (error.response?.data?.message) {
+        setError(error.response.data.message);
       } else {
-        // Autre erreur
-        console.error('Erreur inconnue:', error.message);
-        setError(`Erreur: ${error.message}`);
+        setError('Erreur lors de la création du module. Veuillez réessayer.');
       }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    // Validation
+    if (!formData.title.trim()) {
+      setError('Le titre du module est requis');
+      setLoading(false);
+      return;
+    }
+    if (!formData.description.trim()) {
+      setError('La description du module est requise');
+      setLoading(false);
+      return;
+    }
+
+    const desiredOrder = parseInt(formData.order);
+    if (Number.isFinite(desiredOrder) && desiredOrder > 0) {
+      const conflict = existingOrders.includes(desiredOrder);
+      if (conflict && !confirmConflict.open) {
+        // Ouvrir la confirmation au lieu de créer directement
+        setConfirmConflict({ open: true, desiredOrder });
+        setLoading(false);
+        return;
+      }
+    }
+
+    await actuallyCreate();
   };
 
   if (!user || user.role !== 'tuteur') {
@@ -157,6 +145,20 @@ const CreateModule = () => {
   return (
     <div className="create-course-page">
       <div className="create-course-container">
+        {/* Confirm order conflict */}
+        <ConfirmModal
+          open={confirmConflict.open}
+          title="Ordre déjà utilisé"
+          message={`Un module avec l'ordre ${confirmConflict.desiredOrder ?? ''} existe déjà.\nConfirmez-vous le décalage automatique des autres modules ?`}
+          confirmLabel="Oui, réorganiser"
+          onConfirm={() => {
+            setConfirmConflict({ open: false, desiredOrder: null });
+            setLoading(true);
+            actuallyCreate(); // le backend décalera automatiquement vers le bas
+          }}
+          onCancel={() => setConfirmConflict({ open: false, desiredOrder: null })}
+        />
+
         <div className="create-course-header">
           <h1>
             <Icon name="plus" size={IconSizes.lg} color={IconColors.primary} />

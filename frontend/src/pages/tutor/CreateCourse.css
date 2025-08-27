@@ -1673,3 +1673,63 @@
   color: #6b7280;
   font-style: italic;
 }
+
+/* --- Inputs containment and layout fixes --- */
+.create-course-form .form-group,
+.create-course-form .form-row {
+  min-width: 0;
+}
+
+.create-course-form .form-input,
+.create-course-form .form-textarea,
+.create-course-form select {
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.create-course-form .form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .create-course-form .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Reduce excessive margins to keep inputs inside card */
+.create-course-container {
+  overflow: hidden;
+}
+
+.create-course-form .form-group small {
+  display: block;
+  color: #6b7280;
+  margin-top: 0.35rem;
+  line-height: 1.3;
+}
+
+/* --- Warning/confirm modal theming --- */
+.btn.btn-outline {
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+.btn.btn-outline:hover {
+  background: #f8fafc;
+}
+
+/* Optional: subtle spinner animation */
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
