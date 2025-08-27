@@ -171,14 +171,25 @@ const deleteModule = async (req, res) => {
 const getCourseModules = async (req, res) => {
   try {
     const { courseId } = req.params;
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
+    const skip = (page - 1) * limit;
     
-    const modules = await Module.find({ course: courseId })
+    const query = { course: courseId };
+    const total = await Module.countDocuments(query);
+    const modules = await Module.find(query)
       .populate('lessons', 'title description duration type isPublished')
-      .sort('order');
+      .sort('order')
+      .skip(skip)
+      .limit(limit);
     
     res.json({
       success: true,
-      data: modules
+      data: modules,
+      total,
+      page,
+      pages: Math.max(1, Math.ceil(total / limit)),
+      limit
     });
   } catch (error) {
     console.error('Erreur getCourseModules:', error);

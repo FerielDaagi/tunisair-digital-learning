@@ -23,6 +23,12 @@ const MyCourses = () => {
   const [error, setError] = useState('');
   const [styledError, setStyledError] = useState({ show: false, message: '', details: '', type: '' });
 
+  // Server-side pagination (like admin)
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [limit, setLimit] = useState(8);
+  const [total, setTotal] = useState(0);
+
   useEffect(() => {
     // Vérifier que l'utilisateur est un tuteur
     if (user && user.role !== 'tuteur') {
@@ -31,41 +37,35 @@ const MyCourses = () => {
     }
     
     fetchCourses();
-  }, [user, navigate]);
+  }, [user, navigate, page, limit, statusFilter, searchTerm]);
 
   const fetchCourses = async () => {
     try {
       setLoading(true);
       setError(''); // Réinitialiser les erreurs
       
-      const response = await coursesAPI.getTutorCourses();
+      const params = {
+        page,
+        limit,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        q: searchTerm || undefined
+      };
+      const response = await coursesAPI.getTutorCourses(params);
       
-      // S'assurer que courses est un tableau
-      let coursesData = [];
-      if (response && response.data) {
-        // Si response.data est un tableau, l'utiliser directement
-        if (Array.isArray(response.data)) {
-          coursesData = response.data;
-        }
-        // Si response.data.data est un tableau (structure imbriquée)
-        else if (response.data.data && Array.isArray(response.data.data)) {
-          coursesData = response.data.data;
-        }
-        // Si response.data est un objet avec une propriété courses
-        else if (response.data.courses && Array.isArray(response.data.courses)) {
-          coursesData = response.data.courses;
-        }
+      // Normaliser
+      let data = [];
+      if (response?.data?.data && Array.isArray(response.data.data)) {
+        data = response.data.data;
+      } else if (Array.isArray(response?.data)) {
+        data = response.data;
       }
       
-
-      
-
-      
-      setCourses(coursesData);
+      setCourses(data);
+      setTotal(response?.data?.total ?? data.length);
+      setPages(response?.data?.pages ?? 1);
+      setLimit(response?.data?.limit ?? limit);
     } catch (error) {
       console.error('Erreur lors de la récupération des cours:', error);
-      
-      // Gestion des erreurs de validation
       if (error.response?.data?.errors) {
         const validationErrors = error.response.data.errors.join(', ');
         setError(`Erreurs de validation: ${validationErrors}`);
@@ -74,8 +74,9 @@ const MyCourses = () => {
       } else {
         setError('Erreur lors de la récupération des cours. Veuillez réessayer.');
       }
-      
-      setCourses([]); // S'assurer que courses est un tableau vide en cas d'erreur
+      setCourses([]);
+      setPages(1);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -308,6 +309,11 @@ const MyCourses = () => {
 
   const stats = getStats();
 
+  const goToPage = (p) => {
+    if (p < 1 || p > pages) return;
+    setPage(p);
+  };
+
   if (!user || user.role !== 'tuteur') {
     return (
       <div className="my-courses-page">
@@ -452,7 +458,7 @@ const MyCourses = () => {
           </div>
         ) : (
           <div className="courses-grid">
-            {filteredCourses().map(course => (
+            {courses.map(course => (
               <div key={course._id} className="course-card">
                 <div className="course-header">
                   <div className="course-status">
@@ -601,6 +607,27 @@ const MyCourses = () => {
           </div>
         )}
       </div>
+
+      {/* Pagination controls (server-side) */}
+      {!loading && total > 0 && (
+        <div className="pagination-controls compact">
+          <button className="pagination-btn outline" onClick={() => goToPage(page - 1)} disabled={page === 1}>
+            ‹
+          </button>
+          {[...Array(pages)].map((_, idx) => (
+            <button
+              key={idx}
+              className={`pagination-btn ${page === idx + 1 ? 'active' : ''}`}
+              onClick={() => goToPage(idx + 1)}
+            >
+              {idx + 1}
+            </button>
+          ))}
+          <button className="pagination-btn outline" onClick={() => goToPage(page + 1)} disabled={page === pages}>
+            ›
+          </button>
+        </div>
+      )}
 
       {/* Modal de confirmation de suppression */}
       {deleteConfirm.show && (

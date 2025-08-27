@@ -17,6 +17,12 @@ const ManageModules = () => {
   const [error, setError] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, moduleId: null });
 
+  // Pagination state (server-side style)
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
+
   useEffect(() => {
     // Vérifier que l'utilisateur est un tuteur
     if (!user) {
@@ -31,13 +37,17 @@ const ManageModules = () => {
     
     // Charger les données du cours et des modules
     loadCourseAndModules();
-  }, [user, navigate, courseId]);
+  }, [user, navigate, courseId, page, limit]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [courseId]);
 
   const loadCourseAndModules = async () => {
     try {
       setLoading(true);
       
-      // Charger le cours
+      // Charger le cours (métadonnées)
       const courseResponse = await fetch(`http://localhost:5000/api/courses/${courseId}`);
       if (courseResponse.ok) {
         const courseData = await courseResponse.json();
@@ -46,10 +56,13 @@ const ManageModules = () => {
         }
       }
       
-      // Charger les modules
-      const modulesResponse = await modulesAPI.getByCourse(courseId);
+      // Charger les modules (paginés)
+      const modulesResponse = await modulesAPI.getByCourse(courseId, { page, limit });
       if (modulesResponse.data.success) {
         setModules(modulesResponse.data.data);
+        setTotal(modulesResponse.data.total ?? modulesResponse.data.data.length);
+        setPages(modulesResponse.data.pages ?? 1);
+        setLimit(modulesResponse.data.limit ?? limit);
       }
     } catch (error) {
       console.error('Erreur chargement données:', error);
@@ -89,6 +102,11 @@ const ManageModules = () => {
 
   const handleManageLessons = (moduleId) => {
     navigate(`/tutor/manage-lessons/${moduleId}`);
+  };
+
+  const goToPage = (p) => {
+    if (p < 1 || p > pages) return;
+    setPage(p);
   };
 
   if (!user || user.role !== 'tuteur') {
@@ -137,7 +155,7 @@ const ManageModules = () => {
             <div className="stat-card">
               <Icon name="layers" size={IconSizes.lg} color={IconColors.primary} />
               <div className="stat-content">
-                <span className="stat-number">{modules.length}</span>
+                <span className="stat-number">{total}</span>
                 <span className="stat-label">Modules</span>
               </div>
             </div>
@@ -186,7 +204,7 @@ const ManageModules = () => {
         <div className="modules-list">
           <h3>
             <Icon name="list" size={IconSizes.md} color={IconColors.primary} />
-            Modules du cours ({modules.length})
+            Modules du cours ({total})
           </h3>
           
           {modules.length === 0 ? (
@@ -207,6 +225,7 @@ const ManageModules = () => {
           ) : (
             <div className="modules-grid">
               {modules
+                .slice()
                 .sort((a, b) => a.order - b.order)
                 .map((module) => (
                   <div key={module._id} className="module-card">
@@ -267,6 +286,23 @@ const ManageModules = () => {
             </div>
           )}
         </div>
+
+        {/* Pagination controls */}
+        {total > 0 && (
+          <div className="pagination-controls compact">
+            <button className="pagination-btn outline" onClick={() => goToPage(page - 1)} disabled={page === 1}>‹</button>
+            {[...Array(pages)].map((_, idx) => (
+              <button
+                key={idx}
+                className={`pagination-btn ${page === idx + 1 ? 'active' : ''}`}
+                onClick={() => goToPage(idx + 1)}
+              >
+                {idx + 1}
+              </button>
+            ))}
+            <button className="pagination-btn outline" onClick={() => goToPage(page + 1)} disabled={page === pages}>›</button>
+          </div>
+        )}
       </div>
     </div>
   );

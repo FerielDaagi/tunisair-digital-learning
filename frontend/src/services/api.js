@@ -54,7 +54,7 @@ export const authAPI = {
 
 // Courses API
 export const coursesAPI = {
-  getAll: () => api.get('/courses'),
+  getAll: (params) => api.get('/courses', { params }),
   getById: (id) => api.get(`/courses/${id}`),
   enroll: (courseId) => api.post(`/courses/${courseId}/enroll`),
   getEnrolled: () => api.get('/courses/enrolled'),
@@ -69,7 +69,7 @@ export const coursesAPI = {
   },
   delete: (id) => api.delete(`/courses/${id}`),
   publish: (id) => api.patch(`/courses/${id}/publish`),
-  getTutorCourses: () => api.get('/courses/tutor/my-courses'),
+  getTutorCourses: (params) => api.get('/courses/tutor/my-courses', { params }),
 };
 
 // Modules API
@@ -77,8 +77,8 @@ export const modulesAPI = {
   // Créer un module
   create: (moduleData) => api.post(`/modules/course/${moduleData.course}`, moduleData),
   
-  // Récupérer tous les modules d'un cours
-  getByCourse: (courseId) => api.get(`/modules/course/${courseId}`),
+  // Récupérer tous les modules d'un cours (avec pagination)
+  getByCourse: (courseId, params) => api.get(`/modules/course/${courseId}`, { params }),
   
   // Récupérer un module par ID
   getById: (moduleId) => api.get(`/modules/${moduleId}`),

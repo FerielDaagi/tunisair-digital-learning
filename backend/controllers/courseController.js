@@ -525,6 +525,9 @@ const publishCourse = async (req, res) => {
 const getTutorCourses = async (req, res) => {
   try {
     const { status, sort = 'createdAt', order = 'desc' } = req.query;
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 8));
+    const skip = (page - 1) * limit;
     
     let query = { instructor: req.user.id };
     
@@ -537,49 +540,26 @@ const getTutorCourses = async (req, res) => {
     const sortOptions = {};
     sortOptions[sort] = order === 'desc' ? -1 : 1;
     
+    const total = await Course.countDocuments(query);
     const courses = await Course.find(query)
-      .sort(sortOptions);
-    
-    console.log('🔍 Debug - Cours trouvés:', courses.length);
-    
-    // Debug: afficher la structure complète du premier cours
-    if (courses.length > 0) {
-      const firstCourse = courses[0].toObject();
-      console.log('🔍 Debug - Structure complète du premier cours:', {
-        _id: firstCourse._id,
-        title: firstCourse.title,
-        allKeys: Object.keys(firstCourse),
-        hasModules: 'modules' in firstCourse,
-        modulesValue: firstCourse.modules
-      });
-    }
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limit);
     
     // Calculer le nombre correct de modules pour chaque cours
     const coursesWithModuleCount = courses.map(course => {
       const courseObj = course.toObject();
-      
-      // Debug détaillé pour chaque cours
-      console.log(`🔍 Debug - Cours "${courseObj.title}":`, {
-        modules: courseObj.modules,
-        modulesType: typeof courseObj.modules,
-        isArray: Array.isArray(courseObj.modules),
-        modulesLength: courseObj.modules?.length,
-        modulesKeys: courseObj.modules ? Object.keys(courseObj.modules[0] || {}) : 'no modules',
-        allKeys: Object.keys(courseObj)
-      });
-      
-      // Les modules sont maintenant des références populées
       courseObj.moduleCount = Array.isArray(courseObj.modules) ? courseObj.modules.length : 0;
-      
-      // Debug: afficher le nombre de modules pour vérification
-      console.log(`📚 Cours "${courseObj.title}": ${courseObj.moduleCount} modules`);
-      
       return courseObj;
     });
     
     res.json({
       success: true,
-      data: coursesWithModuleCount
+      data: coursesWithModuleCount,
+      total,
+      page,
+      pages: Math.max(1, Math.ceil(total / limit)),
+      limit
     });
   } catch (error) {
     console.error('Erreur getTutorCourses:', error);

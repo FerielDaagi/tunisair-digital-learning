@@ -1733,3 +1733,45 @@
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+/* Compact pagination */
+.pagination-controls.compact {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.75rem 0 1.5rem;
+}
+
+.pagination-btn {
+  height: 28px;
+  min-width: 28px;
+  padding: 0 8px;
+  border-radius: 9999px;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+  color: #111827;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pagination-btn:hover {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+
+.pagination-btn.active {
+  background: var(--primary, #6366f1);
+  border-color: var(--primary, #6366f1);
+  color: #fff;
+}
+
+.pagination-btn.outline {
+  background: transparent;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
