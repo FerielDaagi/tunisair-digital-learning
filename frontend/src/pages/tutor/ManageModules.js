@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { modulesAPI } from '../../services/api';
 import { Icon, IconSizes, IconColors } from '../../components/common/IconTheme';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 import './ManageModules.css';
 
@@ -23,6 +24,8 @@ const ManageModules = () => {
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
   const [q, setQ] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [moduleToDelete, setModuleToDelete] = useState(null);
 
   useEffect(() => {
     // Vérifier que l'utilisateur est un tuteur
@@ -87,18 +90,44 @@ const ManageModules = () => {
     navigate(`/tutor/edit-module/${moduleId}`);
   };
 
-  const handleDeleteModule = async (moduleId) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce module ? Cette action est irréversible.')) {
-      try {
-        const response = await modulesAPI.delete(moduleId);
-        if (response.data.success) {
-          addNotification('Module supprimé avec succès', 'success');
-          await loadCourseAndModules();
+  const handleDeleteModule = (moduleId) => {
+    const module = modules.find(m => m._id === moduleId);
+    setModuleToDelete(module);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteModule = async () => {
+    if (!moduleToDelete) return;
+    
+    try {
+      const response = await modulesAPI.delete(moduleToDelete._id);
+      if (response.data.success) {
+        addNotification('Module supprimé avec succès', 'success');
+        
+        // Réorganiser automatiquement l'ordre des modules restants
+        const remainingModules = modules.filter(m => m._id !== moduleToDelete._id);
+        const reorderedModules = remainingModules.map((module, index) => ({
+          ...module,
+          order: index + 1
+        }));
+        
+        // Mettre à jour l'ordre de tous les modules restants
+        for (const module of reorderedModules) {
+          try {
+            await modulesAPI.update(module._id, { order: module.order });
+          } catch (error) {
+            console.error(`Erreur mise à jour ordre module ${module._id}:`, error);
+          }
         }
-      } catch (error) {
-        console.error('Erreur suppression module:', error);
-        addNotification('La suppression du module a échoué. Veuillez réessayer.', 'error');
+        
+        await loadCourseAndModules();
       }
+    } catch (error) {
+      console.error('Erreur suppression module:', error);
+      addNotification('La suppression du module a échoué. Veuillez réessayer.', 'error');
+    } finally {
+      setShowDeleteModal(false);
+      setModuleToDelete(null);
     }
   };
 
@@ -272,8 +301,12 @@ const ManageModules = () => {
                               Publié
                             </span>
                           ) : (
-                            <span className="status draft">
-                              <Icon name="edit" size={IconSizes.xs} color={IconColors.gray} />
+                            <span className="status draft" style={{ 
+                              background: '#f59e0b !important', 
+                              color: 'white !important', 
+                              border: 'none !important' 
+                            }}>
+                              <Icon name="edit" size={IconSizes.xs} color={IconColors.white} />
                               Brouillon
                             </span>
                           )}
@@ -361,6 +394,22 @@ const ManageModules = () => {
             <button className="pagination-btn outline" onClick={() => goToPage(page + 1)} disabled={page === pages}>›</button>
           </div>
         )}
+
+        {/* Delete Confirmation Modal */}
+        <ConfirmModal
+          open={showDeleteModal}
+          title="Supprimer le module"
+          message={`Êtes-vous sûr de vouloir supprimer le module "${moduleToDelete?.title}" ?\n\nCette action est irréversible et supprimera également toutes les leçons associées.\n\nL'ordre des modules restants sera automatiquement réorganisé.`}
+          confirmLabel="Supprimer définitivement"
+          cancelLabel="Annuler"
+          destructive={true}
+          variant="warning"
+          onConfirm={confirmDeleteModule}
+          onCancel={() => {
+            setShowDeleteModal(false);
+            setModuleToDelete(null);
+          }}
+        />
       </div>
     </div>
   );

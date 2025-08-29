@@ -21,6 +21,7 @@ import TestNotification from './pages/user/TestNotification';
 import CreateCourse from './pages/tutor/CreateCourse';
 import EditCourse from './pages/tutor/EditCourse';
 import CreateModule from './pages/tutor/CreateModule';
+import EditModule from './pages/tutor/EditModule';
 import ManageModules from './pages/tutor/ManageModules';
 import MyCourses from './pages/tutor/MyCourses';
 import QuickCreateModule from './pages/tutor/QuickCreateModule';
@@ -92,6 +93,7 @@ const AppContent = () => {
           <Route path="/tutor/create-course" element={<ProtectedRoute><CreateCourse /></ProtectedRoute>} />
           <Route path="/tutor/edit-course/:courseId" element={<ProtectedRoute><EditCourse /></ProtectedRoute>} />
           <Route path="/tutor/create-module/:courseId" element={<ProtectedRoute><CreateModule /></ProtectedRoute>} />
+          <Route path="/tutor/edit-module/:moduleId" element={<ProtectedRoute><EditModule /></ProtectedRoute>} />
           <Route path="/tutor/quick-create-module/:courseId" element={<ProtectedRoute><QuickCreateModule /></ProtectedRoute>} />
           <Route path="/tutor/manage-modules/:courseId" element={<ProtectedRoute><ManageModules /></ProtectedRoute>} />
           <Route path="/tutor/my-courses" element={<ProtectedRoute><MyCourses /></ProtectedRoute>} />
