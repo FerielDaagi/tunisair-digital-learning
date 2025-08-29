@@ -90,7 +90,10 @@ export const modulesAPI = {
   delete: (moduleId) => api.delete(`/modules/${moduleId}`),
   
   // Réorganiser les modules
-  reorder: (courseId, moduleIds) => api.put(`/modules/reorder/${courseId}`, { moduleIds })
+  reorder: (courseId, moduleIds) => api.put(`/modules/reorder/${courseId}`, { moduleIds }),
+  
+  // Toggle publication d'un module
+  togglePublish: (moduleId) => api.put(`/modules/${moduleId}/toggle-publish`)
 };
 
 // API pour les leçons

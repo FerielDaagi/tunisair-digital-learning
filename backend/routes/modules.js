@@ -5,7 +5,8 @@ const {
   updateModule,
   deleteModule,
   getCourseModules,
-  getModuleById
+  getModuleById,
+  togglePublish
 } = require('../controllers/moduleController');
 const { auth } = require('../middleware/auth');
 
@@ -18,5 +19,8 @@ router.get('/:id', getModuleById);
 router.post('/course/:courseId', createModule);
 router.put('/:id', updateModule);
 router.delete('/:id', deleteModule);
+
+// Toggle publication d'un module
+router.put('/:id/toggle-publish', togglePublish);
 
 module.exports = router;

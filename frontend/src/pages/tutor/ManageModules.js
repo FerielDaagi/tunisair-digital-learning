@@ -3,8 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { modulesAPI } from '../../services/api';
 import { Icon, IconSizes, IconColors } from '../../components/common/IconTheme';
-import ConfirmModal from '../../components/common/ConfirmModal';
-import './CreateCourse.css';
+
+import './ManageModules.css';
 
 const ManageModules = () => {
   const { user, addNotification } = useAuth();
@@ -15,7 +15,7 @@ const ManageModules = () => {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [confirmState, setConfirmState] = useState({ open: false, moduleId: null });
+
 
   // Pagination state (server-side style)
   const [page, setPage] = useState(1);
@@ -73,29 +73,7 @@ const ManageModules = () => {
     }
   };
 
-  const handleDeleteModule = async (moduleId) => {
-    setConfirmState({ open: true, moduleId });
-  };
 
-  const confirmDelete = async () => {
-    const moduleId = confirmState.moduleId;
-    setConfirmState({ open: false, moduleId: null });
-    try {
-      const response = await modulesAPI.delete(moduleId);
-      if (response.data.success) {
-        addNotification('Module supprimé avec succès', 'success');
-        // Recharger les modules
-        await loadCourseAndModules();
-      }
-    } catch (error) {
-      console.error('Erreur suppression module:', error);
-      addNotification('La suppression du module a échoué. Veuillez réessayer.', 'error');
-    }
-  };
-
-  const handleEditModule = (moduleId) => {
-    navigate(`/tutor/edit-module/${moduleId}`);
-  };
 
   const handleCreateModule = () => {
     navigate(`/tutor/create-module/${courseId}`);
@@ -104,6 +82,40 @@ const ManageModules = () => {
   const handleManageLessons = (moduleId) => {
     navigate(`/tutor/manage-lessons/${moduleId}`);
   };
+
+  const handleEditModule = (moduleId) => {
+    navigate(`/tutor/edit-module/${moduleId}`);
+  };
+
+  const handleDeleteModule = async (moduleId) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce module ? Cette action est irréversible.')) {
+      try {
+        const response = await modulesAPI.delete(moduleId);
+        if (response.data.success) {
+          addNotification('Module supprimé avec succès', 'success');
+          await loadCourseAndModules();
+        }
+      } catch (error) {
+        console.error('Erreur suppression module:', error);
+        addNotification('La suppression du module a échoué. Veuillez réessayer.', 'error');
+      }
+    }
+  };
+
+  const handleTogglePublish = async (moduleId) => {
+    try {
+      const response = await modulesAPI.togglePublish(moduleId);
+      if (response.data.success) {
+        addNotification(response.data.message, 'success');
+        await loadCourseAndModules();
+      }
+    } catch (error) {
+      console.error('Erreur toggle publication:', error);
+      addNotification('Le changement de statut a échoué. Veuillez réessayer.', 'error');
+    }
+  };
+
+
 
   const goToPage = (p) => {
     if (p < 1 || p > pages) return;
@@ -114,7 +126,7 @@ const ManageModules = () => {
     return (
       <div className="create-course-page">
         <div className="access-denied">
-          <Icon name="lock" size={IconSizes.xl} color={IconColors.error} />
+                          <Icon name="lock" size={IconSizes.xl} color={IconColors.danger} />
           <h2>Accès refusé</h2>
           <p>Seuls les tuteurs peuvent gérer les modules.</p>
         </div>
@@ -125,27 +137,39 @@ const ManageModules = () => {
   return (
     <div className="create-course-page">
       <div className="create-course-container">
-        <ConfirmModal
-          open={confirmState.open}
-          title="Supprimer le module"
-          message="Confirmez-vous la suppression de ce module ? Cette action est irréversible."
-          confirmLabel="Supprimer"
-          destructive
-          onConfirm={confirmDelete}
-          onCancel={() => setConfirmState({ open: false, moduleId: null })}
-        />
+
         
-        <div className="create-course-header">
-          <h1>
-            <Icon name="layers" size={IconSizes.lg} color={IconColors.primary} />
-            Gestion des modules {loading && <Icon name="loader" size={IconSizes.sm} color={IconColors.muted} className="spin" />}
-          </h1>
-          <p>Cours : {course?.title || '...'}</p>
+        {/* Page header - align with Courses header design */}
+        <div className="page-header">
+          <div className="header-content">
+            <h1>
+              <Icon name="layers" size={IconSizes.lg} color={IconColors.primary} />
+              Modules du cours
+              {loading && <Icon name="loader" size={IconSizes.sm} color={IconColors.gray} className="spin" />}
+            </h1>
+            <p>{course?.title ? `Cours : ${course.title}` : 'Chargement du cours...'}</p>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={() => navigate(`/tutor/edit-course/${courseId}`)}
+              className="btn btn-outline"
+            >
+              <Icon name="arrowLeft" size={IconSizes.sm} color={IconColors.gray} />
+              Retour au cours
+            </button>
+            <button
+              onClick={handleCreateModule}
+              className="create-course-btn"
+            >
+              <Icon name="plus" size={IconSizes.sm} color={IconColors.white} />
+              Nouveau module
+            </button>
+          </div>
         </div>
 
         {error && (
           <div className="alert alert-error">
-            <Icon name="error" size={IconSizes.sm} color={IconColors.white} />
+                            <Icon name="error" size={IconSizes.sm} color={IconColors.danger} />
             {error}
           </div>
         )}
@@ -156,13 +180,13 @@ const ManageModules = () => {
             <div className="stat-card">
               <Icon name="layers" size={IconSizes.lg} color={IconColors.primary} />
               <div className="stat-content">
-                <span className="stat-number">{total}</span>
+                <span className="stat-number">{modules.length}</span>
                 <span className="stat-label">Modules</span>
               </div>
             </div>
             
             <div className="stat-card">
-              <Icon name="book" size={IconSizes.lg} color={IconColors.success} />
+                                          <Icon name="book" size={IconSizes.lg} color={IconColors.white} />
               <div className="stat-content">
                 <span className="stat-number">
                   {modules.reduce((total, module) => total + (module.lessons?.length || 0), 0)}
@@ -182,23 +206,7 @@ const ManageModules = () => {
             </div>
           </div>
           
-          <div className="overview-actions">
-            <button
-              onClick={handleCreateModule}
-              className="btn btn-primary btn-lg"
-            >
-              <Icon name="plus" size={IconSizes.md} color={IconColors.white} />
-              Nouveau module
-            </button>
-            
-            <button
-              onClick={() => navigate(`/tutor/edit-course/${courseId}`)}
-              className="btn btn-outline"
-            >
-              <Icon name="arrowLeft" size={IconSizes.sm} color={IconColors.muted} />
-              Retour au cours
-            </button>
-          </div>
+          <div className="overview-actions" />
         </div>
 
         {/* Liste des modules */}
@@ -208,7 +216,7 @@ const ManageModules = () => {
             Modules du cours ({modules.length})
           </h3>
           <div className="search-box" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-            <Icon name="search" size={IconSizes.sm} color={IconColors.muted} />
+                            <Icon name="search" size={IconSizes.sm} color={IconColors.gray} />
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -222,75 +230,114 @@ const ManageModules = () => {
             <div className="empty-state">
               {loading ? (
                 <>
-                  <Icon name="loader" size={IconSizes.lg} color={IconColors.muted} className="spin" />
+                  <Icon name="loader" size={IconSizes.lg} color={IconColors.gray} className="spin" />
                   <p>Chargement...</p>
                 </>
               ) : (
                 <>
-                  <Icon name="layers" size={IconSizes.xl} color={IconColors.muted} />
+                  <Icon name="layers" size={IconSizes.xl} color={IconColors.gray} />
                   <p>Aucun module créé pour ce cours</p>
                   <small>Commencez par créer votre premier module</small>
                 </>
               )}
             </div>
           ) : (
-            <div className="modules-grid">
+            <div className="unique-modules-container" style={{ 
+              display: 'flex !important', 
+              flexWrap: 'wrap !important', 
+              gap: '1.5rem !important',
+              width: '100% !important'
+            }}>
               {modules
                 .slice()
                 .sort((a, b) => a.order - b.order)
                 .map((module) => (
-                  <div key={module._id} className="module-card">
-                    <div className="module-header">
-                      <div className="module-order">
-                        <Icon name="hash" size={IconSizes.sm} color={IconColors.primary} />
-                        {module.order}
+                  <div key={module._id} className="unique-module-item" style={{ 
+                    width: '400px !important', 
+                    flex: '0 0 400px !important',
+                    maxWidth: '400px !important',
+                    minWidth: '400px !important'
+                  }}>
+                    <div className="module-accent" />
+                    <div className="module-inner">
+                      <div className="module-header">
+                        <div className="module-order">
+                          <Icon name="hash" size={IconSizes.sm} color={IconColors.primary} />
+                          {module.order}
+                        </div>
+                        <div className="module-status">
+                          {module.isPublished ? (
+                            <span className="status published">
+                              <Icon name="globe" size={IconSizes.xs} color={IconColors.primary} />
+                              Publié
+                            </span>
+                          ) : (
+                            <span className="status draft">
+                              <Icon name="edit" size={IconSizes.xs} color={IconColors.gray} />
+                              Brouillon
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="module-status">
-                        {module.isPublished ? (
-                          <span className="status published">
-                            <Icon name="globe" size={IconSizes.xs} color={IconColors.success} />
-                            Publié
+                      
+                      <div className="module-content">
+                        <h4 className="module-title">{module.title}</h4>
+                        <p className="module-description">{module.description}</p>
+                        
+                                                <div className="module-stats">
+                          <span className="stat">
+                            <Icon name="clock" size={IconSizes.xs} color={IconColors.gray} />
+                            {module.estimatedDuration || 'Non définie'}
                           </span>
-                        ) : (
-                          <span className="status draft">
-                            <Icon name="edit" size={IconSizes.xs} color={IconColors.muted} />
-                            Brouillon
+                          <span className="stat">
+                            <Icon name="book" size={IconSizes.xs} color={IconColors.gray} />
+                            {module.lessons?.length || 0} leçon(s)
                           </span>
-                        )}
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="module-content">
-                      <h4 className="module-title">{module.title}</h4>
-                      <p className="module-description">{module.description}</p>
                       
-                      <div className="module-stats">
-                        <span className="stat">
-                          <Icon name="clock" size={IconSizes.xs} color={IconColors.muted} />
-                          {module.estimatedDuration || 'Non définie'}
-                        </span>
-                        <span className="stat">
-                          <Icon name="book" size={IconSizes.xs} color={IconColors.muted} />
-                          {module.lessons?.length || 0} leçon(s)
-                        </span>
+                      {/* Actions du module - même style que les cours */}
+                      <div className="module-actions">
+                        <button 
+                          onClick={() => handleManageLessons(module._id)}
+                          className="btn btn-primary"
+                          title="Gérer les leçons"
+                        >
+                          <Icon name="book" size={IconSizes.xs} color={IconColors.white} />
+                          Leçons
+                        </button>
+                        
+                        <button 
+                          onClick={() => handleEditModule(module._id)}
+                          className="btn btn-secondary"
+                          title="Modifier le module"
+                        >
+                          <Icon name="edit" size={IconSizes.xs} color={IconColors.white} />
+                          Modifier
+                        </button>
+                        
+                        <button 
+                          onClick={() => handleTogglePublish(module._id)}
+                          className={`btn ${module.isPublished ? 'btn-warning' : 'btn-success'}`}
+                          title={module.isPublished ? 'Mettre en brouillon' : 'Publier'}
+                        >
+                          <Icon 
+                            name={module.isPublished ? 'eyeOff' : 'globe'} 
+                            size={IconSizes.xs} 
+                            color={IconColors.white} 
+                          />
+                          {module.isPublished ? 'Brouillon' : 'Publier'}
+                        </button>
+                        
+                        <button 
+                          onClick={() => handleDeleteModule(module._id)}
+                          className="btn btn-danger"
+                          title="Supprimer le module"
+                        >
+                          <Icon name="trash" size={IconSizes.xs} color={IconColors.white} />
+                          Supprimer
+                        </button>
                       </div>
-                    </div>
-                    
-                    <div className="module-actions">
-                      <button className="action-card lessons-card" onClick={() => handleManageLessons(module._id)}>
-                        <Icon name="book" size={IconSizes.sm} color={IconColors.white} />
-                        Leçons
-                      </button>
-                      
-                      <button className="action-card edit-card" onClick={() => handleEditModule(module._id)}>
-                        <Icon name="edit" size={IconSizes.sm} color={IconColors.white} />
-                        Modifier
-                      </button>
-                      
-                      <button className="action-card delete-card" onClick={() => handleDeleteModule(module._id)}>
-                        <Icon name="trash" size={IconSizes.sm} color={IconColors.white} />
-                        Supprimer
-                      </button>
                     </div>
                   </div>
                 ))}

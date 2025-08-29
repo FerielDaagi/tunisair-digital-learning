@@ -240,10 +240,51 @@ const getModuleById = async (req, res) => {
   }
 };
 
+// Toggle le statut de publication d'un module
+const togglePublish = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const module = await Module.findById(id);
+    if (!module) {
+      return res.status(404).json({
+        success: false,
+        message: 'Module introuvable'
+      });
+    }
+    
+    // Vérifier que l'utilisateur est le propriétaire du cours
+    const course = await Course.findById(module.course);
+    if (course.instructor.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Vous n\'êtes pas autorisé à modifier ce module'
+      });
+    }
+    
+    // Toggle le statut de publication
+    module.isPublished = !module.isPublished;
+    await module.save();
+    
+    res.json({
+      success: true,
+      message: `Module ${module.isPublished ? 'publié' : 'mis en brouillon'} avec succès`,
+      data: module
+    });
+  } catch (error) {
+    console.error('Erreur togglePublish:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur interne du serveur'
+    });
+  }
+};
+
 module.exports = {
   createModule,
   updateModule,
   deleteModule,
   getCourseModules,
-  getModuleById
+  getModuleById,
+  togglePublish
 };
