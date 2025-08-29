@@ -26,13 +26,34 @@ const createLesson = async (req, res) => {
       });
     }
     
+    // Calculer l'ordre automatiquement si non fourni ou en conflit
+    let finalOrder = order;
+    if (!finalOrder || finalOrder < 1) {
+      const existingLessons = await Lesson.find({ module: moduleId }).sort({ order: -1 }).limit(1);
+      finalOrder = existingLessons.length > 0 ? existingLessons[0].order + 1 : 1;
+    }
+    
+    // Vérifier qu'il n'y a pas de conflit d'ordre
+    const conflictingLesson = await Lesson.findOne({ 
+      module: moduleId, 
+      order: finalOrder 
+    });
+    
+    if (conflictingLesson) {
+      // Réorganiser les leçons existantes
+      await Lesson.updateMany(
+        { module: moduleId, order: { $gte: finalOrder } },
+        { $inc: { order: 1 } }
+      );
+    }
+    
     // Créer la leçon
     const newLesson = new Lesson({
       title,
       description,
       content,
       duration,
-      order,
+      order: finalOrder,
       course: module.course,
       module: moduleId,
       type: type || 'text',

@@ -98,6 +98,25 @@ const lessonSchema = new mongoose.Schema({
 // Index pour la recherche
 lessonSchema.index({ title: 'text', description: 'text', content: 'text' });
 
+// Index pour les performances et la validation d'ordre
+lessonSchema.index({ module: 1, order: 1 });
+
+// Middleware pour valider l'ordre unique dans un module
+lessonSchema.pre('save', async function(next) {
+  if (this.isModified('order') || this.isModified('module')) {
+    const existingLesson = await this.constructor.findOne({
+      module: this.module,
+      order: this.order,
+      _id: { $ne: this._id }
+    });
+    
+    if (existingLesson) {
+      return next(new Error('Une leçon avec cet ordre existe déjà dans ce module'));
+    }
+  }
+  next();
+});
+
 // Index pour les performances
 lessonSchema.index({ course: 1, module: 1, order: 1 });
 lessonSchema.index({ isPublished: 1, course: 1 });

@@ -75,7 +75,19 @@ export const coursesAPI = {
 // Modules API
 export const modulesAPI = {
   // Créer un module
-  create: (moduleData) => api.post(`/modules/course/${moduleData.course}`, moduleData),
+  create: async (moduleData) => {
+    try {
+      // Try standard endpoint first
+      return await api.post(`/modules`, moduleData);
+    } catch (err) {
+      // Fallback to nested-by-course endpoint if available
+      const courseId = moduleData.course;
+      if (courseId) {
+        return api.post(`/modules/course/${courseId}`, moduleData);
+      }
+      throw err;
+    }
+  },
   
   // Récupérer tous les modules d'un cours (avec pagination)
   getByCourse: (courseId, params) => api.get(`/modules/course/${courseId}`, { params }),
@@ -99,7 +111,12 @@ export const modulesAPI = {
 // API pour les leçons
 export const lessonsAPI = {
   // Créer une leçon
-  create: (lessonData) => api.post(`/lessons/module/${lessonData.moduleId}`, lessonData),
+  create: (lessonData) => {
+    const isFormData = typeof FormData !== 'undefined' && lessonData instanceof FormData;
+    const moduleId = isFormData ? (lessonData.get('module') || lessonData.get('moduleId')) : (lessonData.module || lessonData.moduleId);
+    // Do not set Content-Type manually; let the browser/axios set the boundary
+    return api.post(`/lessons/module/${moduleId}`, lessonData);
+  },
   
   // Récupérer toutes les leçons d'un module
   getByModule: (moduleId) => api.get(`/lessons/module/${moduleId}`),
@@ -108,7 +125,10 @@ export const lessonsAPI = {
   getById: (lessonId) => api.get(`/lessons/${lessonId}`),
   
   // Modifier une leçon
-  update: (lessonId, lessonData) => api.put(`/lessons/${lessonId}`, lessonData),
+  update: (lessonId, lessonData) => {
+    // Let axios handle the Content-Type
+    return api.put(`/lessons/${lessonId}`, lessonData);
+  },
   
   // Supprimer une leçon
   delete: (lessonId) => api.delete(`/lessons/${lessonId}`),

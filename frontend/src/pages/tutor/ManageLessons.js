@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { lessonsAPI } from '../../services/api';
+import { lessonsAPI, modulesAPI, coursesAPI } from '../../services/api';
 import { Icon, IconSizes, IconColors } from '../../components/common/IconTheme';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import './CreateCourse.css';
@@ -16,7 +16,10 @@ const ManageLessons = () => {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [confirmState, setConfirmState] = useState({ open: false, lessonId: null });
+  
+  // Modal states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [lessonToDelete, setLessonToDelete] = useState(null);
 
   useEffect(() => {
     // Vérifier que l'utilisateur est un tuteur
@@ -30,133 +33,137 @@ const ManageLessons = () => {
       return;
     }
     
-    // Charger les données
-    const fetchData = async () => {
-      try {
-        // Charger le module et le cours
-        const moduleResponse = await fetch(`http://localhost:5000/api/modules/${moduleId}`);
-        if (moduleResponse.ok) {
-          const moduleData = await moduleResponse.json();
-          if (moduleData.success) {
-            setModule(moduleData.data);
-            
-            // Charger le cours
-            const courseResponse = await fetch(`http://localhost:5000/api/courses/${moduleData.data.course}`);
-            if (courseResponse.ok) {
-              const courseData = await courseResponse.json();
-              if (courseData.success) {
-                setCourse(courseData.data);
-              }
-            }
-          }
-        }
-        
-        // Charger les leçons
-        const lessonsResponse = await lessonsAPI.getByModule(moduleId);
-        if (lessonsResponse.data.success) {
-          setLessons(lessonsResponse.data.data);
-        }
-      } catch (error) {
-        console.error('Erreur chargement données:', error);
-        setError('Erreur lors du chargement des données');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchData();
+    // Charger les informations du module et des leçons
+    loadModuleAndLessons();
   }, [user, navigate, moduleId]);
 
-  const handleDeleteLesson = async (lessonId) => {
-    setConfirmState({ open: true, lessonId });
-  };
-
-  const confirmDelete = async () => {
-    const lessonId = confirmState.lessonId;
-    setConfirmState({ open: false, lessonId: null });
+  const loadModuleAndLessons = async () => {
     try {
-      const response = await lessonsAPI.delete(lessonId);
-      if (response.data.success) {
-        const lessonsResponse = await lessonsAPI.getByModule(moduleId);
-        if (lessonsResponse.data.success) {
-          setLessons(lessonsResponse.data.data);
+      setLoading(true);
+      
+      // Charger le module (auth via axios)
+      const moduleRes = await modulesAPI.getById(moduleId);
+      if (moduleRes.data?.success) {
+        const moduleData = moduleRes.data.data;
+        setModule(moduleData);
+        
+        // Charger le cours (auth via axios)
+        const courseRes = await coursesAPI.getById(moduleData.course);
+        if (courseRes.data?.success) {
+          setCourse(courseRes.data.data);
         }
-        if (addNotification) {
-          addNotification('Leçon supprimée avec succès', 'success');
+        
+        // Charger les leçons du module
+        const lessonsRes = await lessonsAPI.getByModule(moduleId);
+        if (lessonsRes.data?.success) {
+          setLessons(lessonsRes.data.data || []);
         }
       }
     } catch (error) {
-      console.error('Erreur suppression leçon:', error);
-      if (addNotification) {
-        addNotification('La suppression de la leçon a échoué. Veuillez réessayer.', 'error');
-      }
+      console.error('Erreur chargement données:', error);
+      setError('Erreur lors du chargement des données');
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const handleEditLesson = (lessonId) => {
-    navigate(`/tutor/edit-lesson/${lessonId}`);
   };
 
   const handleCreateLesson = () => {
     navigate(`/tutor/create-lesson/${moduleId}`);
   };
 
-  const handleReorderLessons = async (lessonIds) => {
+  const handleEditLesson = (lesson) => {
+    navigate(`/tutor/edit-lesson/${moduleId}/${lesson._id}`);
+  };
+
+  const handleDeleteLesson = (lesson) => {
+    setLessonToDelete(lesson);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteLesson = async () => {
+    if (!lessonToDelete) return;
+    
     try {
-      const response = await lessonsAPI.reorder(moduleId, lessonIds);
+      const response = await lessonsAPI.delete(lessonToDelete._id);
       if (response.data.success) {
-        const lessonsResponse = await lessonsAPI.getByModule(moduleId);
-        if (lessonsResponse.data.success) {
-          setLessons(lessonsResponse.data.data);
-        }
-        if (addNotification) {
-          addNotification('Ordre des leçons mis à jour', 'success');
-        }
+        addNotification('Leçon supprimée avec succès', 'success');
+        await loadModuleAndLessons();
       }
     } catch (error) {
-      console.error('Erreur réorganisation leçons:', error);
-      if (addNotification) {
-        addNotification('La réorganisation des leçons a échoué', 'error');
-      }
+      console.error('Erreur suppression leçon:', error);
+      addNotification('La suppression de la leçon a échoué', 'error');
+    } finally {
+      setShowDeleteModal(false);
+      setLessonToDelete(null);
     }
   };
 
-  const moveLesson = (fromIndex, toIndex) => {
-    const newLessons = [...lessons];
-    const [movedLesson] = newLessons.splice(fromIndex, 1);
-    newLessons.splice(toIndex, 0, movedLesson);
-    
-    // Mettre à jour l'ordre
-    const updatedLessons = newLessons.map((lesson, index) => ({
-      ...lesson,
-      order: index + 1
-    }));
-    
-    setLessons(updatedLessons);
-    
-    // Envoyer la mise à jour au serveur
-    const lessonIds = updatedLessons.map(lesson => lesson._id);
-    handleReorderLessons(lessonIds);
+  const getLessonTypeIcon = (type) => {
+    switch (type) {
+      case 'document':
+        return <Icon name="fileText" size={IconSizes.sm} color={IconColors.primary} />;
+      case 'url':
+        return <Icon name="link" size={IconSizes.sm} color={IconColors.primary} />;
+      case 'video':
+        return <Icon name="video" size={IconSizes.sm} color={IconColors.primary} />;
+      case 'youtube':
+        return <Icon name="youtube" size={IconSizes.sm} color={IconColors.danger} />;
+      case 'quiz':
+        return <Icon name="helpCircle" size={IconSizes.sm} color={IconColors.warning} />;
+      default:
+        return <Icon name="file" size={IconSizes.sm} color={IconColors.gray} />;
+    }
   };
 
-  if (!user || user.role !== 'tuteur') {
+  const getLessonTypeLabel = (type) => {
+    switch (type) {
+      case 'document':
+        return 'Document';
+      case 'url':
+        return 'Lien web';
+      case 'video':
+        return 'Vidéo';
+      case 'youtube':
+        return 'Vidéo YouTube';
+      case 'quiz':
+        return 'Quiz';
+      default:
+        return 'Autre';
+    }
+  };
+
+  const formatDuration = (minutes) => {
+    if (!minutes) return 'Non définie';
+    if (minutes < 60) return `${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
+  };
+
+  if (loading) {
     return (
       <div className="create-course-page">
-        <div className="access-denied">
-          <Icon name="lock" size={IconSizes.xl} color={IconColors.error} />
-          <h2>Accès refusé</h2>
-          <p>Seuls les tuteurs peuvent gérer les leçons.</p>
+        <div className="create-course-container">
+          <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+            <Icon name="loader" size={IconSizes.xl} color={IconColors.gray} className="spin" />
+            <p>Chargement des leçons...</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (loading) {
+  if (error && !module) {
     return (
       <div className="create-course-page">
-        <div className="loading">
-          <Icon name="loader" size={IconSizes.xl} color={IconColors.primary} />
-          <h2>Chargement des leçons...</h2>
+        <div className="create-course-container">
+          <div className="alert alert-error">
+            <Icon name="error" size={IconSizes.sm} color={IconColors.danger} />
+            {error}
+          </div>
+          <button onClick={() => navigate(-1)} className="btn btn-outline">
+            Retour
+          </button>
         </div>
       </div>
     );
@@ -165,162 +172,194 @@ const ManageLessons = () => {
   return (
     <div className="create-course-page">
       <div className="create-course-container">
-        <ConfirmModal
-          open={confirmState.open}
-          title="Supprimer la leçon"
-          message="Confirmez-vous la suppression de cette leçon ? Cette action est irréversible."
-          confirmLabel="Supprimer"
-          destructive
-          onConfirm={confirmDelete}
-          onCancel={() => setConfirmState({ open: false, lessonId: null })}
-        />
-        <div className="create-course-header">
-          <h1>
-            <Icon name="bookOpen" size={IconSizes.lg} color={IconColors.primary} />
-            Gérer les leçons
-          </h1>
-          <p>Module : {module?.title || '...'}</p>
-          <p>Cours : {course?.title || '...'}</p>
+        
+        {/* Page header */}
+        <div className="page-header">
+          <div className="header-content">
+            <h1>
+              <Icon name="book" size={IconSizes.lg} color={IconColors.primary} />
+              Gérer les leçons
+            </h1>
+            <p>
+              {course?.title ? `Cours : ${course.title}` : 'Chargement du cours...'} 
+              {module?.title && ` - Module : ${module.title}`}
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={() => navigate(`/tutor/manage-modules/${course?._id}`)}
+              className="btn btn-outline"
+            >
+              <Icon name="arrowLeft" size={IconSizes.sm} color={IconColors.gray} />
+              Retour aux modules
+            </button>
+            <button
+              onClick={handleCreateLesson}
+              className="create-course-btn"
+            >
+              <Icon name="plus" size={IconSizes.sm} color={IconColors.white} />
+              Nouvelle leçon
+            </button>
+          </div>
         </div>
 
         {error && (
           <div className="alert alert-error">
-            <Icon name="error" size={IconSizes.sm} color={IconColors.white} />
+            <Icon name="error" size={IconSizes.sm} color={IconColors.danger} />
             {error}
           </div>
         )}
 
-        <div className="lessons-management">
-          <div className="lessons-header">
-            <div className="lessons-info">
-              <h3>Leçons ({lessons.length})</h3>
-              <p>Organisez les leçons de votre module</p>
+        {/* Overview Statistics */}
+        <div className="modules-overview">
+          <div className="overview-stats">
+            <div className="stat-card">
+              <Icon name="book" size={IconSizes.lg} color={IconColors.primary} />
+              <div className="stat-content">
+                <span className="stat-number">{lessons.length}</span>
+                <span className="stat-label">Leçons</span>
+              </div>
             </div>
-            <button
-              onClick={handleCreateLesson}
-              className="btn btn-primary"
-            >
-              <Icon name="plus" size={IconSizes.sm} color={IconColors.white} />
-              Ajouter une leçon
-            </button>
+            
+            <div className="stat-card">
+              <Icon name="clock" size={IconSizes.lg} color={IconColors.warning} />
+              <div className="stat-content">
+                <span className="stat-number">
+                  {formatDuration(lessons.reduce((total, lesson) => total + (lesson.estimatedDuration || 0), 0))}
+                </span>
+                <span className="stat-label">Temps total</span>
+              </div>
+            </div>
+            
+            <div className="stat-card">
+              <Icon name="layers" size={IconSizes.lg} color={IconColors.success} />
+              <div className="stat-content">
+                <span className="stat-number">
+                  {lessons.filter(l => l.isPublished).length}
+                </span>
+                <span className="stat-label">Publiées</span>
+              </div>
+            </div>
           </div>
+        </div>
 
+        {/* Lessons List */}
+        <div className="modules-list">
+          <h3>
+            <Icon name="list" size={IconSizes.md} color={IconColors.primary} />
+            Leçons du module ({lessons.length})
+          </h3>
+          
           {lessons.length === 0 ? (
-            <div className="no-lessons">
-              <Icon name="bookOpen" size={IconSizes.xl} color={IconColors.muted} />
-              <h3>Aucune leçon créée</h3>
-              <p>Commencez par créer votre première leçon</p>
-              <button
-                onClick={handleCreateLesson}
-                className="btn btn-primary"
-              >
-                <Icon name="plus" size={IconSizes.sm} color={IconColors.white} />
-                Créer la première leçon
-              </button>
+            <div className="empty-state">
+              <Icon name="book" size={IconSizes.xl} color={IconColors.gray} />
+              <p>Aucune leçon créée pour ce module</p>
+              <small>Commencez par créer votre première leçon</small>
             </div>
           ) : (
-            <div className="lessons-list">
-              {lessons.map((lesson, index) => (
-                <div key={lesson._id} className="lesson-card">
-                  <div className="lesson-info">
-                    <div className="lesson-header">
-                      <div className="lesson-order">
-                        <Icon name="hash" size={IconSizes.sm} color={IconColors.primary} />
-                        <span>{lesson.order}</span>
+            <div className="unique-modules-container" style={{ 
+              display: 'flex !important', 
+              flexWrap: 'wrap !important', 
+              gap: '1.5rem !important',
+              width: '100% !important'
+            }}>
+              {lessons
+                .slice()
+                .sort((a, b) => a.order - b.order)
+                .map((lesson) => (
+                  <div key={lesson._id} className="unique-module-item" style={{ 
+                    width: '400px !important', 
+                    flex: '0 0 400px !important',
+                    maxWidth: '400px !important',
+                    minWidth: '400px !important'
+                  }}>
+                    <div className="module-accent" />
+                    <div className="module-inner">
+                      <div className="module-header">
+                        <div className="module-order">
+                          <Icon name="hash" size={IconSizes.sm} color={IconColors.primary} />
+                          {lesson.order}
+                        </div>
+                        <div className="module-status">
+                          {lesson.isPublished ? (
+                            <span className="status published">
+                              <Icon name="globe" size={IconSizes.xs} color={IconColors.primary} />
+                              Publié
+                            </span>
+                          ) : (
+                            <span className="status draft">
+                              <Icon name="edit" size={IconSizes.xs} color={IconColors.white} />
+                              Brouillon
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="lesson-title">
-                        <h4>{lesson.title}</h4>
-                        <p>{lesson.description}</p>
-                      </div>
-                      <div className="lesson-status">
-                        {lesson.isPublished ? (
-                          <span className="status published">
-                            <Icon name="globe" size={IconSizes.xs} color={IconColors.success} />
-                            Publié
+                      
+                      <div className="module-content">
+                        <h4 className="module-title">{lesson.title}</h4>
+                        <p className="module-description">{lesson.description}</p>
+                        
+                        <div className="module-stats">
+                          <span className="stat">
+                            {getLessonTypeIcon(lesson.type)}
+                            {getLessonTypeLabel(lesson.type)}
                           </span>
-                        ) : (
-                          <span className="status draft">
-                            <Icon name="eyeOff" size={IconSizes.xs} color={IconColors.muted} />
-                            Brouillon
+                          <span className="stat">
+                            <Icon name="clock" size={IconSizes.xs} color={IconColors.gray} />
+                            {formatDuration(lesson.estimatedDuration)}
                           </span>
+                        </div>
+
+                        {lesson.remarks && (
+                          <div className="lesson-remarks">
+                            <strong>Remarques :</strong> {lesson.remarks}
+                          </div>
                         )}
                       </div>
-                    </div>
-                    
-                    <div className="lesson-stats">
-                      <span className="stat">
-                        <Icon name="clock" size={IconSizes.xs} color={IconColors.primary} />
-                        {lesson.duration}
-                      </span>
-                      <span className="stat">
-                        <Icon name="tag" size={IconSizes.xs} color={IconColors.secondary} />
-                        {lesson.type}
-                      </span>
-                      {lesson.isFree && (
-                        <span className="stat free">
-                          <Icon name="gift" size={IconSizes.xs} color={IconColors.success} />
-                          Gratuit
-                        </span>
-                      )}
+                      
+                      {/* Lesson Actions */}
+                      <div className="module-actions">
+                        <button 
+                          onClick={() => handleEditLesson(lesson)}
+                          className="btn btn-secondary"
+                          title="Modifier la leçon"
+                        >
+                          <Icon name="edit" size={IconSizes.xs} color={IconColors.white} />
+                          Modifier
+                        </button>
+                        
+                        <button 
+                          onClick={() => handleDeleteLesson(lesson)}
+                          className="btn btn-danger"
+                          title="Supprimer la leçon"
+                        >
+                          <Icon name="trash" size={IconSizes.xs} color={IconColors.white} />
+                          Supprimer
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  
-                  <div className="lesson-actions">
-                    <div className="reorder-buttons">
-                      {index > 0 && (
-                        <button
-                          onClick={() => moveLesson(index, index - 1)}
-                          className="btn btn-sm btn-secondary"
-                          title="Déplacer vers le haut"
-                        >
-                          <Icon name="chevronUp" size={IconSizes.xs} color={IconColors.white} />
-                        </button>
-                      )}
-                      {index < lessons.length - 1 && (
-                        <button
-                          onClick={() => moveLesson(index, index + 1)}
-                          className="btn btn-sm btn-secondary"
-                          title="Déplacer vers le bas"
-                        >
-                          <Icon name="chevronDown" size={IconSizes.xs} color={IconColors.white} />
-                        </button>
-                      )}
-                    </div>
-                    
-                    <button
-                      onClick={() => handleEditLesson(lesson._id)}
-                      className="btn btn-sm btn-secondary"
-                      title="Modifier la leçon"
-                    >
-                      <Icon name="edit" size={IconSizes.xs} color={IconColors.white} />
-                      Modifier
-                    </button>
-                    
-                    <button
-                      onClick={() => handleDeleteLesson(lesson._id)}
-                      className="btn btn-sm btn-danger"
-                      title="Supprimer la leçon"
-                    >
-                      <Icon name="trash" size={IconSizes.xs} color={IconColors.white} />
-                      Supprimer
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
           )}
         </div>
-
-        <div className="form-actions">
-          <button
-            onClick={() => navigate(`/tutor/manage-modules/${course?._id}`)}
-            className="btn btn-secondary"
-          >
-            <Icon name="arrowLeft" size={IconSizes.sm} color={IconColors.white} />
-            Retour aux modules
-          </button>
-        </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        open={showDeleteModal}
+        title="Supprimer la leçon"
+        message={`Êtes-vous sûr de vouloir supprimer la leçon "${lessonToDelete?.title}" ?\n\nCette action est irréversible.`}
+        confirmLabel="Supprimer définitivement"
+        cancelLabel="Annuler"
+        destructive={true}
+        variant="warning"
+        onConfirm={confirmDeleteLesson}
+        onCancel={() => {
+          setShowDeleteModal(false);
+          setLessonToDelete(null);
+        }}
+      />
     </div>
   );
 };
