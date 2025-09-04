@@ -7,7 +7,11 @@ const { updateCourseDuration } = require('../utils/courseDurationCalculator');
 // Créer une nouvelle leçon
 const createLesson = async (req, res) => {
   try {
-    const { title, description, content, duration, order, type, videoUrl, isFree, difficulty, tags } = req.body;
+    console.log('🔍 createLesson - req.body:', req.body);
+    console.log('🔍 createLesson - req.files:', req.files);
+    console.log('🔍 createLesson - req.params:', req.params);
+    
+    const { title, description, content, duration, order, type, videoUrl, linkUrl, isFree, difficulty, tags } = req.body;
     const { moduleId } = req.params;
     
     // Vérifier que le module existe
@@ -49,17 +53,74 @@ const createLesson = async (req, res) => {
       );
     }
     
+    // Préparer les pièces jointes si fournies
+    let attachments = [];
+    if (req.files && req.files.attachments) {
+      console.log('🔍 Processing attachments:', req.files.attachments);
+      const attachmentFiles = Array.isArray(req.files.attachments) ? req.files.attachments : [req.files.attachments];
+      attachments = attachmentFiles.map((file) => ({
+        filename: file.filename,
+        originalName: file.originalname,
+        path: `/uploads/lessons/attachments/${file.filename}`,
+        size: file.size,
+        mimeType: file.mimetype
+      }));
+    }
+
+    // Gérer la vidéo uploadée
+    let finalVideoUrl = videoUrl || null;
+    if (req.files && req.files.videoFile) {
+      console.log('🔍 Processing video file:', req.files.videoFile);
+      const videoFiles = Array.isArray(req.files.videoFile) ? req.files.videoFile : [req.files.videoFile];
+      if (videoFiles.length > 0) {
+        const file = videoFiles[0];
+        finalVideoUrl = `/uploads/lessons/videos/${file.filename}`;
+      }
+    }
+
+    // Déterminer un contenu final obligatoire selon le type
+    let finalContent = content;
+    
+    // Si content est undefined, null ou vide, on génère un contenu selon le type
+    if (!finalContent || finalContent === undefined || finalContent === null || (typeof finalContent === 'string' && finalContent.trim() === '')) {
+      if (type === 'link' && linkUrl) {
+        finalContent = `Lien: ${linkUrl}`;
+      } else if (type === 'video') {
+        if (finalVideoUrl) {
+          finalContent = `Vidéo: ${finalVideoUrl}`;
+        } else if (videoUrl) {
+          finalContent = `Vidéo: ${videoUrl}`;
+        } else {
+          finalContent = 'Vidéo incluse';
+        }
+      } else if (type === 'file' && attachments.length > 0) {
+        finalContent = `Fichiers inclus: ${attachments.map(a => a.originalName).join(', ')}`;
+      } else {
+        // Fallback par défaut
+        finalContent = `Leçon de type ${type}`;
+      }
+    }
+    
+    console.log('🔍 Final data:', {
+      type,
+      finalContent: finalContent ? finalContent.substring(0, 100) + '...' : null,
+      finalVideoUrl,
+      attachmentsCount: attachments.length
+    });
+
     // Créer la leçon
     const newLesson = new Lesson({
       title,
       description,
-      content,
+      content: finalContent,
       duration,
       order: finalOrder,
       course: module.course,
       module: moduleId,
       type: type || 'text',
-      videoUrl: videoUrl || null,
+      videoUrl: finalVideoUrl,
+      linkUrl: linkUrl || null,
+      attachments,
       isFree: isFree || false,
       difficulty: difficulty || 'moyen',
       tags: tags || []
@@ -95,8 +156,12 @@ const createLesson = async (req, res) => {
 // Mettre à jour une leçon
 const updateLesson = async (req, res) => {
   try {
+    console.log('🔍 updateLesson - req.body:', req.body);
+    console.log('🔍 updateLesson - req.files:', req.files);
+    console.log('🔍 updateLesson - req.params:', req.params);
+    
     const { id } = req.params;
-    const updateData = req.body;
+    const { title, description, content, duration, order, type, videoUrl, linkUrl, isFree, difficulty, tags } = req.body;
     
     const lesson = await Lesson.findById(id);
     if (!lesson) {
@@ -115,7 +180,78 @@ const updateLesson = async (req, res) => {
       });
     }
     
+    // Préparer les pièces jointes si fournies
+    let attachments = lesson.attachments || [];
+    if (req.files && req.files.attachments) {
+      console.log('🔍 Processing new attachments:', req.files.attachments);
+      const attachmentFiles = Array.isArray(req.files.attachments) ? req.files.attachments : [req.files.attachments];
+      const newAttachments = attachmentFiles.map((file) => ({
+        filename: file.filename,
+        originalName: file.originalname,
+        path: `/uploads/lessons/attachments/${file.filename}`,
+        size: file.size,
+        mimeType: file.mimetype
+      }));
+      attachments = [...attachments, ...newAttachments];
+    }
+
+    // Gérer la vidéo uploadée
+    let finalVideoUrl = videoUrl || lesson.videoUrl || null;
+    if (req.files && req.files.videoFile) {
+      console.log('🔍 Processing new video file:', req.files.videoFile);
+      const videoFiles = Array.isArray(req.files.videoFile) ? req.files.videoFile : [req.files.videoFile];
+      if (videoFiles.length > 0) {
+        const file = videoFiles[0];
+        finalVideoUrl = `/uploads/lessons/videos/${file.filename}`;
+      }
+    }
+
+    // Déterminer un contenu final obligatoire selon le type
+    let finalContent = content;
+    
+    // Si content est undefined, null ou vide, on génère un contenu selon le type
+    if (!finalContent || finalContent === undefined || finalContent === null || (typeof finalContent === 'string' && finalContent.trim() === '')) {
+      if (type === 'link' && linkUrl) {
+        finalContent = `Lien: ${linkUrl}`;
+      } else if (type === 'video') {
+        if (finalVideoUrl) {
+          finalContent = `Vidéo: ${finalVideoUrl}`;
+        } else if (videoUrl) {
+          finalContent = `Vidéo: ${videoUrl}`;
+        } else {
+          finalContent = 'Vidéo incluse';
+        }
+      } else if (type === 'file' && attachments.length > 0) {
+        finalContent = `Fichiers inclus: ${attachments.map(a => a.originalName).join(', ')}`;
+      } else {
+        // Fallback par défaut
+        finalContent = `Leçon de type ${type}`;
+      }
+    }
+    
+    console.log('🔍 Final update data:', {
+      type,
+      finalContent: finalContent ? finalContent.substring(0, 100) + '...' : null,
+      finalVideoUrl,
+      attachmentsCount: attachments.length
+    });
+    
     // Mettre à jour la leçon
+    const updateData = {
+      title,
+      description,
+      content: finalContent,
+      duration,
+      order,
+      type: type || lesson.type,
+      videoUrl: finalVideoUrl,
+      linkUrl: linkUrl || lesson.linkUrl,
+      attachments,
+      isFree: isFree !== undefined ? isFree : lesson.isFree,
+      difficulty: difficulty || lesson.difficulty,
+      tags: tags || lesson.tags
+    };
+    
     const updatedLesson = await Lesson.findByIdAndUpdate(
       id,
       updateData,

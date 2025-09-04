@@ -48,8 +48,50 @@
   padding: 1.5rem;
   background: #f8fafc;
   border-radius: 15px;
-  border: 1px solid #e2e8f0;
-  transition: all 0.3s ease;
+}
+
+/* Aperçu du contenu */
+.content-preview {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #e0f2fe;
+  border: 2px solid #0ea5e9;
+  border-radius: 10px;
+}
+
+.content-preview h4 {
+  margin: 0 0 0.5rem 0;
+  color: #0369a1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.preview-content {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #bae6fd;
+}
+
+.preview-content a {
+  color: #0ea5e9;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.preview-content a:hover {
+  text-decoration: underline;
+}
+
+.preview-content ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.preview-content li {
+  margin-bottom: 0.5rem;
 }
 
 .form-section:hover {

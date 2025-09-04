@@ -100,16 +100,20 @@ const ManageLessons = () => {
 
   const getLessonTypeIcon = (type) => {
     switch (type) {
-      case 'document':
+      case 'text':
         return <Icon name="fileText" size={IconSizes.sm} color={IconColors.primary} />;
-      case 'url':
+      case 'link':
         return <Icon name="link" size={IconSizes.sm} color={IconColors.primary} />;
+      case 'file':
+        return <Icon name="file" size={IconSizes.sm} color={IconColors.primary} />;
       case 'video':
         return <Icon name="video" size={IconSizes.sm} color={IconColors.primary} />;
-      case 'youtube':
-        return <Icon name="youtube" size={IconSizes.sm} color={IconColors.danger} />;
       case 'quiz':
         return <Icon name="helpCircle" size={IconSizes.sm} color={IconColors.warning} />;
+      case 'assignment':
+        return <Icon name="edit" size={IconSizes.sm} color={IconColors.success} />;
+      case 'interactive':
+        return <Icon name="play" size={IconSizes.sm} color={IconColors.info} />;
       default:
         return <Icon name="file" size={IconSizes.sm} color={IconColors.gray} />;
     }
@@ -117,18 +121,22 @@ const ManageLessons = () => {
 
   const getLessonTypeLabel = (type) => {
     switch (type) {
-      case 'document':
-        return 'Document';
-      case 'url':
-        return 'Lien web';
+      case 'text':
+        return 'Texte';
+      case 'link':
+        return 'Lien';
+      case 'file':
+        return 'Fichier';
       case 'video':
         return 'Vidéo';
-      case 'youtube':
-        return 'Vidéo YouTube';
       case 'quiz':
         return 'Quiz';
+      case 'assignment':
+        return 'Devoir';
+      case 'interactive':
+        return 'Interactif';
       default:
-        return '';
+        return type || 'Non défini';
     }
   };
 

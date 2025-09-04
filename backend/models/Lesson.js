@@ -37,10 +37,14 @@ const lessonSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['video', 'text', 'quiz', 'assignment', 'interactive'],
+    enum: ['video', 'text', 'link', 'file', 'quiz', 'assignment', 'interactive'],
     default: 'text'
   },
   videoUrl: {
+    type: String,
+    default: null
+  },
+  linkUrl: {
     type: String,
     default: null
   },

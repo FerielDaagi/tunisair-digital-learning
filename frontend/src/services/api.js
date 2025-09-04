@@ -114,6 +114,7 @@ export const lessonsAPI = {
   create: (lessonData) => {
     const isFormData = typeof FormData !== 'undefined' && lessonData instanceof FormData;
     const moduleId = isFormData ? (lessonData.get('module') || lessonData.get('moduleId')) : (lessonData.module || lessonData.moduleId);
+    console.log('🔍 lessonsAPI.create - moduleId:', moduleId, 'isFormData:', isFormData);
     // Do not set Content-Type manually; let the browser/axios set the boundary
     return api.post(`/lessons/module/${moduleId}`, lessonData);
   },
@@ -126,6 +127,8 @@ export const lessonsAPI = {
   
   // Modifier une leçon
   update: (lessonId, lessonData) => {
+    const isFormData = typeof FormData !== 'undefined' && lessonData instanceof FormData;
+    console.log('🔍 lessonsAPI.update - lessonId:', lessonId, 'isFormData:', isFormData);
     // Let axios handle the Content-Type
     return api.put(`/lessons/${lessonId}`, lessonData);
   },
