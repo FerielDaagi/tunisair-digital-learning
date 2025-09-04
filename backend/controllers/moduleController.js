@@ -1,6 +1,7 @@
 const Module = require('../models/Module');
 const Course = require('../models/Course');
 const Lesson = require('../models/Lesson');
+const { updateCourseDuration } = require('../utils/courseDurationCalculator');
 
 // Créer un nouveau module
 const createModule = async (req, res) => {
@@ -62,6 +63,9 @@ const createModule = async (req, res) => {
     // Ajouter le module au cours (sans validation pour éviter les conflits)
     course.modules.push(newModule._id);
     await course.save({ validateBeforeSave: false });
+    
+    // Mettre à jour la durée du cours
+    await updateCourseDuration(courseId);
     
     res.status(201).json({
       success: true,
@@ -153,6 +157,9 @@ const deleteModule = async (req, res) => {
     // Supprimer le module
     await Module.findByIdAndUpdate(id, { lessons: [] });
     await Module.findByIdAndDelete(id);
+    
+    // Mettre à jour la durée du cours
+    await updateCourseDuration(module.course);
     
     res.json({
       success: true,

@@ -128,16 +128,93 @@ const ManageLessons = () => {
       case 'quiz':
         return 'Quiz';
       default:
-        return 'Autre';
+        return '';
     }
   };
 
-  const formatDuration = (minutes) => {
-    if (!minutes) return 'Non définie';
-    if (minutes < 60) return `${minutes} min`;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
+  const formatDuration = (value) => {
+    if (!value) return 'Non définie';
+    if (typeof value === 'number') {
+      if (value < 60) return `${value} minute${value > 1 ? 's' : ''}`;
+      const h = Math.floor(value / 60);
+      const m = value % 60;
+      return m > 0
+        ? `${h} ${h > 1 ? 'heures' : 'heure'} ${m} minute${m > 1 ? 's' : ''}`
+        : `${h} ${h > 1 ? 'heures' : 'heure'}`;
+    }
+    // If already a string like "1 heure 30 minutes" just return it
+    return value;
+  };
+
+  const parseDurationToMinutes = (duration) => {
+    if (!duration || typeof duration !== 'string') {
+      return 0;
+    }
+    
+    const durationLower = duration.toLowerCase().trim();
+    let totalMinutes = 0;
+    
+    // Patterns pour détecter les heures et minutes
+    const hourPattern = /(\d+)\s*(?:heure|h|hr)/;
+    const minutePattern = /(\d+)\s*(?:minute|min|m)/;
+    
+    // Extraire les heures
+    const hourMatch = durationLower.match(hourPattern);
+    if (hourMatch) {
+      totalMinutes += parseInt(hourMatch[1]) * 60;
+    }
+    
+    // Extraire les minutes
+    const minuteMatch = durationLower.match(minutePattern);
+    if (minuteMatch) {
+      totalMinutes += parseInt(minuteMatch[1]);
+    }
+    
+    // Si aucun pattern n'est trouvé, essayer de parser comme nombre de minutes
+    if (totalMinutes === 0) {
+      const numberMatch = durationLower.match(/(\d+)/);
+      if (numberMatch) {
+        totalMinutes = parseInt(numberMatch[1]);
+      }
+    }
+    
+    return totalMinutes;
+  };
+
+  const calculateTotalDuration = (lessons) => {
+    if (!lessons || lessons.length === 0) {
+      return '0 heure';
+    }
+    
+    let totalMinutes = 0;
+    
+    lessons.forEach(lesson => {
+      const duration = lesson.duration || '';
+      const minutes = parseDurationToMinutes(duration);
+      totalMinutes += minutes;
+    });
+    
+    if (totalMinutes === 0) {
+      return '0 heure';
+    }
+    
+    const hours = Math.floor(totalMinutes / 60);
+    const remainingMinutes = totalMinutes % 60;
+    
+    let result = '';
+    
+    if (hours > 0) {
+      result += `${hours} heure${hours > 1 ? 's' : ''}`;
+    }
+    
+    if (remainingMinutes > 0) {
+      if (result) {
+        result += ' ';
+      }
+      result += `${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}`;
+    }
+    
+    return result;
   };
 
   if (loading) {
@@ -225,7 +302,7 @@ const ManageLessons = () => {
               <Icon name="clock" size={IconSizes.lg} color={IconColors.warning} />
               <div className="stat-content">
                 <span className="stat-number">
-                  {formatDuration(lessons.reduce((total, lesson) => total + (lesson.estimatedDuration || 0), 0))}
+                  {calculateTotalDuration(lessons)}
                 </span>
                 <span className="stat-label">Temps total</span>
               </div>
@@ -300,13 +377,15 @@ const ManageLessons = () => {
                         <p className="module-description">{lesson.description}</p>
                         
                         <div className="module-stats">
-                          <span className="stat">
-                            {getLessonTypeIcon(lesson.type)}
-                            {getLessonTypeLabel(lesson.type)}
-                          </span>
+                          {getLessonTypeLabel(lesson.type) && (
+                            <span className="stat">
+                              {getLessonTypeIcon(lesson.type)}
+                              {getLessonTypeLabel(lesson.type)}
+                            </span>
+                          )}
                           <span className="stat">
                             <Icon name="clock" size={IconSizes.xs} color={IconColors.gray} />
-                            {formatDuration(lesson.estimatedDuration)}
+                            {formatDuration(lesson.duration)}
                           </span>
                         </div>
 

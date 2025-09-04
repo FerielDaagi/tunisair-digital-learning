@@ -2737,6 +2737,18 @@
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 }
 
+.create-lesson-page .loading-simple {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50vh;
+}
+
+.create-lesson-page .loading-simple .spinner {
+  animation: spin 2s linear infinite;
+  display: inline-block;
+}
+
 .create-lesson-page .loading h2 {
   font-size: 2rem;
   font-weight: 600;
@@ -2878,4 +2890,23 @@
 .create-lesson-form .btn:disabled:hover {
   transform: none;
   box-shadow: none;
+}
+
+/* ===== Order Warning Styles ===== */
+.create-lesson-form .order-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: #fffbeb;
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  color: #92400e;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.create-lesson-form .order-warning svg {
+  flex-shrink: 0;
 }

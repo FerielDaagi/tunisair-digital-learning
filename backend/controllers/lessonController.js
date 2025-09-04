@@ -1,6 +1,8 @@
 const Lesson = require('../models/Lesson');
 const Module = require('../models/Module');
 const Course = require('../models/Course');
+const { updateModuleDuration } = require('../utils/durationCalculator');
+const { updateCourseDuration } = require('../utils/courseDurationCalculator');
 
 // Créer une nouvelle leçon
 const createLesson = async (req, res) => {
@@ -70,6 +72,12 @@ const createLesson = async (req, res) => {
       $push: { lessons: newLesson._id }
     });
     
+    // Mettre à jour la durée du module
+    await updateModuleDuration(moduleId);
+    
+    // Mettre à jour la durée du cours
+    await updateCourseDuration(module.course);
+    
     res.status(201).json({
       success: true,
       message: 'Leçon créée avec succès',
@@ -114,6 +122,13 @@ const updateLesson = async (req, res) => {
       { new: true, runValidators: true }
     );
     
+    // Mettre à jour la durée du module si la durée de la leçon a changé
+    if (updateData.duration) {
+      await updateModuleDuration(updatedLesson.module);
+      // Mettre à jour la durée du cours
+      await updateCourseDuration(updatedLesson.course);
+    }
+    
     res.json({
       success: true,
       message: 'Leçon mise à jour avec succès',
@@ -157,6 +172,22 @@ const deleteLesson = async (req, res) => {
     
     // Supprimer la leçon
     await Lesson.findByIdAndDelete(id);
+    
+    // Réorganiser les ordres des leçons restantes du module (1..N sans trous)
+    const remainingLessons = await Lesson.find({ module: lesson.module })
+      .sort({ order: 1, createdAt: 1 });
+    for (let index = 0; index < remainingLessons.length; index++) {
+      const desiredOrder = index + 1;
+      if (remainingLessons[index].order !== desiredOrder) {
+        await Lesson.findByIdAndUpdate(remainingLessons[index]._id, { order: desiredOrder });
+      }
+    }
+    
+    // Mettre à jour la durée du module
+    await updateModuleDuration(lesson.module);
+    
+    // Mettre à jour la durée du cours
+    await updateCourseDuration(lesson.course);
     
     res.json({
       success: true,
@@ -253,6 +284,12 @@ const reorderLessons = async (req, res) => {
     for (let i = 0; i < lessonIds.length; i++) {
       await Lesson.findByIdAndUpdate(lessonIds[i], { order: i + 1 });
     }
+    
+    // Mettre à jour la durée du module
+    await updateModuleDuration(moduleId);
+    
+    // Mettre à jour la durée du cours
+    await updateCourseDuration(module.course);
     
     res.json({
       success: true,

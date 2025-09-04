@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import api, { lessonsAPI, modulesAPI, coursesAPI } from '../../services/api';
 import { Icon, IconSizes, IconColors } from '../../components/common/IconTheme';
-import ConfirmModal from '../../components/common/ConfirmModal';
 import './CreateCourse.css';
 
 const CreateLesson = () => {
@@ -18,7 +17,7 @@ const CreateLesson = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [existingOrders, setExistingOrders] = useState([]);
-  const [confirmConflict, setConfirmConflict] = useState({ open: false, desiredOrder: null });
+  const [orderWarning, setOrderWarning] = useState('');
   
   const [formData, setFormData] = useState({
     title: '',
@@ -127,21 +126,48 @@ const CreateLesson = () => {
           console.log('Fetching lessons for module:', moduleId);
           const lessonsResponse = await lessonsAPI.getByModule(moduleId);
           console.log('Lessons response:', lessonsResponse);
+          console.log('Lessons response.data:', lessonsResponse.data);
+          console.log('Lessons response.data.success:', lessonsResponse.data?.success);
+          console.log('Lessons response.data.data:', lessonsResponse.data?.data);
           
           if (lessonsResponse.data) {
-            const lessons = lessonsResponse.data;
+            // Gérer la structure de réponse de l'API
+            let lessons;
+            if (lessonsResponse.data.success && lessonsResponse.data.data) {
+              // Structure: {success: true, data: [...]}
+              lessons = lessonsResponse.data.data;
+            } else if (Array.isArray(lessonsResponse.data)) {
+              // Structure directe: [...]
+              lessons = lessonsResponse.data;
+            } else {
+              lessons = [];
+            }
+            
+            console.log('Lessons loaded:', lessons);
+            
             // Extraire les ordres existants
             const orders = lessons
               .map(l => l?.order)
               .filter(o => typeof o === 'number' && Number.isFinite(o));
+            
+            console.log('Existing orders extracted:', orders);
             setExistingOrders(orders);
             
             // Calculer le prochain ordre disponible
             const maxOrder = orders.length > 0 ? Math.max(...orders) : 0;
+            const nextOrder = maxOrder + 1;
+            console.log('Max order:', maxOrder, 'Next order will be:', nextOrder);
+            
             setFormData(prev => ({
               ...prev,
-              order: maxOrder + 1
+              order: nextOrder
             }));
+            
+            // Vérifier si l'ordre actuel dans formData est en conflit
+            if (formData.order && orders.includes(formData.order)) {
+              console.log('Current form order conflicts, updating warning');
+              setOrderWarning(`⚠️ L'ordre ${formData.order} existe déjà. Les autres leçons seront automatiquement réorganisées.`);
+            }
           }
         } catch (lessonsError) {
           console.warn('Failed to fetch lessons, using default order:', lessonsError);
@@ -199,8 +225,32 @@ const CreateLesson = () => {
 
   // Debug loading state changes
   useEffect(() => {
-    console.log('Loading state changed:', { loading, loadingStep, error });
-  }, [loading, loadingStep, error]);
+    console.log('Loading state changed:', { loading, loadingStep, error, orderWarning });
+  }, [loading, loadingStep, error, orderWarning]);
+
+  // Debug existing orders changes
+  useEffect(() => {
+    console.log('Existing orders changed:', existingOrders);
+  }, [existingOrders]);
+
+  // Debug order warning changes
+  useEffect(() => {
+    console.log('Order warning changed:', orderWarning);
+  }, [orderWarning]);
+
+  // Vérifier les conflits d'ordre quand formData.order ou existingOrders changent
+  useEffect(() => {
+    if (existingOrders.length > 0 && formData.order) {
+      const orderValue = parseInt(formData.order);
+      if (Number.isFinite(orderValue) && existingOrders.includes(orderValue)) {
+        console.log('Order conflict detected in useEffect:', orderValue);
+        setOrderWarning(`⚠️ L'ordre ${orderValue} existe déjà. Les autres leçons seront automatiquement réorganisées.`);
+      } else {
+        console.log('No order conflict in useEffect');
+        setOrderWarning('');
+      }
+    }
+  }, [formData.order, existingOrders]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -208,11 +258,22 @@ const CreateLesson = () => {
     if (name === 'order') {
       // Valider que l'ordre est un nombre positif
       const orderValue = parseInt(value);
+      console.log('Order input changed:', { value, orderValue, existingOrders });
+      
       if (value === '' || (Number.isFinite(orderValue) && orderValue > 0)) {
         setFormData(prev => ({
           ...prev,
           [name]: value === '' ? '' : orderValue
         }));
+        
+        // Vérifier si l'ordre existe déjà (seulement si les données sont chargées)
+        if (Number.isFinite(orderValue) && existingOrders.length > 0 && existingOrders.includes(orderValue)) {
+          console.log('Order conflict detected:', orderValue);
+          setOrderWarning(`⚠️ L'ordre ${orderValue} existe déjà. Les autres leçons seront automatiquement réorganisées.`);
+        } else {
+          console.log('No order conflict or data not loaded yet');
+          setOrderWarning('');
+        }
       }
     } else {
       setFormData(prev => ({
@@ -292,18 +353,7 @@ const CreateLesson = () => {
       return;
     }
 
-    // Vérifier les conflits d'ordre
-    const desiredOrder = parseInt(formData.order);
-    if (Number.isFinite(desiredOrder) && desiredOrder > 0) {
-      const conflict = existingOrders.includes(desiredOrder);
-      if (conflict && !confirmConflict.open) {
-        // Ouvrir la confirmation au lieu de créer directement
-        setConfirmConflict({ open: true, desiredOrder });
-        setSubmitting(false);
-        return;
-      }
-    }
-
+    // Créer directement - le backend gérera la réorganisation automatique
     await actuallyCreateLesson();
   };
 
@@ -322,35 +372,9 @@ const CreateLesson = () => {
     if (loading) {
     return (
       <div className="create-lesson-page">
-        <div className="loading">
-          <div style={{ 
-            animation: 'spin 2s linear infinite',
-            display: 'inline-block',
-            marginBottom: '1rem'
-          }}>
+        <div className="loading-simple">
+          <div className="spinner">
             <Icon name="loader" size={IconSizes.xl} color={IconColors.primary} />
-          </div>
-          <h2>Chargement des données...</h2>
-          {loadingStep && <p style={{ color: '#666', marginBottom: '0.5rem' }}>{loadingStep}</p>}
-          <small style={{ color: '#888' }}>Si le chargement prend trop de temps, rafraîchissez la page</small>
-          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '1rem' }}>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="btn btn-secondary"
-            >
-              <Icon name="refresh" size={IconSizes.sm} color={IconColors.white} />
-              Rafraîchir la page
-            </button>
-            <button 
-              onClick={() => {
-                setLoading(false);
-                setError('Chargement interrompu. Le formulaire sera affiché avec des informations limitées.');
-              }} 
-              className="btn btn-primary"
-            >
-              <Icon name="play" size={IconSizes.sm} color={IconColors.white} />
-              Continuer quand même
-            </button>
           </div>
         </div>
       </div>
@@ -362,19 +386,7 @@ const CreateLesson = () => {
     return (
       <div className="create-lesson-page">
         <div className="create-lesson-container">
-          {/* Confirm order conflict */}
-          <ConfirmModal
-            open={confirmConflict.open}
-            title="Ordre déjà utilisé"
-            message={`Une leçon avec l'ordre ${confirmConflict.desiredOrder ?? ''} existe déjà.\nConfirmez-vous le décalage automatique des autres leçons ?`}
-            confirmLabel="Oui, réorganiser"
-            onConfirm={() => {
-              setConfirmConflict({ open: false, desiredOrder: null });
-              setSubmitting(true);
-              actuallyCreateLesson(); // le backend décalera automatiquement vers le bas
-            }}
-            onCancel={() => setConfirmConflict({ open: false, desiredOrder: null })}
-          />
+
 
           <div className="create-lesson-header">
             <h1>
@@ -509,19 +521,7 @@ const CreateLesson = () => {
   return (
     <div className="create-lesson-page">
       <div className="create-lesson-container">
-        {/* Confirm order conflict */}
-        <ConfirmModal
-          open={confirmConflict.open}
-          title="Ordre déjà utilisé"
-          message={`Une leçon avec l'ordre ${confirmConflict.desiredOrder ?? ''} existe déjà.\nConfirmez-vous le décalage automatique des autres leçons ?`}
-          confirmLabel="Oui, réorganiser"
-          onConfirm={() => {
-            setConfirmConflict({ open: false, desiredOrder: null });
-            setSubmitting(true);
-            actuallyCreateLesson(); // le backend décalera automatiquement vers le bas
-          }}
-          onCancel={() => setConfirmConflict({ open: false, desiredOrder: null })}
-        />
+
 
         <div className="create-lesson-header">
           <h1>
@@ -596,6 +596,12 @@ const CreateLesson = () => {
                   required
                 />
                 <small>Position de la leçon dans le module</small>
+                {orderWarning && (
+                  <div className="order-warning">
+                    <Icon name="warning" size={IconSizes.sm} color={IconColors.warning} />
+                    <span>{orderWarning}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
