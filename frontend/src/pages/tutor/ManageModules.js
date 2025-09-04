@@ -180,7 +180,7 @@ const ManageModules = () => {
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button
-              onClick={() => navigate(`/tutor/edit-course/${courseId}`)}
+              onClick={() => navigate('/tutor/my-courses')}
               className="btn btn-outline"
             >
               <Icon name="arrowLeft" size={IconSizes.sm} color={IconColors.gray} />

@@ -275,6 +275,18 @@ const CreateLesson = () => {
           setOrderWarning('');
         }
       }
+    } else if (name === 'duration') {
+      // Only allow numeric minutes between 1 and 59
+      const numeric = value.replace(/[^0-9]/g, '');
+      let minutes = numeric === '' ? '' : parseInt(numeric);
+      if (minutes !== '' && Number.isFinite(minutes)) {
+        if (minutes < 1) minutes = 1;
+        if (minutes > 59) minutes = 59;
+      }
+      setFormData(prev => ({
+        ...prev,
+        duration: minutes === '' ? '' : minutes
+      }));
     } else {
       setFormData(prev => ({
         ...prev,
@@ -572,15 +584,18 @@ const CreateLesson = () => {
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="duration">Durée *</label>
+                <label htmlFor="duration">Durée (minutes) *</label>
                 <input
-                  type="text"
+                  type="number"
                   id="duration"
                   name="duration"
                   value={formData.duration}
                   onChange={handleInputChange}
                   required
-                  placeholder="ex: 15 minutes"
+                  inputMode="numeric"
+                  min={1}
+                  max={59}
+                  placeholder="1 - 59"
                 />
               </div>
 

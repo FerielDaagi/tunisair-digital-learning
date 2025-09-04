@@ -385,7 +385,7 @@ const ManageLessons = () => {
                           )}
                           <span className="stat">
                             <Icon name="clock" size={IconSizes.xs} color={IconColors.gray} />
-                            {formatDuration(lesson.duration)}
+                            {`${parseInt(lesson.duration || 0) || 0} minute${(parseInt(lesson.duration || 0) || 0) > 1 ? 's' : ''}`}
                           </span>
                         </div>
 
