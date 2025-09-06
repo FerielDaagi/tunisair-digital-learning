@@ -14,7 +14,11 @@ const lessonSchema = new mongoose.Schema({
   },
   content: {
     type: String,
-    required: [true, 'Le contenu de la leçon est requis']
+    required: function() {
+      // Le contenu est requis seulement pour le type 'text'
+      return this.type === 'text';
+    },
+    default: ''
   },
   duration: {
     type: String,

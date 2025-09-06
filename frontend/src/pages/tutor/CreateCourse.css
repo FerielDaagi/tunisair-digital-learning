@@ -94,6 +94,26 @@
   margin-bottom: 0.5rem;
 }
 
+/* Contenus existants */
+.existing-attachments,
+.existing-video {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f0f9ff;
+  border: 2px solid #0ea5e9;
+  border-radius: 10px;
+}
+
+.existing-attachments h4,
+.existing-video h4 {
+  margin: 0 0 0.5rem 0;
+  color: #0369a1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .form-section:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);

@@ -81,23 +81,14 @@ const createLesson = async (req, res) => {
     // Déterminer un contenu final obligatoire selon le type
     let finalContent = content;
     
-    // Si content est undefined, null ou vide, on génère un contenu selon le type
+    // Si content est undefined, null ou vide, on génère un contenu seulement pour le type texte
     if (!finalContent || finalContent === undefined || finalContent === null || (typeof finalContent === 'string' && finalContent.trim() === '')) {
-      if (type === 'link' && linkUrl) {
-        finalContent = `Lien: ${linkUrl}`;
-      } else if (type === 'video') {
-        if (finalVideoUrl) {
-          finalContent = `Vidéo: ${finalVideoUrl}`;
-        } else if (videoUrl) {
-          finalContent = `Vidéo: ${videoUrl}`;
-        } else {
-          finalContent = 'Vidéo incluse';
-        }
-      } else if (type === 'file' && attachments.length > 0) {
-        finalContent = `Fichiers inclus: ${attachments.map(a => a.originalName).join(', ')}`;
+      if (type === 'text') {
+        // Pour le type texte, on exige un contenu
+        finalContent = 'Contenu de la leçon';
       } else {
-        // Fallback par défaut
-        finalContent = `Leçon de type ${type}`;
+        // Pour tous les autres types (link, file, video), on laisse vide
+        finalContent = '';
       }
     }
     
@@ -164,6 +155,9 @@ const updateLesson = async (req, res) => {
     const { title, description, content, duration, order, type, videoUrl, linkUrl, isFree, difficulty, tags } = req.body;
     
     const lesson = await Lesson.findById(id);
+    
+    console.log('🔍 Extracted type from req.body:', type);
+    console.log('🔍 Current lesson type:', lesson.type);
     if (!lesson) {
       return res.status(404).json({
         success: false,
@@ -209,23 +203,15 @@ const updateLesson = async (req, res) => {
     // Déterminer un contenu final obligatoire selon le type
     let finalContent = content;
     
-    // Si content est undefined, null ou vide, on génère un contenu selon le type
+    // Pour la mise à jour, on garde le contenu existant seulement s'il n'est pas un message généré automatiquement
     if (!finalContent || finalContent === undefined || finalContent === null || (typeof finalContent === 'string' && finalContent.trim() === '')) {
-      if (type === 'link' && linkUrl) {
-        finalContent = `Lien: ${linkUrl}`;
-      } else if (type === 'video') {
-        if (finalVideoUrl) {
-          finalContent = `Vidéo: ${finalVideoUrl}`;
-        } else if (videoUrl) {
-          finalContent = `Vidéo: ${videoUrl}`;
-        } else {
-          finalContent = 'Vidéo incluse';
-        }
-      } else if (type === 'file' && attachments.length > 0) {
-        finalContent = `Fichiers inclus: ${attachments.map(a => a.originalName).join(', ')}`;
+      // Si c'est une mise à jour et qu'il y a déjà un contenu, on le garde seulement s'il n'est pas généré automatiquement
+      if (lesson.content && lesson.content.trim() !== '' && !lesson.content.includes('Leçon de type')) {
+        finalContent = lesson.content;
       } else {
-        // Fallback par défaut
-        finalContent = `Leçon de type ${type}`;
+        // Pour les mises à jour, on ne génère pas de contenu automatique
+        // L'utilisateur peut laisser le contenu vide pour les types file/video
+        finalContent = '';
       }
     }
     
@@ -233,7 +219,8 @@ const updateLesson = async (req, res) => {
       type,
       finalContent: finalContent ? finalContent.substring(0, 100) + '...' : null,
       finalVideoUrl,
-      attachmentsCount: attachments.length
+      attachmentsCount: attachments.length,
+      originalContent: lesson.content ? lesson.content.substring(0, 50) + '...' : null
     });
     
     // Mettre à jour la leçon
@@ -243,7 +230,7 @@ const updateLesson = async (req, res) => {
       content: finalContent,
       duration,
       order,
-      type: type || lesson.type,
+      type: (type && type.trim() !== '') ? type : lesson.type,
       videoUrl: finalVideoUrl,
       linkUrl: linkUrl || lesson.linkUrl,
       attachments,

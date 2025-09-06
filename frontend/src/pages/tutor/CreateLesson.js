@@ -317,7 +317,7 @@ const CreateLesson = () => {
     try {
       let lessonData;
 
-      const shouldUseFormData = formData.type === 'file' || (formData.type === 'video' && selectedVideoFile) || (selectedFiles && selectedFiles.length > 0);
+      const shouldUseFormData = formData.type === 'file' || (formData.type === 'video' && selectedVideoFile) || (selectedFiles && selectedFiles.length > 0) || formData.type === 'link';
 
       if (shouldUseFormData) {
         const fd = new FormData();
@@ -350,9 +350,9 @@ const CreateLesson = () => {
         lessonData = fd;
       } else {
         lessonData = {
-          ...formData,
-          moduleId
-        };
+        ...formData,
+        moduleId
+      };
       }
 
       console.log('Submitting lesson data:', lessonData);
@@ -406,7 +406,7 @@ const CreateLesson = () => {
 
     // Type-specific validation
     if (formData.type === 'text') {
-      if (!formData.content.trim()) {
+    if (!formData.content.trim()) {
         setError('Le contenu de la leçon est requis pour le type Texte');
         setSubmitting(false);
         return;
@@ -440,8 +440,8 @@ const CreateLesson = () => {
       const hasVideoFile = !!selectedVideoFile;
       if (!hasVideoUrl && !hasVideoFile) {
         setError('Fournissez soit une URL YouTube, soit un fichier vidéo');
-        setSubmitting(false);
-        return;
+      setSubmitting(false);
+      return;
       }
     }
 
@@ -730,25 +730,33 @@ const CreateLesson = () => {
             </div>
 
             {formData.type === 'text' && (
+            <div className="form-group">
+              <label htmlFor="content">Contenu de la leçon *</label>
+              <textarea
+                id="content"
+                name="content"
+                value={formData.content}
+                onChange={handleInputChange}
+                required
+                rows={8}
+                placeholder="Contenu détaillé de la leçon..."
+              />
+              </div>
+            )}
+
+            {/* Section pour les types non-texte */}
+            {(formData.type === 'file' || formData.type === 'video' || formData.type === 'link') && (
               <div className="form-group">
-                <label htmlFor="content">Contenu de la leçon *</label>
+                <label htmlFor="content">Contenu optionnel</label>
                 <textarea
                   id="content"
                   name="content"
                   value={formData.content}
                   onChange={handleInputChange}
-                  required
-                  rows={8}
-                  placeholder="Contenu détaillé de la leçon..."
+                  rows={4}
+                  placeholder="Contenu optionnel pour accompagner vos fichiers, vidéos ou liens..."
                 />
-                {formData.content && (
-                  <div className="content-preview">
-                    <h4>Aperçu du contenu :</h4>
-                    <div className="preview-content">
-                      {formData.content}
-                    </div>
-                  </div>
-                )}
+                <small>Vous pouvez ajouter du contenu textuel optionnel pour accompagner vos fichiers, vidéos ou liens.</small>
               </div>
             )}
 
@@ -764,16 +772,6 @@ const CreateLesson = () => {
                   placeholder="https://..."
                 />
                 <small>Entrez un lien (YouTube, site, document, etc.).</small>
-                {formData.linkUrl && (
-                  <div className="content-preview">
-                    <h4>Aperçu du lien :</h4>
-                    <div className="preview-content">
-                      <a href={formData.linkUrl} target="_blank" rel="noopener noreferrer">
-                        {formData.linkUrl}
-                      </a>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
@@ -788,20 +786,6 @@ const CreateLesson = () => {
                   onChange={(e) => setSelectedFiles(Array.from(e.target.files || []))}
                 />
                 <small>{selectedFiles.length > 0 ? `${selectedFiles.length} fichier(s) sélectionné(s)` : 'Sélectionnez un ou plusieurs fichiers.'}</small>
-                {selectedFiles.length > 0 && (
-                  <div className="content-preview">
-                    <h4>Aperçu des fichiers :</h4>
-                    <div className="preview-content">
-                      <ul>
-                        {selectedFiles.map((file, index) => (
-                          <li key={index}>
-                            <strong>{file.name}</strong> ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
@@ -829,27 +813,53 @@ const CreateLesson = () => {
                   />
                   <small>Fournissez soit une URL, soit un fichier vidéo.</small>
                 </div>
-                {(formData.videoUrl || selectedVideoFile) && (
-                  <div className="content-preview">
-                    <h4>Aperçu de la vidéo :</h4>
-                    <div className="preview-content">
-                      {formData.videoUrl ? (
-                        <div>
-                          <p><strong>URL YouTube :</strong></p>
-                          <a href={formData.videoUrl} target="_blank" rel="noopener noreferrer">
-                            {formData.videoUrl}
-                          </a>
-                        </div>
-                      ) : selectedVideoFile ? (
-                        <div>
-                          <p><strong>Fichier vidéo :</strong></p>
-                          <p>{selectedVideoFile.name} ({(selectedVideoFile.size / 1024 / 1024).toFixed(2)} MB)</p>
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                )}
               </>
+            )}
+
+            {/* Aperçu global du contenu */}
+            {(formData.type === 'file' || formData.type === 'video' || formData.type === 'link') && (
+              <div className="form-group">
+                <div className="content-preview">
+                  <h4>Aperçu complet de la leçon :</h4>
+                  <div className="preview-content">
+                    {formData.content && (
+                      <>
+                        {formData.content}
+                        <br />
+                      </>
+                    )}
+                    {formData.type === 'link' && formData.linkUrl && (
+                      <>
+                        <strong>Lien :</strong> <a href={formData.linkUrl} target="_blank" rel="noopener noreferrer">{formData.linkUrl}</a>
+                      </>
+                    )}
+                    {formData.type === 'file' && selectedFiles.length > 0 && (
+                      <>
+                        <strong>Fichiers :</strong>
+                        <ul>
+                          {selectedFiles.map((file, index) => (
+                            <li key={index}>{file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                    {formData.type === 'video' && (
+                      <>
+                        {formData.videoUrl && (
+                          <>
+                            <strong>Vidéo (URL) :</strong> <a href={formData.videoUrl} target="_blank" rel="noopener noreferrer">{formData.videoUrl}</a>
+                          </>
+                        )}
+                        {selectedVideoFile && (
+                          <>
+                            <strong>Vidéo (fichier) :</strong> {selectedVideoFile.name} ({(selectedVideoFile.size / 1024 / 1024).toFixed(2)} MB)
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 

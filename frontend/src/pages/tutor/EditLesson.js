@@ -114,6 +114,14 @@ const EditLesson = () => {
         linkUrl: lessonData.linkUrl || ''
       });
       
+      console.log('🔍 Lesson data loaded:', {
+        type: lessonData.type,
+        content: lessonData.content,
+        videoUrl: lessonData.videoUrl,
+        linkUrl: lessonData.linkUrl,
+        attachments: lessonData.attachments
+      });
+      
       console.log('Data fetch completed successfully');
       setLoading(false);
     } catch (error) {
@@ -190,6 +198,7 @@ const EditLesson = () => {
         fd.append('duration', formData.duration);
         fd.append('order', formData.order);
         fd.append('type', formData.type);
+        console.log('🔍 Sending type in FormData:', formData.type);
 
         // Toujours envoyer un contenu, même vide
         fd.append('content', formData.content || '');
@@ -471,6 +480,14 @@ const EditLesson = () => {
             {formData.type === 'text' && (
               <div className="form-group">
                 <label htmlFor="content">Contenu de la leçon *</label>
+                {lesson && lesson.content && (
+                  <div className="existing-video">
+                    <h4>Contenu existant :</h4>
+                    <div className="preview-content">
+                      {lesson.content}
+                    </div>
+                  </div>
+                )}
                 <textarea
                   id="content"
                   name="content"
@@ -480,14 +497,22 @@ const EditLesson = () => {
                   rows={8}
                   placeholder="Contenu détaillé de la leçon..."
                 />
-                {formData.content && (
-                  <div className="content-preview">
-                    <h4>Aperçu du contenu :</h4>
-                    <div className="preview-content">
-                      {formData.content}
-                    </div>
-                  </div>
-                )}
+              </div>
+            )}
+
+            {/* Section pour les types non-texte */}
+            {(formData.type === 'file' || formData.type === 'video' || formData.type === 'link') && (
+              <div className="form-group">
+                <label htmlFor="content">Contenu optionnel</label>
+                <textarea
+                  id="content"
+                  name="content"
+                  value={formData.content}
+                  onChange={handleInputChange}
+                  rows={4}
+                  placeholder="Contenu optionnel pour cette leçon..."
+                />
+                <small>Vous pouvez ajouter du contenu textuel optionnel pour accompagner vos fichiers, vidéos ou liens.</small>
               </div>
             )}
 
@@ -503,34 +528,12 @@ const EditLesson = () => {
                   placeholder="https://..."
                 />
                 <small>Entrez un lien (YouTube, site, document, etc.).</small>
-                {formData.linkUrl && (
-                  <div className="content-preview">
-                    <h4>Aperçu du lien :</h4>
-                    <div className="preview-content">
-                      <a href={formData.linkUrl} target="_blank" rel="noopener noreferrer">
-                        {formData.linkUrl}
-                      </a>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
             {formData.type === 'file' && (
               <div className="form-group">
                 <label htmlFor="attachments">Fichiers *</label>
-                {existingAttachments.length > 0 && (
-                  <div className="existing-attachments">
-                    <h4>Fichiers existants :</h4>
-                    <ul>
-                      {existingAttachments.map((attachment, index) => (
-                        <li key={index}>
-                          <strong>{attachment.originalName}</strong> ({(attachment.size / 1024 / 1024).toFixed(2)} MB)
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
                 <input
                   type="file"
                   id="attachments"
@@ -539,31 +542,11 @@ const EditLesson = () => {
                   onChange={(e) => setSelectedFiles(Array.from(e.target.files || []))}
                 />
                 <small>{selectedFiles.length > 0 ? `${selectedFiles.length} nouveau(x) fichier(s) sélectionné(s)` : 'Sélectionnez de nouveaux fichiers (optionnel).'}</small>
-                {selectedFiles.length > 0 && (
-                  <div className="content-preview">
-                    <h4>Aperçu des nouveaux fichiers :</h4>
-                    <div className="preview-content">
-                      <ul>
-                        {selectedFiles.map((file, index) => (
-                          <li key={index}>
-                            <strong>{file.name}</strong> ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
             {formData.type === 'video' && (
               <>
-                {lesson && lesson.videoUrl && (
-                  <div className="existing-video">
-                    <h4>Vidéo existante :</h4>
-                    <p>{lesson.videoUrl}</p>
-                  </div>
-                )}
                 <div className="form-group">
                   <label htmlFor="videoUrl">URL de la vidéo (YouTube, etc.)</label>
                   <input
@@ -586,27 +569,136 @@ const EditLesson = () => {
                   />
                   <small>Fournissez soit une URL, soit un fichier vidéo.</small>
                 </div>
-                {(formData.videoUrl || selectedVideoFile) && (
-                  <div className="content-preview">
-                    <h4>Aperçu de la vidéo :</h4>
-                    <div className="preview-content">
-                      {formData.videoUrl ? (
-                        <div>
-                          <p><strong>URL YouTube :</strong></p>
-                          <a href={formData.videoUrl} target="_blank" rel="noopener noreferrer">
-                            {formData.videoUrl}
-                          </a>
-                        </div>
-                      ) : selectedVideoFile ? (
-                        <div>
-                          <p><strong>Fichier vidéo :</strong></p>
-                          <p>{selectedVideoFile.name} ({(selectedVideoFile.size / 1024 / 1024).toFixed(2)} MB)</p>
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                )}
               </>
+            )}
+
+            {/* Aperçu du contenu existant */}
+            {(formData.type === 'file' || formData.type === 'video' || formData.type === 'link') && lesson && (
+              <div className="form-group">
+                <div className="content-preview">
+                  <h4>Contenu existant :</h4>
+                  <div className="preview-content">
+                    {lesson.content && (
+                      <>
+                        {lesson.content}
+                        <br />
+                      </>
+                    )}
+                    {formData.type === 'link' && lesson.linkUrl && (
+                      <>
+                        <strong>Lien :</strong> <a href={lesson.linkUrl} target="_blank" rel="noopener noreferrer">{lesson.linkUrl}</a>
+                      </>
+                    )}
+                    {formData.type === 'file' && existingAttachments.length > 0 && (
+                      <>
+                        <strong>Fichiers :</strong>
+                        <ul>
+                          {existingAttachments.map((attachment, index) => (
+                            <li key={index}>
+                              <a 
+                                href={`/uploads/lessons/attachments/${attachment.filename}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                style={{ textDecoration: 'none', color: '#3b82f6' }}
+                              >
+                                {attachment.originalName}
+                              </a> ({(attachment.size / 1024 / 1024).toFixed(2)} MB)
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                    {formData.type === 'video' && lesson.videoUrl && (
+                      <>
+                        <strong>Vidéo :</strong> 
+                        {lesson.videoUrl.startsWith('http') ? (
+                          <a href={lesson.videoUrl} target="_blank" rel="noopener noreferrer"> {lesson.videoUrl}</a>
+                        ) : (
+                          <a 
+                            href={`/uploads/lessons/videos/${lesson.videoUrl}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{ textDecoration: 'none', color: '#3b82f6' }}
+                          > {lesson.videoUrl}</a>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Aperçu du nouveau contenu complet */}
+            {(formData.type === 'file' || formData.type === 'video' || formData.type === 'link') && (
+              <div className="form-group">
+                <div className="content-preview">
+                  <h4>Nouveau contenu complet :</h4>
+                  <div className="preview-content">
+                    {formData.content && (
+                      <>
+                        {formData.content}
+                        <br />
+                      </>
+                    )}
+                    {formData.type === 'link' && formData.linkUrl && (
+                      <>
+                        <strong>Lien :</strong> <a href={formData.linkUrl} target="_blank" rel="noopener noreferrer">{formData.linkUrl}</a>
+                      </>
+                    )}
+                    {formData.type === 'file' && (existingAttachments.length > 0 || selectedFiles.length > 0) && (
+                      <>
+                        <strong>Fichiers :</strong>
+                        <ul>
+                          {existingAttachments.map((attachment, index) => (
+                            <li key={`existing-${index}`}>
+                              <a 
+                                href={`/uploads/lessons/attachments/${attachment.filename}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                style={{ textDecoration: 'none', color: '#3b82f6' }}
+                              >
+                                {attachment.originalName}
+                              </a> ({(attachment.size / 1024 / 1024).toFixed(2)} MB)
+                            </li>
+                          ))}
+                          {selectedFiles.map((file, index) => (
+                            <li key={`new-${index}`}>{file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB) <em>(nouveau)</em></li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                    {formData.type === 'video' && (
+                      <>
+                        {(lesson && lesson.videoUrl) && (
+                          <>
+                            <strong>Vidéo existante :</strong> 
+                            {lesson.videoUrl.startsWith('http') ? (
+                              <a href={lesson.videoUrl} target="_blank" rel="noopener noreferrer"> {lesson.videoUrl}</a>
+                            ) : (
+                              <a 
+                                href={`/uploads/lessons/videos/${lesson.videoUrl}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                style={{ textDecoration: 'none', color: '#3b82f6' }}
+                              > {lesson.videoUrl}</a>
+                            )}
+                          </>
+                        )}
+                        {formData.videoUrl && (
+                          <>
+                            <strong>Vidéo (URL) :</strong> <a href={formData.videoUrl} target="_blank" rel="noopener noreferrer">{formData.videoUrl}</a>
+                          </>
+                        )}
+                        {selectedVideoFile && (
+                          <>
+                            <strong>Vidéo (nouveau fichier) :</strong> {selectedVideoFile.name} ({(selectedVideoFile.size / 1024 / 1024).toFixed(2)} MB)
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 

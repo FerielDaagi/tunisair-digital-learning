@@ -288,6 +288,7 @@ export const IconTheme = {
   
   // Status & Feedback
   success: CheckCircle,
+  check: CheckCircle,
   error: XCircle,
   warning: AlertTriangle,
   info: Info,
