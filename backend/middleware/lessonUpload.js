@@ -35,10 +35,40 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: {
-    fileSize: 200 * 1024 * 1024 // 200MB per file
+    fileSize: 200 * 1024 * 1024, // 200MB per file
+    files: 10 // Maximum 10 files
+  },
+  fileFilter: (req, file, cb) => {
+    console.log('🔍 Multer fileFilter called for:', file.fieldname, file.originalname, 'mimetype:', file.mimetype);
+    // Accepter tous les fichiers
+    cb(null, true);
   }
 });
 
-module.exports = upload;
+// Middleware de gestion d'erreurs multer
+const handleMulterError = (error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    console.error('❌ Multer Error:', error);
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        success: false,
+        message: 'Fichier trop volumineux. Taille maximale: 200MB'
+      });
+    }
+    if (error.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({
+        success: false,
+        message: 'Trop de fichiers. Maximum: 10 fichiers'
+      });
+    }
+    return res.status(400).json({
+      success: false,
+      message: 'Erreur lors de l\'upload du fichier: ' + error.message
+    });
+  }
+  next(error);
+};
+
+module.exports = { upload, handleMulterError };
 
 

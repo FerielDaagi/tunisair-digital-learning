@@ -4,10 +4,20 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const fs = require('fs');
 const http = require('http');
 const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+// Configuration par défaut si .env n'existe pas
+if (fs.existsSync(path.join(__dirname, '.env'))) {
+  require('dotenv').config({ path: path.join(__dirname, '.env') });
+} else {
+  console.log('⚠️ Fichier .env non trouvé, utilisation des valeurs par défaut');
+  process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/e_learning';
+  process.env.JWT_SECRET = process.env.JWT_SECRET || 'default_jwt_secret_change_in_production';
+  process.env.PORT = process.env.PORT || '5000';
+  process.env.FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+}
 
 console.log('🔍 Debug - MONGODB_URI:', process.env.MONGODB_URI);
 console.log('🔍 Debug - JWT_SECRET:', process.env.JWT_SECRET ? 'SET' : 'NOT SET');
@@ -85,9 +95,33 @@ app.use(cors({
 // Preflight pour toutes les routes
 app.options('*', cors());
 
-// Body parsing middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Body parsing middleware - seulement pour les routes qui n'utilisent pas multer
+app.use('/api/auth', express.json());
+app.use('/api/auth', express.urlencoded({ extended: true }));
+app.use('/api/users', express.json());
+app.use('/api/users', express.urlencoded({ extended: true }));
+app.use('/api/courses', express.json());
+app.use('/api/courses', express.urlencoded({ extended: true }));
+app.use('/api/modules', express.json());
+app.use('/api/modules', express.urlencoded({ extended: true }));
+app.use('/api/dashboard', express.json());
+app.use('/api/dashboard', express.urlencoded({ extended: true }));
+app.use('/api/notifications', express.json());
+app.use('/api/notifications', express.urlencoded({ extended: true }));
+app.use('/api/admin', express.json());
+app.use('/api/admin', express.urlencoded({ extended: true }));
+app.use('/api/categories', express.json());
+app.use('/api/categories', express.urlencoded({ extended: true }));
+
+// Middleware spécifique pour les routes lessons
+app.use('/api/lessons', (req, res, next) => {
+  console.log('🔍 Lessons middleware - Content-Type:', req.headers['content-type']);
+  console.log('🔍 Lessons middleware - Method:', req.method);
+  next();
+});
+
+// Configuration JSON pour les routes lessons (pour les requêtes non-FormData)
+app.use('/api/lessons', express.json({ limit: '10mb' }));
 
 // 🆕 NOUVEAU - Servir les fichiers statiques (avatars uploadés)
 app.use('/uploads', (req, res, next) => {

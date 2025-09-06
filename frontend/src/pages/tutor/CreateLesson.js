@@ -317,7 +317,15 @@ const CreateLesson = () => {
     try {
       let lessonData;
 
-      const shouldUseFormData = formData.type === 'file' || (formData.type === 'video' && selectedVideoFile) || (selectedFiles && selectedFiles.length > 0) || formData.type === 'link';
+      const shouldUseFormData = formData.type === 'file' || (formData.type === 'video' && selectedVideoFile) || (selectedFiles && selectedFiles.length > 0);
+      
+      console.log('🔍 Form submission debug:', {
+        type: formData.type,
+        selectedFiles: selectedFiles,
+        selectedFilesLength: selectedFiles.length,
+        selectedVideoFile: selectedVideoFile,
+        shouldUseFormData: shouldUseFormData
+      });
 
       if (shouldUseFormData) {
         const fd = new FormData();
@@ -342,7 +350,12 @@ const CreateLesson = () => {
           }
         }
         if (selectedFiles && selectedFiles.length > 0) {
-          selectedFiles.forEach((file) => fd.append('attachments', file));
+          console.log('🔍 Adding files to FormData:', selectedFiles.map(f => f.name));
+          selectedFiles.forEach((file) => {
+            fd.append('attachments', file, file.name);
+          });
+        } else {
+          console.log('🔍 No files selected for upload');
         }
 
         // Also include module for API helper to pick moduleId
@@ -430,6 +443,14 @@ const CreateLesson = () => {
     if (formData.type === 'file') {
       if (!selectedFiles || selectedFiles.length === 0) {
         setError('Ajoutez au moins un fichier pour le type Fichier');
+        setSubmitting(false);
+        return;
+      }
+      // Vérifier la taille des fichiers
+      const maxSize = 200 * 1024 * 1024; // 200MB
+      const oversizedFiles = selectedFiles.filter(file => file.size > maxSize);
+      if (oversizedFiles.length > 0) {
+        setError(`Fichier(s) trop volumineux: ${oversizedFiles.map(f => f.name).join(', ')}. Taille maximale: 200MB`);
         setSubmitting(false);
         return;
       }
@@ -783,7 +804,11 @@ const CreateLesson = () => {
                   id="attachments"
                   name="attachments"
                   multiple
-                  onChange={(e) => setSelectedFiles(Array.from(e.target.files || []))}
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    console.log('🔍 Files selected:', files.map(f => f.name));
+                    setSelectedFiles(files);
+                  }}
                 />
                 <small>{selectedFiles.length > 0 ? `${selectedFiles.length} fichier(s) sélectionné(s)` : 'Sélectionnez un ou plusieurs fichiers.'}</small>
               </div>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Upload de Fichiers</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Upload de Fichiers</h1>
+    
+    <form id="uploadForm">
+        <div class="form-group">
+            <label for="title">Titre :</label>
+            <input type="text" id="title" name="title" value="Test Lesson" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description :</label>
+            <textarea id="description" name="description" rows="3" required>Description de test</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="type">Type :</label>
+            <select id="type" name="type">
+                <option value="file">Fichier</option>
+                <option value="video">Vidéo</option>
+                <option value="text">Texte</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="attachments">Fichiers (attachments) :</label>
+            <input type="file" id="attachments" name="attachments" multiple>
+        </div>
+        
+        <div class="form-group">
+            <label for="videoFile">Fichier Vidéo :</label>
+            <input type="file" id="videoFile" name="videoFile" accept="video/*">
+        </div>
+        
+        <div class="form-group">
+            <label for="content">Contenu :</label>
+            <textarea id="content" name="content" rows="4">Contenu de test</textarea>
+        </div>
+        
+        <button type="submit">🚀 Tester l'Upload</button>
+    </form>
+    
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '⏳ Envoi en cours...';
+            
+            try {
+                const formData = new FormData();
+                
+                // Ajouter les champs texte
+                formData.append('title', document.getElementById('title').value);
+                formData.append('description', document.getElementById('description').value);
+                formData.append('type', document.getElementById('type').value);
+                formData.append('content', document.getElementById('content').value);
+                
+                // Ajouter les fichiers
+                const attachments = document.getElementById('attachments').files;
+                for (let i = 0; i < attachments.length; i++) {
+                    formData.append('attachments', attachments[i]);
+                    console.log('📁 Fichier ajouté:', attachments[i].name);
+                }
+                
+                const videoFile = document.getElementById('videoFile').files[0];
+                if (videoFile) {
+                    formData.append('videoFile', videoFile);
+                    console.log('🎥 Vidéo ajoutée:', videoFile.name);
+                }
+                
+                console.log('🔍 FormData créé, envoi vers le serveur de test...');
+                
+                const response = await fetch('http://localhost:5001/test-upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = '✅ SUCCÈS!\n\n' + JSON.stringify(result, null, 2);
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = '❌ ERREUR!\n\n' + JSON.stringify(result, null, 2);
+                }
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ ERREUR RÉSEAU!\n\n' + error.message;
+                console.error('Erreur:', error);
+            }
+        });
+    </script>
+</body>
+</html>

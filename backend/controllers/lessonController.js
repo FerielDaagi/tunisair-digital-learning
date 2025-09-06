@@ -10,13 +10,75 @@ const createLesson = async (req, res) => {
     console.log('🔍 createLesson - req.body:', req.body);
     console.log('🔍 createLesson - req.files:', req.files);
     console.log('🔍 createLesson - req.params:', req.params);
+    console.log('🔍 createLesson - Content-Type:', req.headers['content-type']);
+    console.log('🔍 createLesson - Available file fields:', req.files ? Object.keys(req.files) : 'No files');
+    console.log('🔍 createLesson - Raw body keys:', Object.keys(req.body || {}));
     
-    const { title, description, content, duration, order, type, videoUrl, linkUrl, isFree, difficulty, tags } = req.body;
+    // Gérer le cas où req.body est undefined (avec FormData)
+    const bodyData = req.body || {};
+    
+    // Debug: Afficher toutes les valeurs
+    console.log('🔍 Debug - All body values:');
+    Object.keys(bodyData).forEach(key => {
+      console.log(`  ${key}: "${bodyData[key]}" (type: ${typeof bodyData[key]})`);
+    });
+    
+    const { title, description, content, duration, order, type, videoUrl, linkUrl, isFree, difficulty, tags, module: moduleFromBody } = bodyData;
     const { moduleId } = req.params;
     
+    // Utiliser moduleId du paramètre ou du body
+    const finalModuleId = moduleId || moduleFromBody;
+    
+    // Convertir les types de données (FormData envoie tout en string)
+    const finalDuration = duration ? parseInt(duration) : null;
+    const finalOrder = order ? parseInt(order) : null;
+    
+    // Validation des champs requis avec debug
+    console.log('🔍 Validation - title:', title, 'type:', typeof title);
+    console.log('🔍 Validation - description:', description, 'type:', typeof description);
+    console.log('🔍 Validation - finalModuleId:', finalModuleId, 'type:', typeof finalModuleId);
+    console.log('🔍 Validation - finalDuration:', finalDuration, 'type:', typeof finalDuration);
+    
+    if (!title || title.trim() === '') {
+      console.log('❌ Validation failed: Missing title');
+      return res.status(400).json({
+        success: false,
+        message: 'Le titre de la leçon est requis',
+        debug: { title, titleType: typeof title }
+      });
+    }
+    
+    if (!description || description.trim() === '') {
+      console.log('❌ Validation failed: Missing description');
+      return res.status(400).json({
+        success: false,
+        message: 'La description de la leçon est requise',
+        debug: { description, descriptionType: typeof description }
+      });
+    }
+    
+    if (!finalModuleId) {
+      console.log('❌ Validation failed: Missing module ID');
+      return res.status(400).json({
+        success: false,
+        message: 'ID du module requis',
+        debug: { finalModuleId, moduleId, moduleFromBody }
+      });
+    }
+    
+    // Validation de la durée
+    if (!finalDuration || isNaN(finalDuration) || finalDuration < 1) {
+      console.log('❌ Validation failed: Invalid duration');
+      return res.status(400).json({
+        success: false,
+        message: 'Une durée valide (en minutes) est requise',
+        debug: { duration, finalDuration, durationType: typeof duration }
+      });
+    }
+    
     // Vérifier que le module existe
-    const module = await Module.findById(moduleId);
-    if (!module) {
+    const moduleDoc = await Module.findById(finalModuleId);
+    if (!moduleDoc) {
       return res.status(404).json({
         success: false,
         message: 'Module introuvable'
@@ -24,7 +86,7 @@ const createLesson = async (req, res) => {
     }
     
     // Vérifier que l'utilisateur est le propriétaire du cours
-    const course = await Course.findById(module.course);
+    const course = await Course.findById(moduleDoc.course);
     if (course.instructor.toString() !== req.user.id) {
       return res.status(403).json({
         success: false,
@@ -33,22 +95,22 @@ const createLesson = async (req, res) => {
     }
     
     // Calculer l'ordre automatiquement si non fourni ou en conflit
-    let finalOrder = order;
-    if (!finalOrder || finalOrder < 1) {
-      const existingLessons = await Lesson.find({ module: moduleId }).sort({ order: -1 }).limit(1);
-      finalOrder = existingLessons.length > 0 ? existingLessons[0].order + 1 : 1;
+    let finalOrderValue = finalOrder;
+    if (!finalOrderValue || finalOrderValue < 1) {
+      const existingLessons = await Lesson.find({ module: finalModuleId }).sort({ order: -1 }).limit(1);
+      finalOrderValue = existingLessons.length > 0 ? existingLessons[0].order + 1 : 1;
     }
     
     // Vérifier qu'il n'y a pas de conflit d'ordre
     const conflictingLesson = await Lesson.findOne({ 
-      module: moduleId, 
-      order: finalOrder 
+      module: finalModuleId, 
+      order: finalOrderValue 
     });
     
     if (conflictingLesson) {
       // Réorganiser les leçons existantes
       await Lesson.updateMany(
-        { module: moduleId, order: { $gte: finalOrder } },
+        { module: finalModuleId, order: { $gte: finalOrderValue } },
         { $inc: { order: 1 } }
       );
     }
@@ -65,6 +127,10 @@ const createLesson = async (req, res) => {
         size: file.size,
         mimeType: file.mimetype
       }));
+      console.log('🔍 Final attachments array:', attachments);
+    } else {
+      console.log('🔍 No attachments found in req.files');
+      console.log('🔍 Available files:', req.files ? Object.keys(req.files) : 'No files object');
     }
 
     // Gérer la vidéo uploadée
@@ -78,6 +144,30 @@ const createLesson = async (req, res) => {
       }
     }
 
+    // Validation spécifique pour le type file
+    if (type === 'file') {
+      if (!attachments || attachments.length === 0) {
+        console.log('❌ Validation failed: No files provided for file type lesson');
+        return res.status(400).json({
+          success: false,
+          message: 'Au moins un fichier est requis pour le type "file"'
+        });
+      }
+      console.log('✅ Validation passed: Files provided for file type lesson');
+    }
+    
+    // Validation spécifique pour le type link
+    if (type === 'link') {
+      if (!linkUrl || linkUrl.trim() === '') {
+        console.log('❌ Validation failed: No link URL provided for link type lesson');
+        return res.status(400).json({
+          success: false,
+          message: 'Une URL est requise pour le type "link"'
+        });
+      }
+      console.log('✅ Validation passed: Link URL provided for link type lesson');
+    }
+    
     // Déterminer un contenu final obligatoire selon le type
     let finalContent = content;
     
@@ -96,7 +186,12 @@ const createLesson = async (req, res) => {
       type,
       finalContent: finalContent ? finalContent.substring(0, 100) + '...' : null,
       finalVideoUrl,
-      attachmentsCount: attachments.length
+      attachmentsCount: attachments.length,
+      finalModuleId,
+      title,
+      description,
+      duration: finalDuration,
+      order: finalOrderValue
     });
 
     // Créer la leçon
@@ -104,10 +199,10 @@ const createLesson = async (req, res) => {
       title,
       description,
       content: finalContent,
-      duration,
-      order: finalOrder,
-      course: module.course,
-      module: moduleId,
+      duration: finalDuration,
+      order: finalOrderValue,
+      course: moduleDoc.course,
+      module: finalModuleId,
       type: type || 'text',
       videoUrl: finalVideoUrl,
       linkUrl: linkUrl || null,
@@ -117,18 +212,20 @@ const createLesson = async (req, res) => {
       tags: tags || []
     });
     
+    console.log('🔍 About to save lesson with attachments:', attachments);
     await newLesson.save();
+    console.log('🔍 Lesson saved successfully with ID:', newLesson._id);
     
     // Ajouter la leçon au module
-    await Module.findByIdAndUpdate(moduleId, {
+    await Module.findByIdAndUpdate(finalModuleId, {
       $push: { lessons: newLesson._id }
     });
     
     // Mettre à jour la durée du module
-    await updateModuleDuration(moduleId);
+    await updateModuleDuration(finalModuleId);
     
     // Mettre à jour la durée du cours
-    await updateCourseDuration(module.course);
+    await updateCourseDuration(moduleDoc.course);
     
     res.status(201).json({
       success: true,
@@ -136,10 +233,12 @@ const createLesson = async (req, res) => {
       data: newLesson
     });
   } catch (error) {
-    console.error('Erreur createLesson:', error);
+    console.error('❌ Erreur createLesson:', error);
+    console.error('❌ Stack trace:', error.stack);
     res.status(500).json({
       success: false,
-      message: 'Erreur interne du serveur'
+      message: 'Erreur interne du serveur',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -152,7 +251,9 @@ const updateLesson = async (req, res) => {
     console.log('🔍 updateLesson - req.params:', req.params);
     
     const { id } = req.params;
-    const { title, description, content, duration, order, type, videoUrl, linkUrl, isFree, difficulty, tags } = req.body;
+    // Gérer le cas où req.body est undefined (avec FormData)
+    const bodyData = req.body || {};
+    const { title, description, content, duration, order, type, videoUrl, linkUrl, isFree, difficulty, tags } = bodyData;
     
     const lesson = await Lesson.findById(id);
     
@@ -178,6 +279,24 @@ const updateLesson = async (req, res) => {
     let attachments = lesson.attachments || [];
     if (req.files && req.files.attachments) {
       console.log('🔍 Processing new attachments:', req.files.attachments);
+      
+      // Supprimer les anciens fichiers du système de fichiers
+      if (lesson.attachments && lesson.attachments.length > 0) {
+        const fs = require('fs');
+        const path = require('path');
+        lesson.attachments.forEach(attachment => {
+          const filePath = path.join(__dirname, '..', 'uploads', 'lessons', 'attachments', attachment.filename);
+          try {
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+              console.log('🗑️ Deleted old attachment:', attachment.filename);
+            }
+          } catch (error) {
+            console.error('❌ Error deleting old attachment:', attachment.filename, error.message);
+          }
+        });
+      }
+      
       const attachmentFiles = Array.isArray(req.files.attachments) ? req.files.attachments : [req.files.attachments];
       const newAttachments = attachmentFiles.map((file) => ({
         filename: file.filename,
@@ -186,13 +305,32 @@ const updateLesson = async (req, res) => {
         size: file.size,
         mimeType: file.mimetype
       }));
-      attachments = [...attachments, ...newAttachments];
+      // Remplacer les anciens fichiers par les nouveaux
+      attachments = newAttachments;
+      console.log('🔍 Replaced attachments with new ones:', attachments);
     }
 
     // Gérer la vidéo uploadée
     let finalVideoUrl = videoUrl || lesson.videoUrl || null;
     if (req.files && req.files.videoFile) {
       console.log('🔍 Processing new video file:', req.files.videoFile);
+      
+      // Supprimer l'ancienne vidéo du système de fichiers
+      if (lesson.videoUrl) {
+        const fs = require('fs');
+        const path = require('path');
+        const oldVideoFilename = path.basename(lesson.videoUrl);
+        const oldVideoPath = path.join(__dirname, '..', 'uploads', 'lessons', 'videos', oldVideoFilename);
+        try {
+          if (fs.existsSync(oldVideoPath)) {
+            fs.unlinkSync(oldVideoPath);
+            console.log('🗑️ Deleted old video:', oldVideoFilename);
+          }
+        } catch (error) {
+          console.error('❌ Error deleting old video:', oldVideoFilename, error.message);
+        }
+      }
+      
       const videoFiles = Array.isArray(req.files.videoFile) ? req.files.videoFile : [req.files.videoFile];
       if (videoFiles.length > 0) {
         const file = videoFiles[0];
