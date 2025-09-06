@@ -488,24 +488,134 @@ const getModuleLessons = async (req, res) => {
 const getLessonById = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log('🔍 getLessonById - lessonId:', id);
     
     const lesson = await Lesson.findById(id);
     if (!lesson) {
+      console.log('❌ Lesson not found for ID:', id);
       return res.status(404).json({
         success: false,
         message: 'Leçon introuvable'
       });
     }
     
+    console.log('🔍 Lesson found:', {
+      id: lesson._id,
+      title: lesson.title,
+      module: lesson.module,
+      course: lesson.course,
+      type: lesson.type
+    });
+    
+    // If lesson doesn't have a module field or it's null/undefined, try to find and assign one
+    if (!lesson.module || lesson.module === null || lesson.module === undefined) {
+      console.log('⚠️ Lesson missing module field, attempting to fix...');
+      console.log('🔍 Current module value:', lesson.module);
+      
+      try {
+        // Try to find a module that contains this lesson
+        const moduleWithLesson = await Module.findOne({ lessons: lesson._id });
+        if (moduleWithLesson) {
+          console.log('✅ Found module containing this lesson:', moduleWithLesson._id);
+          lesson.module = moduleWithLesson._id;
+          await lesson.save();
+          console.log('✅ Updated lesson with module field');
+        } else {
+          console.log('❌ No module found containing this lesson');
+          // Try to find any module to assign (fallback)
+          const anyModule = await Module.findOne();
+          if (anyModule) {
+            console.log('⚠️ Assigning lesson to first available module:', anyModule._id);
+            lesson.module = anyModule._id;
+            await lesson.save();
+            console.log('✅ Assigned lesson to fallback module');
+          } else {
+            console.log('❌ No modules found in database');
+          }
+        }
+      } catch (fixError) {
+        console.error('❌ Error fixing module field:', fixError);
+        // Continue without fixing - the lesson will still be returned
+      }
+    }
+    
+    // Refresh the lesson from database to get the updated data
+    const updatedLesson = await Lesson.findById(id);
+    console.log('🔍 Final lesson data being returned:', {
+      id: updatedLesson._id,
+      title: updatedLesson.title,
+      module: updatedLesson.module,
+      course: updatedLesson.course,
+      type: updatedLesson.type
+    });
+    
     res.json({
       success: true,
-      data: lesson
+      data: updatedLesson
     });
   } catch (error) {
     console.error('Erreur getLessonById:', error);
     res.status(500).json({
       success: false,
       message: 'Erreur interne du serveur'
+    });
+  }
+};
+
+// Fix all lessons missing module field
+const fixAllLessonsModuleField = async (req, res) => {
+  try {
+    console.log('🔧 Starting to fix all lessons missing module field...');
+    
+    // Find all lessons without module field
+    const lessonsWithoutModule = await Lesson.find({
+      $or: [
+        { module: { $exists: false } },
+        { module: null },
+        { module: undefined }
+      ]
+    });
+    
+    console.log(`📊 Found ${lessonsWithoutModule.length} lessons without module field`);
+    
+    let fixedCount = 0;
+    
+    for (const lesson of lessonsWithoutModule) {
+      console.log(`🔍 Processing lesson: ${lesson.title} (ID: ${lesson._id})`);
+      
+      // Try to find a module that contains this lesson
+      const moduleWithLesson = await Module.findOne({ lessons: lesson._id });
+      if (moduleWithLesson) {
+        console.log(`✅ Found module containing lesson: ${moduleWithLesson._id}`);
+        lesson.module = moduleWithLesson._id;
+        await lesson.save();
+        fixedCount++;
+      } else {
+        // Try to find any module to assign (fallback)
+        const anyModule = await Module.findOne();
+        if (anyModule) {
+          console.log(`⚠️ Assigning lesson to fallback module: ${anyModule._id}`);
+          lesson.module = anyModule._id;
+          await lesson.save();
+          fixedCount++;
+        }
+      }
+    }
+    
+    console.log(`🎉 Fixed ${fixedCount} lessons!`);
+    
+    res.json({
+      success: true,
+      message: `Fixed ${fixedCount} lessons`,
+      fixedCount,
+      totalFound: lessonsWithoutModule.length
+    });
+    
+  } catch (error) {
+    console.error('❌ Error fixing lessons:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la correction des leçons'
     });
   }
 };
@@ -571,5 +681,6 @@ module.exports = {
   deleteLesson,
   getModuleLessons,
   getLessonById,
+  fixAllLessonsModuleField,
   reorderLessons
 };

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import api, { lessonsAPI, modulesAPI, coursesAPI } from '../../services/api';
 import { Icon, IconSizes, IconColors } from '../../components/common/IconTheme';
+import FileViewer from '../../components/common/FileViewer';
 import './CreateCourse.css';
 
 const CreateLesson = () => {
@@ -342,9 +343,6 @@ const CreateLesson = () => {
           fd.append('linkUrl', formData.linkUrl);
         }
         if (formData.type === 'video') {
-          if (formData.videoUrl) {
-            fd.append('videoUrl', formData.videoUrl);
-          }
           if (selectedVideoFile) {
             fd.append('videoFile', selectedVideoFile);
           }
@@ -362,10 +360,11 @@ const CreateLesson = () => {
         fd.append('module', moduleId);
         lessonData = fd;
       } else {
+        const { videoUrl, ...formDataWithoutVideoUrl } = formData;
         lessonData = {
-        ...formData,
-        moduleId
-      };
+          ...formDataWithoutVideoUrl,
+          moduleId
+        };
       }
 
       console.log('Submitting lesson data:', lessonData);
@@ -457,12 +456,11 @@ const CreateLesson = () => {
     }
 
     if (formData.type === 'video') {
-      const hasVideoUrl = !!formData.videoUrl.trim();
       const hasVideoFile = !!selectedVideoFile;
-      if (!hasVideoUrl && !hasVideoFile) {
-        setError('Fournissez soit une URL YouTube, soit un fichier vidéo');
-      setSubmitting(false);
-      return;
+      if (!hasVideoFile) {
+        setError('Veuillez sélectionner un fichier vidéo à importer');
+        setSubmitting(false);
+        return;
       }
     }
 
@@ -588,19 +586,6 @@ const CreateLesson = () => {
               </select>
             </div>
 
-            {formData.type === 'video' && (
-              <div className="form-group">
-                <label htmlFor="videoUrl">URL de la vidéo</label>
-                <input
-                  type="url"
-                  id="videoUrl"
-                  name="videoUrl"
-                  value={formData.videoUrl}
-                  onChange={handleInputChange}
-                  placeholder="https://..."
-                />
-              </div>
-            )}
           </div>
 
           <div className="form-actions">
@@ -815,30 +800,17 @@ const CreateLesson = () => {
             )}
 
             {formData.type === 'video' && (
-              <>
-                <div className="form-group">
-                  <label htmlFor="videoUrl">URL de la vidéo (YouTube, etc.)</label>
-                  <input
-                    type="url"
-                    id="videoUrl"
-                    name="videoUrl"
-                    value={formData.videoUrl}
-                    onChange={handleInputChange}
-                    placeholder="https://..."
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="videoFile">Ou importer une vidéo</label>
-                  <input
-                    type="file"
-                    id="videoFile"
-                    name="videoFile"
-                    accept="video/*"
-                    onChange={(e) => setSelectedVideoFile((e.target.files && e.target.files[0]) || null)}
-                  />
-                  <small>Fournissez soit une URL, soit un fichier vidéo.</small>
-                </div>
-              </>
+              <div className="form-group">
+                <label htmlFor="videoFile">Importer une vidéo depuis votre PC</label>
+                <input
+                  type="file"
+                  id="videoFile"
+                  name="videoFile"
+                  accept="video/*"
+                  onChange={(e) => setSelectedVideoFile((e.target.files && e.target.files[0]) || null)}
+                />
+                <small>Formats acceptés : MP4, AVI, MOV, WMV, etc.</small>
+              </div>
             )}
 
             {/* Aperçu global du contenu */}
@@ -860,26 +832,26 @@ const CreateLesson = () => {
                     )}
                     {formData.type === 'file' && selectedFiles.length > 0 && (
                       <>
-                        <strong>Fichiers :</strong>
-                        <ul>
+                        <strong>Fichiers sélectionnés :</strong>
+                        <div style={{ marginTop: '1rem' }}>
                           {selectedFiles.map((file, index) => (
-                            <li key={index}>{file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</li>
+                            <FileViewer 
+                              key={index} 
+                              file={{
+                                originalName: file.name,
+                                size: file.size,
+                                mimeType: file.type,
+                                filename: file.name
+                              }}
+                              baseUrl=""
+                            />
                           ))}
-                        </ul>
+                        </div>
                       </>
                     )}
-                    {formData.type === 'video' && (
+                    {formData.type === 'video' && selectedVideoFile && (
                       <>
-                        {formData.videoUrl && (
-                          <>
-                            <strong>Vidéo (URL) :</strong> <a href={formData.videoUrl} target="_blank" rel="noopener noreferrer">{formData.videoUrl}</a>
-                          </>
-                        )}
-                        {selectedVideoFile && (
-                          <>
-                            <strong>Vidéo (fichier) :</strong> {selectedVideoFile.name} ({(selectedVideoFile.size / 1024 / 1024).toFixed(2)} MB)
-                          </>
-                        )}
+                        <strong>Vidéo :</strong> {selectedVideoFile.name} ({(selectedVideoFile.size / 1024 / 1024).toFixed(2)} MB)
                       </>
                     )}
                   </div>

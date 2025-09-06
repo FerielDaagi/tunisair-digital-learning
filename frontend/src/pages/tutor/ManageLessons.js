@@ -407,6 +407,15 @@ const ManageLessons = () => {
                       {/* Lesson Actions */}
                       <div className="module-actions">
                         <button 
+                          onClick={() => navigate(`/lesson/${lesson._id}`)}
+                          className="btn btn-primary"
+                          title="Voir la leçon"
+                        >
+                          <Icon name="eye" size={IconSizes.xs} color={IconColors.white} />
+                          Voir
+                        </button>
+                        
+                        <button 
                           onClick={() => handleEditLesson(lesson)}
                           className="btn btn-secondary"
                           title="Modifier la leçon"

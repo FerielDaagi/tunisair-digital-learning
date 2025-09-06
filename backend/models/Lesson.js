@@ -37,7 +37,8 @@ const lessonSchema = new mongoose.Schema({
   module: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Module',
-    required: [true, 'Le module est requis']
+    required: false, // Made optional to handle existing lessons without module field
+    default: null
   },
   type: {
     type: String,

@@ -6,6 +6,7 @@ const {
   deleteLesson,
   getModuleLessons,
   getLessonById,
+  fixAllLessonsModuleField,
   reorderLessons
 } = require('../controllers/lessonController');
 const { auth } = require('../middleware/auth');
@@ -18,6 +19,7 @@ router.use(auth);
 // Routes pour les leçons
 router.get('/module/:moduleId', getModuleLessons);
 router.get('/:id', getLessonById);
+router.post('/fix-module-fields', fixAllLessonsModuleField);
 
 // Middleware pour détecter le type de contenu
 const detectContentType = (req, res, next) => {

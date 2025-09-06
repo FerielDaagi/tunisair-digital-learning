@@ -14,6 +14,7 @@ import Dashboard from './pages/dashboard/Dashboard';
 import Courses from './pages/courses/Courses';
 import CourseDetail from './pages/courses/CourseDetail';
 import Profile from './pages/user/Profile';
+import LessonView from './pages/user/LessonView';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import NotificationCenter from './pages/admin/NotificationCenter';
 import UserStats from './pages/admin/UserStats';
@@ -70,6 +71,11 @@ const AppContent = () => {
           <Route path="/profile" element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          } />
+          <Route path="/lesson/:lessonId" element={
+            <ProtectedRoute>
+              <LessonView />
             </ProtectedRoute>
           } />
           <Route path="/admin" element={

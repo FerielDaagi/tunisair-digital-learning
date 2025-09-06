@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import api, { lessonsAPI, modulesAPI, coursesAPI } from '../../services/api';
 import { Icon, IconSizes, IconColors } from '../../components/common/IconTheme';
+import FileViewer from '../../components/common/FileViewer';
 import './CreateCourse.css';
 
 const EditLesson = () => {
@@ -591,21 +592,16 @@ const EditLesson = () => {
                     )}
                     {formData.type === 'file' && existingAttachments.length > 0 && (
                       <>
-                        <strong>Fichiers :</strong>
-                        <ul>
+                        <strong>Fichiers existants :</strong>
+                        <div style={{ marginTop: '1rem' }}>
                           {existingAttachments.map((attachment, index) => (
-                            <li key={index}>
-                              <a 
-                                href={`/uploads/lessons/attachments/${attachment.filename}`} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                style={{ textDecoration: 'none', color: '#3b82f6' }}
-                              >
-                                {attachment.originalName}
-                              </a> ({(attachment.size / 1024 / 1024).toFixed(2)} MB)
-                            </li>
+                            <FileViewer 
+                              key={index} 
+                              file={attachment}
+                              baseUrl="http://localhost:5000"
+                            />
                           ))}
-                        </ul>
+                        </div>
                       </>
                     )}
                     {formData.type === 'video' && lesson.videoUrl && (
