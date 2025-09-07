@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { lessonsAPI, modulesAPI, coursesAPI } from '../../services/api';
 import { Icon, IconSizes, IconColors } from '../../components/common/IconTheme';
 import FileViewer from '../../components/common/FileViewer';
+import './LessonView.css';
 
 const LessonView = () => {
   const { lessonId } = useParams();
@@ -134,12 +135,25 @@ const LessonView = () => {
     }
   };
 
+  const getFileType = (mimeType) => {
+    if (mimeType.includes('pdf')) return 'pdf';
+    if (mimeType.includes('image')) return 'image';
+    if (mimeType.includes('video')) return 'video';
+    return 'doc';
+  };
+
+  const getFileIcon = (mimeType) => {
+    if (mimeType.includes('pdf')) return 'fas fa-file-pdf';
+    if (mimeType.includes('image')) return 'fas fa-file-image';
+    if (mimeType.includes('video')) return 'fas fa-file-video';
+    return 'fas fa-file-alt';
+  };
+
   if (loading) {
     return (
-      <div className="main-content">
-        <div className="text-center" style={{ padding: '2rem' }}>
-          <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
-          <p>Chargement de la leçon...</p>
+      <div className="lesson-view-container">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
         </div>
       </div>
     );
@@ -147,17 +161,20 @@ const LessonView = () => {
 
   if (error || !lesson) {
     return (
-      <div className="main-content">
-        <div className="card text-center" style={{ padding: '2rem' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>❌</div>
-          <h2>Leçon non trouvée</h2>
-          <p style={{ color: '#6c757d', marginBottom: '1.5rem' }}>
+      <div className="lesson-view-container">
+        <div className="error-container">
+          <div className="error-icon">
+            <i className="fas fa-exclamation-triangle"></i>
+          </div>
+          <h2 className="error-title">Leçon non trouvée</h2>
+          <p className="error-message">
             {error || 'Cette leçon n\'existe pas ou vous n\'y avez pas accès.'}
           </p>
           <button 
             onClick={() => navigate(-1)}
-            className="btn btn-primary"
+            className="btn btn-primary btn-lg"
           >
+            <i className="fas fa-arrow-left me-2"></i>
             Retour
           </button>
         </div>
@@ -166,269 +183,222 @@ const LessonView = () => {
   }
 
   return (
-    <div className="main-content">
-      {/* Breadcrumb */}
-      <div style={{ 
-        marginBottom: '1.5rem',
-        fontSize: '0.9rem',
-        color: '#6c757d'
-      }}>
-        <button 
-          onClick={() => navigate(-1)}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: '#3b82f6',
-            cursor: 'pointer',
-            textDecoration: 'underline'
-          }}
-        >
-          ← Retour
-        </button>
-        {course && (
-          <span> • {course.title}</span>
-        )}
-        {module && (
-          <span> • {module.title}</span>
-        )}
-        {!module && lesson && (
-          <span> • Leçon</span>
-        )}
-      </div>
-
-      {/* Lesson Header */}
-      <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
-          <span style={{ fontSize: '2rem', marginRight: '1rem' }}>
-            {getLessonTypeIcon(lesson.type)}
-          </span>
-          <div>
-            <h1 className="card-title" style={{ margin: 0 }}>
-              {lesson.title}
-            </h1>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '1rem',
-              marginTop: '0.5rem',
-              fontSize: '0.9rem',
-              color: '#6c757d'
-            }}>
-              <span>{getLessonTypeLabel(lesson.type)}</span>
-              <span>•</span>
-              <span>{lesson.duration} min</span>
-              {lesson.difficulty && (
-                <>
-                  <span>•</span>
-                  <span>Niveau: {lesson.difficulty}</span>
-                </>
-              )}
+    <div className="lesson-view-container">
+      {/* Hero Section - Like Udemy */}
+      <div className="lesson-hero">
+        <div className="container">
+          <nav className="lesson-navigation mb-4">
+            <button 
+              onClick={() => navigate(-1)}
+              className="btn btn-outline btn-sm back-btn-flash"
+            >
+              Retour
+              <i className="fas fa-arrow-right ms-2"></i>
+            </button>
+          </nav>
+          
+          <div className="lesson-info">
+            <h1 className="lesson-title">{lesson.title}</h1>
+            <p className="lesson-subtitle">{lesson.description}</p>
+            <div className="lesson-details">
+              <div className="detail-item">
+                <span className="detail-label">Leçon :</span>
+                <span className="detail-value">{lesson.title}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Description :</span>
+                <span className="detail-value">{lesson.description}</span>
+              </div>
             </div>
           </div>
+          
+          <div className="lesson-meta">
+            <div className="meta-item">
+              <i className="fas fa-play-circle"></i>
+              <span>{getLessonTypeLabel(lesson.type)}</span>
+            </div>
+            <div className="meta-item">
+              <i className="fas fa-clock"></i>
+              <span>{lesson.duration} minutes</span>
+            </div>
+            {lesson.difficulty && (
+              <div className="meta-item">
+                <i className="fas fa-signal"></i>
+                <span>Niveau {lesson.difficulty}</span>
+              </div>
+            )}
+            {lesson.isFree && (
+              <div className="meta-item">
+                <i className="fas fa-gift"></i>
+                <span>Gratuit</span>
+              </div>
+            )}
+          </div>
         </div>
-        
-        {lesson.description && (
-          <p style={{ 
-            color: '#495057', 
-            fontSize: '1.1rem',
-            lineHeight: '1.6',
-            margin: 0
-          }}>
-            {lesson.description}
-          </p>
-        )}
       </div>
 
-      {/* Lesson Content */}
-      <div className="grid grid-2">
-        {/* Main Content */}
-        <div className="card">
-          <div className="card-header">
-            <h2 className="card-title">Contenu de la leçon</h2>
-          </div>
-          <div style={{ padding: '1.5rem' }}>
-            {lesson.content && (
-              <div style={{ 
-                marginBottom: '2rem',
-                lineHeight: '1.7',
-                color: '#495057'
-              }}>
-                <div style={{ 
-                  whiteSpace: 'pre-wrap',
-                  fontSize: '1rem'
-                }}>
-                  {lesson.content}
+      {/* Main Content */}
+      <div className="lesson-content-wrapper">
+        <div className="container">
+          <div className="row">
+            {/* Content Column */}
+            <div className="col-lg-8">
+              <div className="content-main">
+                <div className="content-header">
+                  <h2>Contenu de la leçon</h2>
+                </div>
+                <div className="content-body">
+                  {/* Text Content */}
+                  {lesson.content && (
+                    <div className="lesson-content-text" style={{ whiteSpace: 'pre-wrap' }}>
+                      {lesson.content}
+                    </div>
+                  )}
+
+                  {/* Video Content */}
+                  {lesson.type === 'video' && lesson.videoUrl && (
+                    <div className="video-player-container">
+                      <video 
+                        src={`http://localhost:5000${lesson.videoUrl}`}
+                        controls
+                      >
+                        Votre navigateur ne supporte pas la lecture vidéo.
+                      </video>
+                    </div>
+                  )}
+
+                  {/* Link Content */}
+                  {lesson.type === 'link' && lesson.linkUrl && (
+                    <div className="link-container-modern">
+                      <h3 className="link-title">
+                        <i className="fas fa-external-link-alt me-2"></i>
+                        Lien externe
+                      </h3>
+                      <a 
+                        href={lesson.linkUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="link-url"
+                      >
+                        {lesson.linkUrl}
+                      </a>
+                      <div className="link-note">
+                        <i className="fas fa-info-circle me-1"></i>
+                        Cliquez pour ouvrir dans un nouvel onglet
+                      </div>
+                    </div>
+                  )}
+
+                  {/* File Attachments */}
+                  {lesson.attachments && lesson.attachments.length > 0 && (
+                    <div className="attachments-section">
+                      <h3 className="attachments-title">
+                        <i className="fas fa-paperclip me-2"></i>
+                        Fichiers de la leçon
+                      </h3>
+                      {lesson.attachments.map((attachment, index) => (
+                        <div key={index} className="attachment-card">
+                          <div className="d-flex align-items-center">
+                            <div className={`attachment-icon ${getFileType(attachment.mimeType)}`}>
+                              <i className={getFileIcon(attachment.mimeType)}></i>
+                            </div>
+                            <div className="attachment-info">
+                              <h4>{attachment.originalName}</h4>
+                              <p>{(attachment.size / 1024 / 1024).toFixed(2)} MB</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Video Content */}
-            {lesson.type === 'video' && lesson.videoUrl && (
-              <div style={{ marginBottom: '2rem' }}>
-                <h3 style={{ marginBottom: '1rem', color: '#495057' }}>
-                  🎥 Vidéo de la leçon
-                </h3>
-                <div style={{
-                  position: 'relative',
-                  width: '100%',
-                  height: '0',
-                  paddingBottom: '56.25%', // 16:9 aspect ratio
-                  backgroundColor: '#000',
-                  borderRadius: '8px',
-                  overflow: 'hidden'
-                }}>
-                  <video 
-                    src={`http://localhost:5000${lesson.videoUrl}`}
-                    controls
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%'
-                    }}
-                  >
-                    Votre navigateur ne supporte pas la lecture vidéo.
-                  </video>
-                </div>
-              </div>
-            )}
-
-            {/* Link Content */}
-            {lesson.type === 'link' && lesson.linkUrl && (
-              <div style={{ marginBottom: '2rem' }}>
-                <h3 style={{ marginBottom: '1rem', color: '#495057' }}>
-                  🔗 Lien externe
-                </h3>
-                <div style={{
-                  padding: '1rem',
-                  backgroundColor: '#f8f9fa',
-                  border: '1px solid #e9ecef',
-                  borderRadius: '8px'
-                }}>
-                  <a 
-                    href={lesson.linkUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      color: '#3b82f6',
-                      textDecoration: 'none',
-                      fontSize: '1.1rem',
-                      fontWeight: '500'
-                    }}
-                  >
-                    {lesson.linkUrl}
-                  </a>
-                  <div style={{ 
-                    marginTop: '0.5rem',
-                    fontSize: '0.9rem',
-                    color: '#6c757d'
-                  }}>
-                    Cliquez pour ouvrir dans un nouvel onglet
+            {/* Sidebar */}
+            <div className="col-lg-4">
+              <div className="lesson-sidebar">
+                {/* Lesson Info */}
+                <div className="sidebar-card">
+                  <div className="sidebar-header">
+                    <h3>Informations de la leçon</h3>
+                  </div>
+                  <div className="sidebar-body">
+                    <div className="info-row">
+                      <span className="info-label">Type</span>
+                      <span className="badge-modern badge-type">
+                        {getLessonTypeLabel(lesson.type)}
+                      </span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">Durée</span>
+                      <span className="info-value">
+                        <i className="fas fa-clock me-1"></i>
+                        {lesson.duration} min
+                      </span>
+                    </div>
+                    {lesson.difficulty && (
+                      <div className="info-row">
+                        <span className="info-label">Niveau</span>
+                        <span className="badge-modern badge-difficulty">
+                          {lesson.difficulty}
+                        </span>
+                      </div>
+                    )}
+                    {lesson.isFree && (
+                      <div className="info-row">
+                        <span className="info-label">Prix</span>
+                        <span className="badge-modern badge-free">
+                          <i className="fas fa-gift me-1"></i>
+                          Gratuit
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            )}
 
-            {/* File Attachments */}
-            {lesson.attachments && lesson.attachments.length > 0 && (
-              <div>
-                <h3 style={{ marginBottom: '1rem', color: '#495057' }}>
-                  📁 Fichiers de la leçon
-                </h3>
-                <div>
-                  {lesson.attachments.map((attachment, index) => (
-                    <FileViewer 
-                      key={index} 
-                      file={attachment}
-                      baseUrl="http://localhost:5000"
-                    />
-                  ))}
-                </div>
+                {/* Course Info */}
+                {course ? (
+                  <div className="course-info-card">
+                    <div className="course-header">
+                      <h3 className="course-title">{course.title}</h3>
+                      <div className="course-instructor">
+                        <i className="fas fa-user me-1"></i>
+                        {course.instructor?.name || 'Instructeur'}
+                      </div>
+                    </div>
+                    <div className="course-body">
+                      <p className="course-description">
+                        {course.description}
+                      </p>
+                      <div className="course-stats">
+                        <span>
+                          <i className="fas fa-clock me-1"></i>
+                          {course.duration || 'Durée non spécifiée'}
+                        </span>
+                        <span>
+                          <i className="fas fa-graduation-cap me-1"></i>
+                          Cours
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="sidebar-card">
+                    <div className="sidebar-header">
+                      <h3>Informations du cours</h3>
+                    </div>
+                    <div className="sidebar-body">
+                      <div className="alert alert-warning mb-0">
+                        <i className="fas fa-exclamation-triangle me-2"></i>
+                        <span className="small">Informations du cours non disponibles</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Sidebar */}
-        <div>
-          {/* Lesson Info */}
-          <div className="card" style={{ marginBottom: '1.5rem' }}>
-            <div className="card-header">
-              <h3 className="card-title">Informations</h3>
-            </div>
-            <div style={{ padding: '1.5rem' }}>
-              <div style={{ marginBottom: '1rem' }}>
-                <strong style={{ color: '#495057' }}>Type:</strong>
-                <span style={{ marginLeft: '0.5rem', color: '#6c757d' }}>
-                  {getLessonTypeLabel(lesson.type)}
-                </span>
-              </div>
-              <div style={{ marginBottom: '1rem' }}>
-                <strong style={{ color: '#495057' }}>Durée:</strong>
-                <span style={{ marginLeft: '0.5rem', color: '#6c757d' }}>
-                  {lesson.duration} minutes
-                </span>
-              </div>
-              {lesson.difficulty && (
-                <div style={{ marginBottom: '1rem' }}>
-                  <strong style={{ color: '#495057' }}>Niveau:</strong>
-                  <span style={{ marginLeft: '0.5rem', color: '#6c757d' }}>
-                    {lesson.difficulty}
-                  </span>
-                </div>
-              )}
-              {lesson.isFree && (
-                <div style={{ 
-                  padding: '0.5rem',
-                  backgroundColor: '#d4edda',
-                  color: '#155724',
-                  borderRadius: '4px',
-                  fontSize: '0.9rem',
-                  textAlign: 'center',
-                  fontWeight: '500'
-                }}>
-                  🆓 Leçon gratuite
-                </div>
-              )}
             </div>
           </div>
-
-          {/* Course Info */}
-          {course ? (
-            <div className="card">
-              <div className="card-header">
-                <h3 className="card-title">Cours</h3>
-              </div>
-              <div style={{ padding: '1.5rem' }}>
-                <h4 style={{ margin: '0 0 0.5rem 0', color: '#495057' }}>
-                  {course.title}
-                </h4>
-                <p style={{ 
-                  margin: '0 0 1rem 0', 
-                  color: '#6c757d',
-                  fontSize: '0.9rem'
-                }}>
-                  {course.description}
-                </p>
-                <div style={{ fontSize: '0.85rem', color: '#6c757d' }}>
-                  <div>Instructeur: {course.instructor?.name || 'Non spécifié'}</div>
-                  <div>Durée totale: {course.duration || 'Non spécifiée'}</div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="card">
-              <div className="card-header">
-                <h3 className="card-title">Informations du cours</h3>
-              </div>
-              <div style={{ padding: '1.5rem' }}>
-                <p style={{ color: '#6c757d', fontStyle: 'italic' }}>
-                  Informations du cours non disponibles
-                </p>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
