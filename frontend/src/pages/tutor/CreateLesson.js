@@ -34,6 +34,36 @@ const CreateLesson = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [selectedVideoFile, setSelectedVideoFile] = useState(null);
 
+  // Fonction pour ouvrir/visualiser les fichiers sélectionnés localement
+  const handleFilePreview = (file) => {
+    console.log('Tentative de prévisualisation du fichier:', file);
+    
+    // Créer une URL locale pour le fichier
+    const fileUrl = URL.createObjectURL(file);
+    
+    // Pour les images et vidéos, ouvrir dans un nouvel onglet
+    if (file.type?.includes('image') || file.type?.includes('video')) {
+      window.open(fileUrl, '_blank');
+    } 
+    // Pour les PDFs, ouvrir dans un nouvel onglet
+    else if (file.type?.includes('pdf')) {
+      window.open(fileUrl, '_blank');
+    }
+    // Pour les autres fichiers, télécharger
+    else {
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = file.name;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    
+    // Nettoyer l'URL après utilisation (optionnel, pour économiser la mémoire)
+    setTimeout(() => URL.revokeObjectURL(fileUrl), 1000);
+  };
+
   useEffect(() => {
     console.log('CreateLesson useEffect triggered with:', { user, moduleId });
     
@@ -835,23 +865,130 @@ const CreateLesson = () => {
                         <strong>Fichiers sélectionnés :</strong>
                         <div style={{ marginTop: '1rem' }}>
                           {selectedFiles.map((file, index) => (
-                            <FileViewer 
-                              key={index} 
-                              file={{
-                                originalName: file.name,
-                                size: file.size,
-                                mimeType: file.type,
-                                filename: file.name
+                            <div 
+                              key={index}
+                              onClick={() => handleFilePreview(file)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                padding: '0.75rem',
+                                border: '1px solid #e9ecef',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                                backgroundColor: '#fff',
+                                marginBottom: '0.5rem'
                               }}
-                              baseUrl=""
-                            />
+                              onMouseEnter={(e) => {
+                                e.target.style.borderColor = '#3b82f6';
+                                e.target.style.backgroundColor = '#f8f9ff';
+                                e.target.style.transform = 'translateY(-2px)';
+                                e.target.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.15)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.borderColor = '#e9ecef';
+                                e.target.style.backgroundColor = '#fff';
+                                e.target.style.transform = 'translateY(0)';
+                                e.target.style.boxShadow = 'none';
+                              }}
+                            >
+                              <div style={{ fontSize: '1.5rem', marginRight: '0.75rem' }}>
+                                {file.type?.startsWith('image/') ? '🖼️' :
+                                 file.type?.startsWith('video/') ? '🎥' :
+                                 file.type?.includes('pdf') ? '📄' :
+                                 file.type?.includes('word') ? '📝' :
+                                 file.type?.includes('excel') ? '📊' :
+                                 file.type?.includes('powerpoint') ? '📽️' :
+                                 file.type?.includes('zip') ? '📦' : '📁'}
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ 
+                                  fontWeight: '500', 
+                                  color: '#495057',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis'
+                                }}>
+                                  {file.name}
+                                </div>
+                                <div style={{ 
+                                  fontSize: '0.85rem', 
+                                  color: '#6c757d',
+                                  marginTop: '0.25rem'
+                                }}>
+                                  {(file.size / 1024 / 1024).toFixed(2)} MB
+                                </div>
+                              </div>
+                              <div style={{ 
+                                fontSize: '0.85rem', 
+                                color: '#6c757d',
+                                marginLeft: '0.5rem'
+                              }}>
+                                {file.type?.startsWith('image/') || file.type?.startsWith('video/') || file.type?.includes('pdf') ? '👁️ Voir' : '⬇️ Télécharger'}
+                              </div>
+                            </div>
                           ))}
                         </div>
                       </>
                     )}
                     {formData.type === 'video' && selectedVideoFile && (
                       <>
-                        <strong>Vidéo :</strong> {selectedVideoFile.name} ({(selectedVideoFile.size / 1024 / 1024).toFixed(2)} MB)
+                        <strong>Vidéo sélectionnée :</strong>
+                        <div 
+                          onClick={() => handleFilePreview(selectedVideoFile)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '0.75rem',
+                            border: '1px solid #e9ecef',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            backgroundColor: '#fff',
+                            marginTop: '0.5rem'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.borderColor = '#3b82f6';
+                            e.target.style.backgroundColor = '#f8f9ff';
+                            e.target.style.transform = 'translateY(-2px)';
+                            e.target.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.15)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.borderColor = '#e9ecef';
+                            e.target.style.backgroundColor = '#fff';
+                            e.target.style.transform = 'translateY(0)';
+                            e.target.style.boxShadow = 'none';
+                          }}
+                        >
+                          <div style={{ fontSize: '1.5rem', marginRight: '0.75rem' }}>
+                            🎥
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ 
+                              fontWeight: '500', 
+                              color: '#495057',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}>
+                              {selectedVideoFile.name}
+                            </div>
+                            <div style={{ 
+                              fontSize: '0.85rem', 
+                              color: '#6c757d',
+                              marginTop: '0.25rem'
+                            }}>
+                              {(selectedVideoFile.size / 1024 / 1024).toFixed(2)} MB
+                            </div>
+                          </div>
+                          <div style={{ 
+                            fontSize: '0.85rem', 
+                            color: '#6c757d',
+                            marginLeft: '0.5rem'
+                          }}>
+                            👁️ Voir
+                          </div>
+                        </div>
                       </>
                     )}
                   </div>

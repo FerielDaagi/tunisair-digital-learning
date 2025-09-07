@@ -149,6 +149,41 @@ const LessonView = () => {
     return 'fas fa-file-alt';
   };
 
+  const handleFileClick = (attachment) => {
+    // Vérifier que l'URL existe
+    const fileUrl = attachment.url || attachment.path || attachment.filename;
+    
+    if (!fileUrl) {
+      console.error('URL du fichier non trouvée:', attachment);
+      alert('Impossible d\'ouvrir le fichier : URL non trouvée');
+      return;
+    }
+    
+    // Construire l'URL complète
+    const fullUrl = fileUrl.startsWith('http') ? fileUrl : `http://localhost:5000${fileUrl}`;
+    
+    console.log('Tentative d\'ouverture du fichier:', fullUrl);
+    
+    // Pour les images et vidéos, ouvrir dans un nouvel onglet
+    if (attachment.mimeType?.includes('image') || attachment.mimeType?.includes('video')) {
+      window.open(fullUrl, '_blank');
+    } 
+    // Pour les PDFs, ouvrir dans un nouvel onglet
+    else if (attachment.mimeType?.includes('pdf')) {
+      window.open(fullUrl, '_blank');
+    }
+    // Pour les autres fichiers, télécharger
+    else {
+      const link = document.createElement('a');
+      link.href = fullUrl;
+      link.download = attachment.originalName;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   if (loading) {
     return (
       <div className="lesson-view-container">
@@ -296,8 +331,15 @@ const LessonView = () => {
                         <i className="fas fa-paperclip me-2"></i>
                         Fichiers de la leçon
                       </h3>
-                      {lesson.attachments.map((attachment, index) => (
-                        <div key={index} className="attachment-card">
+                      {lesson.attachments.map((attachment, index) => {
+                        console.log('Attachment data:', attachment);
+                        return (
+                        <div 
+                          key={index} 
+                          className="attachment-card"
+                          onClick={() => handleFileClick(attachment)}
+                          style={{ cursor: 'pointer' }}
+                        >
                           <div className="d-flex align-items-center">
                             <div className={`attachment-icon ${getFileType(attachment.mimeType)}`}>
                               <i className={getFileIcon(attachment.mimeType)}></i>
@@ -306,9 +348,13 @@ const LessonView = () => {
                               <h4>{attachment.originalName}</h4>
                               <p>{(attachment.size / 1024 / 1024).toFixed(2)} MB</p>
                             </div>
+                            <div className="attachment-action">
+                              <i className="fas fa-external-link-alt"></i>
+                            </div>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

@@ -419,6 +419,17 @@
   margin: 0;
 }
 
+.attachment-action {
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  color: var(--primary-blue);
+}
+
+.attachment-card:hover .attachment-action {
+  opacity: 1;
+}
+
 /* Sidebar - Style moderne avec le thème */
 .lesson-sidebar {
   position: sticky;
