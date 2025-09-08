@@ -3,7 +3,7 @@
   min-height: 100vh;
   background: white;
   padding: 2rem 0;
-  margin-left: 190px; /* Réduire la marge pour la sidebar */
+  margin-left: 80px; /* Réduire encore plus l'espacement avec la sidebar */
 }
 
 .my-courses-container {
@@ -549,15 +549,15 @@
   padding: 1rem 1.5rem;
   background: #f8fafc;
   border-top: 1px solid #e2e8f0;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
-  flex-wrap: wrap;
   align-items: center;
 }
 
 .course-actions .btn {
   flex: 1;
-  min-width: 120px;
+  min-width: 70px;
   max-width: 200px;
 }
 
@@ -773,7 +773,8 @@
   }
   
   .course-actions {
-    flex-direction: column;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
   }
   
   .btn {
@@ -1080,7 +1081,7 @@
 /* Responsive design pour les boutons et images */
 @media (max-width: 768px) {
   .course-actions {
-    grid-template-columns: 1fr; /* Une seule colonne sur mobile */
+    grid-template-columns: 1fr 1fr; /* Garder 2 colonnes même sur mobile */
     gap: 8px;
   }
   
@@ -1103,17 +1104,10 @@
 }
 
 /* Amélioration de l'espacement et de l'alignement des boutons */
-.course-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 16px;
-  width: 100%;
-}
 
 /* Ajustement pour les boutons avec texte long */
 .course-actions .btn-warning {
-  min-width: 160px; /* Un peu plus large pour "Ajouter des modules" */
+  min-width: 140px; /* Largeur standard pour les boutons */
 }
 
 /* Animation de chargement pour les boutons */

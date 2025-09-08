@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useParams, Link } from 'react-router-dom';
-import { coursesAPI } from '../../services/api';
+import { coursesAPI, enrollmentAPI } from '../../services/api';
 
 const CourseDetail = () => {
   const { id } = useParams();
@@ -14,7 +14,13 @@ const CourseDetail = () => {
     const fetchCourse = async () => {
       try {
         const response = await coursesAPI.getById(id);
-        setCourse(response.data);
+        console.log('📚 Réponse API course detail:', response.data);
+        if (response.data.success) {
+          setCourse(response.data.data);
+        } else {
+          console.error('Erreur API:', response.data.message);
+          setCourse(null);
+        }
       } catch (error) {
         console.error('Error fetching course:', error);
         // Use mock data for demo
@@ -86,15 +92,21 @@ const CourseDetail = () => {
   const handleEnroll = async () => {
     setEnrolling(true);
     try {
-      await coursesAPI.enroll(id);
-      if (addNotification) {
-        addNotification('Votre inscription au cours a été effectuée avec succès.', 'success');
+      console.log('🔍 Tentative d\'inscription au cours:', id);
+      const response = await enrollmentAPI.enrollInCourse(id);
+      console.log('📋 Réponse d\'inscription:', response.data);
+      
+      if (response.data.success) {
+        addNotification('Votre inscription au cours a été effectuée avec succès !', 'success');
+        // Rediriger vers la page des cours de l'étudiant
+        window.location.href = '/my-courses';
+      } else {
+        addNotification(response.data.message || 'Erreur lors de l\'inscription', 'error');
       }
     } catch (error) {
-      console.error('Error enrolling:', error);
-      if (addNotification) {
-        addNotification('Votre inscription a été enregistrée (mode démo).', 'info');
-      }
+      console.error('❌ Erreur lors de l\'inscription:', error);
+      const errorMessage = error.response?.data?.message || 'Erreur lors de l\'inscription au cours';
+      addNotification(errorMessage, 'error');
     } finally {
       setEnrolling(false);
     }
@@ -154,8 +166,8 @@ const CourseDetail = () => {
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-              <span>⭐ {course.rating}</span>
-                              <span>{course.students} apprentis inscrits</span>
+              <span>⭐ {course.rating?.average || course.rating || 'N/A'}</span>
+                              <span>{course.enrolledStudents?.length || course.students || 0} apprentis inscrits</span>
               <span>{course.duration}</span>
             </div>
             <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--danger)' }}>
@@ -187,7 +199,7 @@ const CourseDetail = () => {
           </div>
           <div>
             {course.modules.map((module) => (
-              <div key={module.id} style={{ 
+              <div key={module._id || module.id} style={{ 
                 padding: '1rem', 
                 borderBottom: '1px solid #e9ecef',
                 display: 'flex',
@@ -197,7 +209,7 @@ const CourseDetail = () => {
                 <div>
                   <h4 style={{ margin: 0, color: '#495057' }}>{module.title}</h4>
                   <small style={{ color: '#6c757d' }}>
-                    {module.lessons} leçons • {module.duration}
+                    {module.lessons?.length || module.lessons || 0} leçons • {module.duration}
                   </small>
                 </div>
                 <span style={{ color: '#6c757d' }}>▶</span>
@@ -256,10 +268,10 @@ const CourseDetail = () => {
             fontSize: '1.5rem',
             fontWeight: 'bold'
           }}>
-            {course.instructor.charAt(0)}
+            {(course.instructor?.name || course.instructor || 'I').charAt(0)}
           </div>
           <div>
-            <h3 style={{ margin: 0, color: '#495057' }}>{course.instructor}</h3>
+            <h3 style={{ margin: 0, color: '#495057' }}>{course.instructor?.name || course.instructor}</h3>
             <p style={{ margin: 0, color: '#6c757d' }}>
               Instructeur expérimenté avec expertise en développement {course.category}
             </p>

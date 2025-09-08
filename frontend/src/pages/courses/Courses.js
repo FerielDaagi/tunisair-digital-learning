@@ -1,88 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { coursesAPI } from '../../services/api';
+import './Courses.css';
 
 const Courses = () => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         const response = await coursesAPI.getAll();
-        setCourses(response.data);
+        console.log('📚 Réponse API cours:', response.data);
+        if (response.data.success) {
+          setCourses(response.data.data);
+        } else {
+          console.error('Erreur API:', response.data.message);
+          setCourses([]);
+        }
       } catch (error) {
-        console.error('Error fetching courses:', error);
-        // Use mock data for demo
-        setCourses([
-          {
-            id: 1,
-            title: 'Fondamentaux React',
-            description: 'Apprenez les bases du développement React incluant les composants, l\'état et les props',
-            duration: '8 heures',
-            level: 'Débutant',
-            category: 'Frontend',
-            instructor: 'Jean Dupont',
-            rating: 4.5,
-            students: 1250
-          },
-          {
-            id: 2,
-            title: 'Développement Backend Node.js',
-            description: 'Construisez des APIs robustes avec Node.js et Express',
-            duration: '12 heures',
-            level: 'Intermédiaire',
-            category: 'Backend',
-            instructor: 'Marie Martin',
-            rating: 4.7,
-            students: 890
-          },
-          {
-            id: 3,
-            title: 'JavaScript Avancé',
-            description: 'Maîtrisez les concepts avancés de JavaScript et les fonctionnalités ES6+',
-            duration: '10 heures',
-            level: 'Avancé',
-            category: 'JavaScript',
-            instructor: 'Michel Johnson',
-            rating: 4.8,
-            students: 2100
-          },
-          {
-            id: 4,
-            title: 'Conception de Base de Données MongoDB',
-            description: 'Apprenez à concevoir et implémenter des bases de données MongoDB',
-            duration: '6 heures',
-            level: 'Intermédiaire',
-            category: 'Base de données',
-            instructor: 'Sarah Wilson',
-            rating: 4.6,
-            students: 750
-          },
-          {
-            id: 5,
-            title: 'CSS Grid et Flexbox',
-            description: 'Maîtrisez les techniques modernes de mise en page CSS',
-            duration: '5 heures',
-            level: 'Débutant',
-            category: 'Frontend',
-            instructor: 'Alex Brown',
-            rating: 4.4,
-            students: 1800
-          },
-          {
-            id: 6,
-            title: 'Conception d\'API RESTful',
-            description: 'Apprenez à concevoir et implémenter des APIs RESTful',
-            duration: '9 heures',
-            level: 'Intermédiaire',
-            category: 'Backend',
-            instructor: 'David Lee',
-            rating: 4.9,
-            students: 1100
-          }
-        ]);
+        console.error('❌ Erreur lors de la récupération des cours:', error);
+        setCourses([]);
+        setError('Erreur lors du chargement des cours. Veuillez réessayer plus tard.');
       } finally {
         setLoading(false);
       }
@@ -102,6 +43,27 @@ const Courses = () => {
       <div className="main-content">
         <div className="text-center">
           <p>Chargement des cours...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="main-content">
+        <div className="card">
+          <div className="card-header">
+            <h1 className="card-title">Erreur</h1>
+          </div>
+          <div className="card-body">
+            <p style={{ color: '#dc3545' }}>{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="btn btn-primary"
+            >
+              Réessayer
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -135,8 +97,25 @@ const Courses = () => {
       </div>
 
       {/* Courses Grid */}
-      <div className="grid grid-3">
-        {filteredCourses.map((course, index) => {
+      {filteredCourses.length === 0 ? (
+        <div className="card">
+          <div className="card-body text-center">
+            <h3>Aucun cours disponible</h3>
+            <p style={{ color: '#6c757d' }}>
+              {courses.length === 0 
+                ? 'Aucun cours n\'a encore été publié par les tuteurs.' 
+                : 'Aucun cours ne correspond à votre filtre.'}
+            </p>
+            {courses.length === 0 && (
+              <p style={{ color: '#6c757d', fontSize: '0.9rem' }}>
+                Les tuteurs peuvent publier leurs cours depuis leur tableau de bord.
+              </p>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-3">
+          {filteredCourses.map((course, index) => {
           const colors = ['red', 'blue', 'green', 'orange', 'purple', 'red'];
           const badgeColors = ['badge-primary', 'badge-blue', 'badge-green', 'badge-orange', 'badge-purple', 'badge-primary'];
           const buttonColors = ['btn-outline', 'btn-blue', 'btn-green', 'btn-orange', 'btn-purple', 'btn-primary'];
@@ -145,7 +124,7 @@ const Courses = () => {
           const buttonClass = buttonColors[index % buttonColors.length];
           
           return (
-            <div key={course.id} className="course-card">
+            <div key={course._id || course.id} className="course-card">
               <div className={`course-image ${colorClass}`}>
                 {course.title.charAt(0)}
               </div>
@@ -164,8 +143,8 @@ const Courses = () => {
                   fontSize: '0.85rem',
                   color: 'var(--text-secondary)'
                 }}>
-                  <span>⭐ {course.rating}</span>
-                  <span>{course.students} apprentis</span>
+                  <span>⭐ {course.rating?.average || course.rating || 'N/A'}</span>
+                  <span>{course.enrolledStudents?.length || course.students || 0} apprentis</span>
                 </div>
                 <div style={{ 
                   marginTop: '0.5rem',
@@ -173,10 +152,10 @@ const Courses = () => {
                   color: 'var(--primary-red)',
                   fontWeight: '500'
                 }}>
-                  {course.instructor}
+                  {course.instructor?.name || course.instructor}
                 </div>
                 <Link 
-                  to={`/courses/${course.id}`} 
+                  to={`/courses/${course._id || course.id}`} 
                   className={`btn ${buttonClass}`}
                   style={{ marginTop: '1rem', display: 'block', textAlign: 'center' }}
                 >
@@ -186,11 +165,6 @@ const Courses = () => {
             </div>
           );
         })}
-      </div>
-
-      {filteredCourses.length === 0 && (
-        <div className="card text-center">
-          <p style={{ color: '#6c757d' }}>Aucun cours trouvé dans cette catégorie.</p>
         </div>
       )}
     </div>

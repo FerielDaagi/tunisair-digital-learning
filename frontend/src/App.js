@@ -29,6 +29,10 @@ import CreateLesson from './pages/tutor/CreateLesson';
 import EditLesson from './pages/tutor/EditLesson';
 import MyCourses from './pages/tutor/MyCourses';
 import QuickCreateModule from './pages/tutor/QuickCreateModule';
+import MyCoursesStudent from './pages/user/MyCourses';
+import CourseProgress from './pages/user/CourseProgress';
+import PublishedCourses from './pages/tutor/PublishedCourses';
+import CourseStats from './pages/tutor/CourseStats';
 
 import './App.css';
 
@@ -109,6 +113,12 @@ const AppContent = () => {
           <Route path="/tutor/quick-create-module/:courseId" element={<ProtectedRoute><QuickCreateModule /></ProtectedRoute>} />
           <Route path="/tutor/manage-modules/:courseId" element={<ProtectedRoute><ManageModules /></ProtectedRoute>} />
           <Route path="/tutor/my-courses" element={<ProtectedRoute><MyCourses /></ProtectedRoute>} />
+          <Route path="/tutor/published-courses" element={<ProtectedRoute><PublishedCourses /></ProtectedRoute>} />
+          <Route path="/tutor/course-stats/:courseId" element={<ProtectedRoute><CourseStats /></ProtectedRoute>} />
+          
+          {/* Routes pour les apprentis */}
+          <Route path="/my-courses" element={<ProtectedRoute><MyCoursesStudent /></ProtectedRoute>} />
+          <Route path="/course-progress/:courseId" element={<ProtectedRoute><CourseProgress /></ProtectedRoute>} />
         </Routes>
       </div>
     </div>

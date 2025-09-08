@@ -411,7 +411,13 @@ const publishCourse = async (req, res) => {
       });
     }
     
-    const course = await Course.findById(id);
+    const course = await Course.findById(id).populate({
+      path: 'modules',
+      populate: {
+        path: 'lessons',
+        model: 'Lesson'
+      }
+    });
     if (!course) {
       console.log('❌ Cours introuvable:', id);
       return res.status(404).json({
@@ -427,6 +433,25 @@ const publishCourse = async (req, res) => {
       status: course.status,
       modules: course.modules?.length || 0
     });
+    
+    // Debug: Afficher les détails des modules
+    if (course.modules && course.modules.length > 0) {
+      console.log('📋 Détails des modules:');
+      course.modules.forEach((module, index) => {
+        console.log(`  Module ${index + 1}:`, {
+          id: module._id,
+          title: module.title,
+          lessonsCount: module.lessons?.length || 0,
+          lessons: module.lessons?.map(lesson => ({
+            id: lesson._id,
+            title: lesson.title,
+            type: lesson.type
+          })) || []
+        });
+      });
+    } else {
+      console.log('❌ Aucun module trouvé dans le cours');
+    }
     
     // Vérifier que l'utilisateur est le propriétaire du cours
     if (course.instructor.toString() !== req.user.id) {

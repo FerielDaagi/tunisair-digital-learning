@@ -180,4 +180,32 @@ export const notificationsAPI = {
   getAdmin: () => api.get('/notifications/admin'),
 };
 
+// Enrollment API
+export const enrollmentAPI = {
+  // Publier un cours (pour les tuteurs)
+  publishCourse: (courseId) => api.post(`/enrollment/publish/${courseId}`),
+  // S'inscrire à un cours (pour les apprentis)
+  enrollInCourse: (courseId) => api.post(`/enrollment/enroll/${courseId}`),
+  // Obtenir les cours publiés
+  getPublishedCourses: (params) => api.get('/enrollment/published', { params }),
+  // Obtenir les cours d'un étudiant
+  getStudentCourses: (params) => api.get('/enrollment/my-courses', { params }),
+  // Obtenir les statistiques d'un cours
+  getCourseStats: (courseId) => api.get(`/enrollment/stats/${courseId}`),
+};
+
+// Progress API
+export const progressAPI = {
+  // Marquer une leçon comme complétée
+  markLessonCompleted: (lessonId) => api.post(`/progress/lesson/${lessonId}/complete`),
+  // Mettre à jour le progrès vidéo
+  updateVideoProgress: (lessonId, data) => api.put(`/progress/lesson/${lessonId}/video-progress`, data),
+  // Obtenir la progression d'un cours
+  getCourseProgress: (courseId) => api.get(`/progress/course/${courseId}`),
+  // Ajouter des notes à une leçon
+  addLessonNotes: (lessonId, notes) => api.put(`/progress/lesson/${lessonId}/notes`, { notes }),
+  // Évaluer une leçon
+  rateLesson: (lessonId, rating) => api.put(`/progress/lesson/${lessonId}/rate`, { rating }),
+};
+
 export default api; 

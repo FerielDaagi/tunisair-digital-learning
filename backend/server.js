@@ -34,6 +34,8 @@ require('./models/Module');
 require('./models/Lesson');
 require('./models/Category');
 require('./models/Notification');
+require('./models/Enrollment');
+require('./models/Progress');
 
 const authRoutes = require('./routes/auth');
 const courseRoutes = require('./routes/courses');
@@ -44,6 +46,8 @@ const dashboardRoutes = require('./routes/dashboard');
 const notificationRoutes = require('./routes/notifications');
 const adminRoutes = require('./routes/admin');
 const categoryRoutes = require('./routes/categories');
+const enrollmentRoutes = require('./routes/enrollment');
+const progressRoutes = require('./routes/progress');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -112,6 +116,10 @@ app.use('/api/admin', express.json());
 app.use('/api/admin', express.urlencoded({ extended: true }));
 app.use('/api/categories', express.json());
 app.use('/api/categories', express.urlencoded({ extended: true }));
+app.use('/api/enrollment', express.json());
+app.use('/api/enrollment', express.urlencoded({ extended: true }));
+app.use('/api/progress', express.json());
+app.use('/api/progress', express.urlencoded({ extended: true }));
 
 // Middleware spécifique pour les routes lessons
 app.use('/api/lessons', (req, res, next) => {
@@ -153,6 +161,8 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/enrollment', enrollmentRoutes);
+app.use('/api/progress', progressRoutes);
 
 console.log('✅ Routes chargées avec succès !');
 
