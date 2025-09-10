@@ -585,6 +585,13 @@ const getTutorCourses = async (req, res) => {
     
     const total = await Course.countDocuments(query);
     const courses = await Course.find(query)
+      .populate({
+        path: 'modules',
+        populate: {
+          path: 'lessons',
+          select: 'title duration'
+        }
+      })
       .sort(sortOptions)
       .skip(skip)
       .limit(limit);

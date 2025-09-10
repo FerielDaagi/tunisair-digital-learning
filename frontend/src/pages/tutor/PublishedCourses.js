@@ -214,6 +214,19 @@ const PublishedCourses = () => {
                       <span>{Array.isArray(course.modules) ? course.modules.length : 0} module{Array.isArray(course.modules) && course.modules.length > 1 ? 's' : ''}</span>
                     </div>
                     <div className="meta-item">
+                      <i className="fas fa-book me-1"></i>
+                      <span>
+                        {Array.isArray(course.modules)
+                          ? course.modules.reduce((total, module) => {
+                              const count = Array.isArray(module.lessons)
+                                ? module.lessons.length
+                                : (typeof module.lessons === 'number' ? module.lessons : 0);
+                              return total + count;
+                            }, 0)
+                          : 0} leçon{Array.isArray(course.modules) && course.modules.reduce((t, m) => t + (Array.isArray(m.lessons) ? m.lessons.length : (typeof m.lessons === 'number' ? m.lessons : 0)), 0) > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <div className="meta-item">
                       <i className="fas fa-users me-1"></i>
                       <span>{Array.isArray(course.enrolledStudents) ? course.enrolledStudents.length : 0} étudiant{Array.isArray(course.enrolledStudents) && course.enrolledStudents.length > 1 ? 's' : ''}</span>
                     </div>
@@ -231,7 +244,14 @@ const PublishedCourses = () => {
                   </div>
                   <div className="stat-item">
                     <div className="stat-value">
-                      {Array.isArray(course.modules) ? course.modules.reduce((total, module) => total + (Array.isArray(module.lessons) ? module.lessons.length : 0), 0) : 0}
+                      {Array.isArray(course.modules)
+                        ? course.modules.reduce((total, module) => {
+                            const count = Array.isArray(module.lessons)
+                              ? module.lessons.length
+                              : (typeof module.lessons === 'number' ? module.lessons : 0);
+                            return total + count;
+                          }, 0)
+                        : 0}
                     </div>
                     <div className="stat-label">Leçons</div>
                   </div>
@@ -260,14 +280,14 @@ const PublishedCourses = () => {
                   {course.status === 'published' ? (
                     <>
                       <button 
-                        className="btn btn-outline btn-sm"
+                        className="btn btn-primary btn-sm btn-stats"
                         onClick={() => handleViewStats(course._id)}
                       >
                         <i className="fas fa-chart-bar me-1"></i>
                         Statistiques
                       </button>
                       <button 
-                        className="btn btn-outline btn-sm"
+                        className="btn btn-primary btn-sm btn-manage"
                         onClick={() => navigate(`/tutor/manage-modules/${course._id}`)}
                       >
                         <i className="fas fa-cog me-1"></i>

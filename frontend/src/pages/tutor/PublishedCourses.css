@@ -138,14 +138,17 @@
 
 .course-header {
   margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .course-title {
   font-size: 1.3rem;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 0.75rem;
-  line-height: 1.3;
+  margin: 0; /* évite l'espace inutile qui peut chevaucher */
+  line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -154,8 +157,9 @@
 
 .course-meta {
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
+  margin-top: 0.25rem; /* espace sous le titre */
 }
 
 .meta-item {
@@ -190,9 +194,9 @@
   justify-content: space-around;
   margin-bottom: 1.5rem;
   padding: 1rem;
-  background: var(--bg-secondary);
+  background: rgba(59, 130, 246, 0.08) !important;
   border-radius: 12px;
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(59, 130, 246, 0.25) !important;
 }
 
 .stat-item {
@@ -240,10 +244,16 @@
   display: flex;
   gap: 0.75rem;
   flex-wrap: nowrap;
+  justify-content: center; /* centrer les boutons sous la carte */
+  background: rgba(59, 130, 246, 0.08) !important; /* léger bleu, non blanc */
+  border: 1px solid rgba(59, 130, 246, 0.25) !important;
+  border-radius: 12px;
+  padding: 0.75rem;
+  margin-top: 1rem;
 }
 
-.course-actions .btn {
-  flex: 1;
+.published-courses-container .course-actions .btn {
+  flex: 0 0 auto; /* ne pas s'étirer, conserver la largeur auto */
   min-width: 120px;
   display: flex;
   align-items: center;
@@ -255,9 +265,40 @@
   transition: all 0.3s ease;
 }
 
-.course-actions .btn:hover {
+.published-courses-container .course-actions .btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Supprimer le fond blanc résiduel des boutons outline */
+.published-courses-container .course-actions .btn-outline-secondary {
+  background-color: transparent !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.published-courses-container .course-actions .btn-outline-secondary:hover {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Styles spécifiques pour Statistiques et Gérer */
+/* Laisser le thème gérer les couleurs via .btn-primary / .btn-outline-secondary */
+.published-courses-container .course-actions .btn-stats,
+.published-courses-container .course-actions .btn-manage {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.course-actions .btn-stats i,
+.course-actions .btn-manage i {
+  margin-right: 0.4rem;
 }
 
 .publish-warning {
