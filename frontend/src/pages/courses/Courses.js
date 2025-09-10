@@ -132,9 +132,6 @@ const Courses = () => {
                     <div className="meta-item">
                       <i className="fas fa-signal" /> {course.level}
                     </div>
-                    <div className="meta-item">
-                      <i className="fas fa-users" /> {course.enrolledStudents?.length || course.students || 0} apprentis
-                    </div>
                   </div>
                   <div className="course-actions">
                     <Link 

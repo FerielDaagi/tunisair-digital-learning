@@ -61,11 +61,14 @@ const publishCourse = async (req, res) => {
     
     for (const student of students) {
       const notification = new Notification({
-        user: student._id,
-        type: 'course_published',
+        sender: course.instructor._id,
+        recipient: 'specific',
+        recipientId: student._id,
         title: 'Nouveau cours disponible !',
         message: `Le cours "${course.title}" a été publié par ${course.instructor.firstName} ${course.instructor.lastName}`,
-        data: {
+        type: 'info',
+        category: 'course',
+        metadata: {
           courseId: course._id,
           courseTitle: course.title,
           instructorName: `${course.instructor.firstName} ${course.instructor.lastName}`
@@ -180,11 +183,14 @@ const enrollInCourse = async (req, res) => {
     const instructor = await User.findById(course.instructor);
     if (instructor) {
       const notification = new Notification({
-        user: instructor._id,
-        type: 'student_enrolled',
+        sender: studentId, // L'étudiant qui s'inscrit
+        recipient: 'specific',
+        recipientId: instructor._id,
         title: 'Nouvel étudiant inscrit',
         message: `${req.user.firstName} ${req.user.lastName} s'est inscrit à votre cours "${course.title}"`,
-        data: {
+        type: 'info',
+        category: 'course',
+        metadata: {
           courseId: course._id,
           courseTitle: course.title,
           studentId: studentId,
