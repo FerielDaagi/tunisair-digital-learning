@@ -2,13 +2,14 @@
 .published-courses-container {
   min-height: 100vh;
   background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
-  padding: 2rem;
-  margin-left: calc(var(--sidebar-width) + 1rem); /* Réduire l'espacement avec la sidebar */
+  padding: 0.75rem 1rem; /* Moins d'espace interne côté gauche */
+  margin-left: 0; /* Aucun décalage supplémentaire, se cale sur le bord du contenu principal */
   transition: margin-left 0.3s ease;
 }
 
 .published-courses-container.sidebar-collapsed {
-  margin-left: calc(var(--sidebar-collapsed-width) + 1rem);
+  margin-left: 0;
+
 }
 
 .courses-header {

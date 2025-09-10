@@ -21,7 +21,12 @@ const getAllCourses = async (req, res) => {
     
     // Recherche textuelle
     if (search) {
-      query.$text = { $search: search };
+      const searchRegex = new RegExp(search, 'i');
+      query.$or = [
+        { title: searchRegex },
+        { description: searchRegex },
+        { longDescription: searchRegex }
+      ];
     }
     
     // Tri

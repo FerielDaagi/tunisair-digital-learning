@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useParams, Link } from 'react-router-dom';
 import { coursesAPI, enrollmentAPI } from '../../services/api';
+import './CourseDetail.css';
 
 const CourseDetail = () => {
   const { id } = useParams();
@@ -136,112 +137,77 @@ const CourseDetail = () => {
   }
 
   return (
-    <div className="main-content">
-      {/* Course Header */}
-      <div className="card">
-        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-          <div style={{ flex: '1', minWidth: '300px' }}>
-            <h1 className="card-title">{course.title}</h1>
-            <p style={{ color: '#6c757d', marginBottom: '1rem' }}>
-              {course.description}
-            </p>
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-              <span style={{ 
-                backgroundColor: 'var(--danger)', 
-                color: 'white', 
-                padding: '0.25rem 0.75rem', 
-                borderRadius: '20px',
-                fontSize: '0.85rem'
-              }}>
-                {course.level}
-              </span>
-              <span style={{ 
-                backgroundColor: '#6c757d', 
-                color: 'white', 
-                padding: '0.25rem 0.75rem', 
-                borderRadius: '20px',
-                fontSize: '0.85rem'
-              }}>
-                {course.category}
-              </span>
+    <div className="course-detail-container">
+      <div className="course-hero card">
+        <div className="course-hero-inner">
+          <div className="course-hero-main">
+            <h1 className="course-title">{course.title}</h1>
+            <p className="course-subtitle">{course.description}</p>
+            <div className="course-tags">
+              <span className="tag tag-level">{course.level}</span>
+              <span className="tag tag-category">{course.category}</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-              <span>⭐ {course.rating?.average || course.rating || 'N/A'}</span>
-                              <span>{course.enrolledStudents?.length || course.students || 0} apprentis inscrits</span>
-              <span>{course.duration}</span>
-            </div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--danger)' }}>
-              {course.price}€
+            <div className="course-quick-stats">
+              <span className="stat"><i className="fas fa-users" /> {course.enrolledStudents?.length || course.students || 0} apprentis inscrits</span>
+              <span className="stat"><i className="fas fa-clock" /> {course.duration}</span>
             </div>
           </div>
-          <div style={{ minWidth: '200px' }}>
+          <div className="course-hero-actions">
             <button
               onClick={handleEnroll}
               disabled={enrolling}
-              className="btn btn-primary"
-              style={{ width: '100%', marginBottom: '1rem' }}
+              className="btn btn-primary btn-lg"
             >
               {enrolling ? 'Inscription...' : 'S\'inscrire maintenant'}
             </button>
-            <Link to="/courses" className="btn btn-outline" style={{ width: '100%' }}>
+            <Link to="/courses" className="btn btn-outline btn-lg">
               Retour aux cours
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Course Content */}
-      <div className="grid grid-2">
-        {/* Course Modules */}
+      <div className="course-content-grid">
         <div className="card">
           <div className="card-header">
             <h2 className="card-title">Contenu du cours</h2>
           </div>
-          <div>
+          <div className="module-list">
             {course.modules.map((module) => (
-              <div key={module._id || module.id} style={{ 
-                padding: '1rem', 
-                borderBottom: '1px solid #e9ecef',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
+              <div key={module._id || module.id} className="module-item">
                 <div>
-                  <h4 style={{ margin: 0, color: '#495057' }}>{module.title}</h4>
-                  <small style={{ color: '#6c757d' }}>
+                  <h4 className="module-title">{module.title}</h4>
+                  <small className="module-subtitle">
                     {module.lessons?.length || module.lessons || 0} leçons • {module.duration}
                   </small>
                 </div>
-                <span style={{ color: '#6c757d' }}>▶</span>
+                <span className="module-arrow">▶</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Course Info */}
         <div>
-          {/* Requirements */}
           <div className="card mb-3">
             <div className="card-header">
               <h3 className="card-title">Prérequis</h3>
             </div>
-            <ul style={{ paddingLeft: '1.5rem', margin: 0 }}>
+            <ul className="list">
               {course.requirements.map((req, index) => (
-                <li key={index} style={{ marginBottom: '0.5rem', color: '#495057' }}>
+                <li key={index} className="list-item">
                   {req}
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Learning Outcomes */}
           <div className="card">
             <div className="card-header">
               <h3 className="card-title">Ce que vous apprendrez</h3>
             </div>
-            <ul style={{ paddingLeft: '1.5rem', margin: 0 }}>
+            <ul className="list">
               {course.outcomes.map((outcome, index) => (
-                <li key={index} style={{ marginBottom: '0.5rem', color: '#495057' }}>
+                <li key={index} className="list-item">
                   {outcome}
                 </li>
               ))}
@@ -250,30 +216,18 @@ const CourseDetail = () => {
         </div>
       </div>
 
-      {/* Instructor */}
       <div className="card">
         <div className="card-header">
           <h2 className="card-title">Instructeur</h2>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ 
-            width: '60px', 
-            height: '60px', 
-            borderRadius: '50%', 
-            backgroundColor: 'var(--danger)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontSize: '1.5rem',
-            fontWeight: 'bold'
-          }}>
+        <div className="instructor">
+          <div className="instructor-avatar">
             {(course.instructor?.name || course.instructor || 'I').charAt(0)}
           </div>
           <div>
-            <h3 style={{ margin: 0, color: '#495057' }}>{course.instructor?.name || course.instructor}</h3>
-            <p style={{ margin: 0, color: '#6c757d' }}>
-              Instructeur expérimenté avec expertise en développement {course.category}
+            <h3 className="instructor-name">{course.instructor?.name || course.instructor}</h3>
+            <p className="instructor-bio">
+              {course.instructor?.profile?.bio || 'Aucune biographie disponible.'}
             </p>
           </div>
         </div>

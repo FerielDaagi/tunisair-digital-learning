@@ -18,16 +18,30 @@ const PublishedCourses = () => {
       return;
     }
     fetchMyCourses();
+    // Ajouter une classe au body pour ajuster l'espacement sur cette page uniquement
+    document.body.classList.add('route-published-courses');
+    return () => {
+      document.body.classList.remove('route-published-courses');
+    };
   }, [user, navigate]);
 
   const fetchMyCourses = async () => {
     try {
       setLoading(true);
       const response = await coursesAPI.getTutorCourses();
-      setCourses(response.data.data.courses);
+      console.log('🔍 Réponse getTutorCourses:', response.data);
+      
+      // La réponse contient directement les cours dans data
+      const coursesData = response.data.data || [];
+      // Filtrer pour ne garder que les cours publiés
+      const publishedCourses = coursesData.filter(course => 
+        course.status === 'published' && course.isPublished === true
+      );
+      setCourses(Array.isArray(publishedCourses) ? publishedCourses : []);
     } catch (error) {
       console.error('Erreur lors de la récupération des cours:', error);
       setError('Erreur lors du chargement des cours');
+      setCourses([]); // S'assurer que courses est un tableau
     } finally {
       setLoading(false);
     }
@@ -96,9 +110,9 @@ const PublishedCourses = () => {
 
   const canPublish = (course) => {
     return course.status === 'draft' && 
-           course.modules && 
+           Array.isArray(course.modules) && 
            course.modules.length > 0 &&
-           course.modules.every(module => module.lessons && module.lessons.length > 0);
+           course.modules.every(module => Array.isArray(module.lessons) && module.lessons.length > 0);
   };
 
   if (loading) {
@@ -161,14 +175,14 @@ const PublishedCourses = () => {
             <div className="no-courses-icon">
               <i className="fas fa-book-open"></i>
             </div>
-            <h3>Aucun cours créé</h3>
-            <p>Vous n'avez pas encore créé de cours. Commencez par créer votre premier cours !</p>
+            <h3>Aucun cours publié</h3>
+            <p>Vous n'avez pas encore de cours publiés. Publiez vos cours depuis "Mes Cours" !</p>
             <button 
               className="btn btn-primary"
-              onClick={() => navigate('/tutor/create-course')}
+              onClick={() => navigate('/tutor/my-courses')}
             >
-              <i className="fas fa-plus me-2"></i>
-              Créer mon premier cours
+              <i className="fas fa-arrow-left me-2"></i>
+              Retour à Mes Cours
             </button>
           </div>
         ) : (
@@ -197,11 +211,11 @@ const PublishedCourses = () => {
                   <div className="course-meta">
                     <div className="meta-item">
                       <i className="fas fa-layer-group me-1"></i>
-                      <span>{course.modules?.length || 0} module{(course.modules?.length || 0) > 1 ? 's' : ''}</span>
+                      <span>{Array.isArray(course.modules) ? course.modules.length : 0} module{Array.isArray(course.modules) && course.modules.length > 1 ? 's' : ''}</span>
                     </div>
                     <div className="meta-item">
                       <i className="fas fa-users me-1"></i>
-                      <span>{course.enrolledStudents?.length || 0} étudiant{(course.enrolledStudents?.length || 0) > 1 ? 's' : ''}</span>
+                      <span>{Array.isArray(course.enrolledStudents) ? course.enrolledStudents.length : 0} étudiant{Array.isArray(course.enrolledStudents) && course.enrolledStudents.length > 1 ? 's' : ''}</span>
                     </div>
                   </div>
                 </div>
@@ -212,17 +226,17 @@ const PublishedCourses = () => {
 
                 <div className="course-stats">
                   <div className="stat-item">
-                    <div className="stat-value">{course.modules?.length || 0}</div>
+                    <div className="stat-value">{Array.isArray(course.modules) ? course.modules.length : 0}</div>
                     <div className="stat-label">Modules</div>
                   </div>
                   <div className="stat-item">
                     <div className="stat-value">
-                      {course.modules?.reduce((total, module) => total + (module.lessons?.length || 0), 0) || 0}
+                      {Array.isArray(course.modules) ? course.modules.reduce((total, module) => total + (Array.isArray(module.lessons) ? module.lessons.length : 0), 0) : 0}
                     </div>
                     <div className="stat-label">Leçons</div>
                   </div>
                   <div className="stat-item">
-                    <div className="stat-value">{course.enrolledStudents?.length || 0}</div>
+                    <div className="stat-value">{Array.isArray(course.enrolledStudents) ? course.enrolledStudents.length : 0}</div>
                     <div className="stat-label">Étudiants</div>
                   </div>
                 </div>

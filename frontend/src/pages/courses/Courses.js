@@ -70,101 +70,85 @@ const Courses = () => {
   }
 
   return (
-    <div className="main-content">
-      <div className="card">
-        <div className="card-header">
-          <h1 className="card-title">Tous les cours</h1>
-          <p style={{ color: '#6c757d', margin: 0 }}>
-            Explorez notre collection complète de cours
-          </p>
-        </div>
+    <div className="courses-container">
+      <div className="courses-header">
+        <h1 className="courses-title">Tous les cours</h1>
+        <p className="courses-subtitle">Explorez notre collection complète de cours</p>
       </div>
 
-      {/* Filter */}
-      <div className="card mb-3">
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          {categories.map((category) => (
-            <button
-              key={category}
-              onClick={() => setFilter(category)}
-              className={`btn ${filter === category ? 'btn-primary' : 'btn-outline'}`}
-              style={{ textTransform: 'capitalize' }}
-            >
-              {category === 'all' ? 'Tous' : category}
-            </button>
-          ))}
-        </div>
+      <div className="filter-tabs">
+        {categories.map((category) => (
+          <button
+            key={category}
+            onClick={() => setFilter(category)}
+            className={`filter-tab ${filter === category ? 'active' : ''}`}
+            style={{ textTransform: 'capitalize' }}
+          >
+            {category === 'all' ? 'Tous' : category}
+          </button>
+        ))}
       </div>
 
-      {/* Courses Grid */}
       {filteredCourses.length === 0 ? (
-        <div className="card">
-          <div className="card-body text-center">
-            <h3>Aucun cours disponible</h3>
-            <p style={{ color: '#6c757d' }}>
-              {courses.length === 0 
-                ? 'Aucun cours n\'a encore été publié par les tuteurs.' 
-                : 'Aucun cours ne correspond à votre filtre.'}
-            </p>
-            {courses.length === 0 && (
-              <p style={{ color: '#6c757d', fontSize: '0.9rem' }}>
-                Les tuteurs peuvent publier leurs cours depuis leur tableau de bord.
-              </p>
-            )}
-          </div>
+        <div className="no-courses">
+          <div className="no-courses-icon">📚</div>
+          <h3>Aucun cours disponible</h3>
+          <p>
+            {courses.length === 0 
+              ? 'Aucun cours n\'a encore été publié par les tuteurs.' 
+              : 'Aucun cours ne correspond à votre filtre.'}
+          </p>
+          {courses.length === 0 && (
+            <p>Les tuteurs peuvent publier leurs cours depuis leur tableau de bord.</p>
+          )}
         </div>
       ) : (
-        <div className="grid grid-3">
-          {filteredCourses.map((course, index) => {
-          const colors = ['red', 'blue', 'green', 'orange', 'purple', 'red'];
-          const badgeColors = ['badge-primary', 'badge-blue', 'badge-green', 'badge-orange', 'badge-purple', 'badge-primary'];
-          const buttonColors = ['btn-outline', 'btn-blue', 'btn-green', 'btn-orange', 'btn-purple', 'btn-primary'];
-          const colorClass = colors[index % colors.length];
-          const badgeClass = badgeColors[index % badgeColors.length];
-          const buttonClass = buttonColors[index % buttonColors.length];
-          
-          return (
-            <div key={course._id || course.id} className="course-card">
-              <div className={`course-image ${colorClass}`}>
-                {course.title.charAt(0)}
+        <div className="courses-grid">
+          {filteredCourses.map((course) => {
+            const hasThumbnail = !!course.thumbnail;
+            return (
+              <div key={course._id || course.id} className="course-card">
+                <div className="course-thumbnail">
+                  {hasThumbnail ? (
+                    <img src={course.thumbnail} alt={course.title} onError={(e) => { e.target.style.display = 'none'; }} />
+                  ) : (
+                    <div className="course-thumbnail-placeholder">
+                      {course.title?.charAt(0) || 'C'}
+                    </div>
+                  )}
+                </div>
+                <div className="course-content">
+                  <div className="course-header">
+                    <h3 className="course-title">{course.title}</h3>
+                    <div className="course-instructor">
+                      <i className="fas fa-user" />
+                      {course.instructor?.name || course.instructor}
+                    </div>
+                  </div>
+                  <p className="course-description">{course.description}</p>
+                  <div className="course-meta">
+                    <div className="meta-item">
+                      <i className="fas fa-clock" /> {course.duration}
+                    </div>
+                    <div className="meta-item">
+                      <i className="fas fa-signal" /> {course.level}
+                    </div>
+                    <div className="meta-item">
+                      <i className="fas fa-users" /> {course.enrolledStudents?.length || course.students || 0} apprentis
+                    </div>
+                  </div>
+                  <div className="course-actions">
+                    <Link 
+                      to={`/courses/${course._id || course.id}`}
+                      className="btn btn-primary"
+                    >
+                      Voir le cours
+                    </Link>
+                  </div>
+                </div>
               </div>
-              <div className="course-content">
-                <h3 className="course-title">{course.title}</h3>
-                <p className="course-description">{course.description}</p>
-                <div className="course-meta">
-                  <span>{course.duration}</span>
-                  <span className={`badge ${badgeClass}`}>{course.level}</span>
-                </div>
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  marginTop: '1rem',
-                  fontSize: '0.85rem',
-                  color: 'var(--text-secondary)'
-                }}>
-                  <span>⭐ {course.rating?.average || course.rating || 'N/A'}</span>
-                  <span>{course.enrolledStudents?.length || course.students || 0} apprentis</span>
-                </div>
-                <div style={{ 
-                  marginTop: '0.5rem',
-                  fontSize: '0.8rem',
-                  color: 'var(--primary-red)',
-                  fontWeight: '500'
-                }}>
-                  {course.instructor?.name || course.instructor}
-                </div>
-                <Link 
-                  to={`/courses/${course._id || course.id}`} 
-                  className={`btn ${buttonClass}`}
-                  style={{ marginTop: '1rem', display: 'block', textAlign: 'center' }}
-                >
-                  Voir le cours
-                </Link>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
         </div>
       )}
     </div>

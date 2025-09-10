@@ -343,13 +343,22 @@ const MyCourses = () => {
             </h1>
             <p>Gérez et suivez vos cours créés</p>
           </div>
-          <button
-            onClick={() => navigate('/tutor/create-course')}
-            className="create-course-btn"
-          >
-            <Icon name="plus" size={IconSizes.sm} color={IconColors.white} />
-            Créer un cours
-          </button>
+          <div className="header-actions">
+            <button
+              onClick={() => navigate('/tutor/published-courses')}
+              className="btn btn-outline"
+            >
+              <Icon name="globe" size={IconSizes.sm} color={IconColors.primary} />
+              Cours Publiés
+            </button>
+            <button
+              onClick={() => navigate('/tutor/create-course')}
+              className="create-course-btn"
+            >
+              <Icon name="plus" size={IconSizes.sm} color={IconColors.white} />
+              Créer un cours
+            </button>
+          </div>
         </div>
 
         {/* Grille de statistiques */}

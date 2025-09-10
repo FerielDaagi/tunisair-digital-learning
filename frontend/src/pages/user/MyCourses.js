@@ -180,7 +180,9 @@ const MyCourses = () => {
                   <h3 className="course-title">{enrollment.course.title}</h3>
                   <div className="course-instructor">
                     <i className="fas fa-user me-1"></i>
-                    {enrollment.course.instructor.firstName} {enrollment.course.instructor.lastName}
+                    {enrollment.course.instructor?.firstName && enrollment.course.instructor?.lastName 
+                      ? `${enrollment.course.instructor.firstName} ${enrollment.course.instructor.lastName}`
+                      : enrollment.course.instructor?.name || enrollment.course.instructor || 'Instructeur'}
                   </div>
                 </div>
 

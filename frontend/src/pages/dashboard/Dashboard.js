@@ -85,10 +85,75 @@ const Dashboard = () => {
         <div className="card-header">
           <h1 className="card-title">Bon retour, {user?.name || 'Apprenti'} !</h1>
           <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
-            Voici votre progression d'apprentissage et votre activité récente
+            {user?.role === 'tuteur' 
+              ? 'Gérez vos cours et suivez les progrès de vos apprentis'
+              : 'Voici votre progression d\'apprentissage et votre activité récente'
+            }
           </p>
         </div>
       </div>
+
+      {/* Tutor Actions */}
+      {user?.role === 'tuteur' && (
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">Actions Tuteur</h2>
+            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+              Gérez vos cours et publiez du contenu pour vos apprentis
+            </p>
+          </div>
+          <div className="card-body">
+            <div className="grid grid-2" style={{ gap: '1rem' }}>
+              <Link to="/tutor/published-courses" className="btn btn-primary btn-lg" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem' }}>
+                <Icon name="globe" size={IconSizes.md} color={IconColors.white} />
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontWeight: '600' }}>Cours Publiés</div>
+                  <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Gérer et publier vos cours</div>
+                </div>
+              </Link>
+              
+              <Link to="/tutor/my-courses" className="btn btn-secondary btn-lg" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem' }}>
+                <Icon name="courses" size={IconSizes.md} color={IconColors.white} />
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontWeight: '600' }}>Mes Cours</div>
+                  <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Créer et modifier vos cours</div>
+                </div>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Student Actions */}
+      {user?.role === 'apprenti' && (
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">Actions Apprenti</h2>
+            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+              Explorez les cours disponibles et suivez votre progression
+            </p>
+          </div>
+          <div className="card-body">
+            <div className="grid grid-2" style={{ gap: '1rem' }}>
+              <Link to="/courses" className="btn btn-primary btn-lg" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem' }}>
+                <Icon name="courses" size={IconSizes.md} color={IconColors.white} />
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontWeight: '600' }}>Tous les Cours</div>
+                  <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Découvrir les cours publiés</div>
+                </div>
+              </Link>
+              
+              <Link to="/my-courses" className="btn btn-secondary btn-lg" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem' }}>
+                <Icon name="bookOpen" size={IconSizes.md} color={IconColors.white} />
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontWeight: '600' }}>Mes Cours</div>
+                  <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Continuer mes apprentissages</div>
+                </div>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="stats-grid">

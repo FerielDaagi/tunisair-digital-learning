@@ -276,12 +276,12 @@ const CourseProgress = () => {
                       {lesson.progress.status === 'in_progress' && lesson.progress.videoProgress && (
                         <div className="video-progress">
                           <div className="video-progress-label">
-                            Progression vidéo: {lesson.progress.videoProgress.watchedPercentage}%
+                            Progression vidéo: {lesson.progress.videoProgress?.watchedPercentage || 0}%
                           </div>
                           <div className="video-progress-bar">
                             <div 
                               className="video-progress-fill"
-                              style={{ width: `${lesson.progress.videoProgress.watchedPercentage}%` }}
+                              style={{ width: `${lesson.progress.videoProgress?.watchedPercentage || 0}%` }}
                             ></div>
                           </div>
                         </div>

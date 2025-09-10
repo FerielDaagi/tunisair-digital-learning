@@ -1002,6 +1002,15 @@ body {
   margin-left: calc(var(--sidebar-collapsed-width) + var(--main-content-margin));
 }
 
+/* Spécifique à /tutor/published-courses: rapprocher le contenu du sidebar */
+body.route-published-courses .main-content {
+  margin-left: var(--sidebar-width);
+}
+
+body.route-published-courses .main-content.sidebar-collapsed {
+  margin-left: var(--sidebar-collapsed-width);
+}
+
 /* Bouton toggle sidebar */
 .sidebar-toggle {
   position: fixed;
