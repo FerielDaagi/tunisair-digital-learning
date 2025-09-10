@@ -53,7 +53,7 @@
 
 .courses-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  grid-template-columns: repeat(2, 1fr); /* 2 cours par ligne */
   gap: 2rem;
   max-width: 1400px;
   margin: 0 auto;
