@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useParams, Link } from 'react-router-dom';
-import { coursesAPI, enrollmentAPI, lessonsAPI } from '../../services/api';
+import { coursesAPI, enrollmentAPI, lessonsAPI, progressAPI } from '../../services/api';
 import './CourseDetail.css';
 
 const CourseDetail = () => {
@@ -12,6 +12,36 @@ const CourseDetail = () => {
   const [enrolling, setEnrolling] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [checkingEnrollment, setCheckingEnrollment] = useState(false);
+  const [courseProgress, setCourseProgress] = useState(null);
+  const [lessonsData, setLessonsData] = useState({});
+  const [expandedModules, setExpandedModules] = useState({});
+
+  // Fonction pour vérifier si un module est accessible
+  const isModuleAccessible = useCallback((moduleIndex) => {
+    if (!isEnrolled || !courseProgress) return moduleIndex === 0;
+    
+    // Le premier module est toujours accessible
+    if (moduleIndex === 0) return true;
+    
+    // Vérifier si le module précédent est complété
+    const previousModule = courseProgress.modules[moduleIndex - 1];
+    return previousModule && previousModule.progress === 100;
+  }, [isEnrolled, courseProgress]);
+
+  // Fonction pour vérifier si une leçon est accessible
+  const isLessonAccessible = useCallback((moduleIndex, lessonIndex) => {
+    if (!isEnrolled || !courseProgress) return lessonIndex === 0;
+    
+    // La première leçon du module est accessible si le module est accessible
+    if (lessonIndex === 0) return isModuleAccessible(moduleIndex);
+    
+    // Vérifier si la leçon précédente est commencée ou complétée
+    const currentModule = courseProgress.modules[moduleIndex];
+    if (!currentModule) return false;
+    
+    const previousLesson = currentModule.lessons[lessonIndex - 1];
+    return previousLesson && (previousLesson.progress.status === 'completed' || previousLesson.progress.status === 'in_progress');
+  }, [isEnrolled, courseProgress, isModuleAccessible]);
 
   // Fonction pour sauvegarder l'état d'inscription dans localStorage
   const saveEnrollmentStatus = (courseId, enrolled) => {
@@ -26,21 +56,51 @@ const CourseDetail = () => {
     return enrollments[courseId] || false;
   };
 
+  // Fonction pour récupérer les leçons d'un module
+  const fetchModuleLessons = async (moduleId) => {
+    try {
+      const response = await lessonsAPI.getByModule(moduleId);
+      return response.data.data || response.data || [];
+    } catch (error) {
+      console.error('Erreur lors de la récupération des leçons:', error);
+      return [];
+    }
+  };
+
+  // Fonction pour récupérer la progression du cours
+  const fetchCourseProgress = async () => {
+    if (!user || !isEnrolled) return;
+    
+    try {
+      const response = await progressAPI.getCourseProgress(id);
+      if (response.data.success) {
+        setCourseProgress(response.data.data);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération de la progression:', error);
+    }
+  };
+
   useEffect(() => {
     const fetchCourse = async () => {
       try {
+        console.log('🔍 Fetching course with ID:', id);
         const response = await coursesAPI.getById(id);
         console.log('📚 Réponse API course detail:', response.data);
+        console.log('📚 Course data from API:', response.data.data);
+        console.log('📚 Course title from API:', response.data.data?.title);
+        
         if (response.data.success) {
           setCourse(response.data.data);
+          console.log('✅ Course set successfully:', response.data.data);
           // Vérifier si l'utilisateur est inscrit
           await checkEnrollmentStatus(response.data.data);
         } else {
-          console.error('Erreur API:', response.data.message);
+          console.error('❌ Erreur API:', response.data.message);
           setCourse(null);
         }
       } catch (error) {
-        console.error('Error fetching course:', error);
+        console.error('❌ Error fetching course:', error);
         // Use mock data for demo
         setCourse({
           id: parseInt(id),
@@ -124,6 +184,34 @@ const CourseDetail = () => {
       setIsEnrolled(false);
     }
   }, [user, course]);
+
+  // Charger la progression quand l'utilisateur est inscrit
+  useEffect(() => {
+    if (isEnrolled && user) {
+      fetchCourseProgress();
+    }
+  }, [isEnrolled, user, id]);
+
+  // Charger les leçons pour chaque module
+  useEffect(() => {
+    if (course && course.modules) {
+      const loadLessons = async () => {
+        const lessonsPromises = course.modules.map(async (module) => {
+          const lessons = await fetchModuleLessons(module._id || module.id);
+          return { moduleId: module._id || module.id, lessons };
+        });
+        
+        const results = await Promise.all(lessonsPromises);
+        const lessonsMap = {};
+        results.forEach(({ moduleId, lessons }) => {
+          lessonsMap[moduleId] = lessons;
+        });
+        setLessonsData(lessonsMap);
+      };
+      
+      loadLessons();
+    }
+  }, [course]);
 
   const checkEnrollmentStatus = async (courseData) => {
     if (!user) {
@@ -252,24 +340,35 @@ const CourseDetail = () => {
     }
   };
 
-  const handleModuleAccess = async (moduleId) => {
+  const handleModuleAccess = async (moduleId, moduleIndex) => {
     if (!isEnrolled) {
       addNotification('Vous devez être inscrit au cours pour accéder au contenu', 'warning');
+      return;
+    }
+
+    // Vérifier si le module est accessible
+    if (!isModuleAccessible(moduleIndex)) {
+      addNotification('Vous devez compléter le module précédent avant d\'accéder à celui-ci', 'warning');
       return;
     }
     
     try {
       // Récupérer les leçons du module
-      const response = await lessonsAPI.getByModule(moduleId);
-      const lessons = response.data.data || response.data;
+      const lessons = lessonsData[moduleId] || [];
       
       if (lessons && lessons.length > 0) {
-        // Trier les leçons par ordre et prendre la première
+        // Trier les leçons par ordre et prendre la première accessible
         const sortedLessons = lessons.sort((a, b) => (a.order || 0) - (b.order || 0));
-        const firstLesson = sortedLessons[0];
+        const firstAccessibleLesson = sortedLessons.find((lesson, index) => 
+          isLessonAccessible(moduleIndex, index)
+        );
         
-        // Rediriger vers la première leçon
-        window.location.href = `/lesson/${firstLesson._id}`;
+        if (firstAccessibleLesson) {
+          // Rediriger vers la première leçon accessible
+          window.location.href = `/lesson/${firstAccessibleLesson._id}`;
+        } else {
+          addNotification('Aucune leçon accessible dans ce module', 'info');
+        }
       } else {
         addNotification('Aucune leçon disponible dans ce module', 'info');
       }
@@ -279,12 +378,36 @@ const CourseDetail = () => {
     }
   };
 
-  const handleModuleClick = (moduleId) => {
+  const handleLessonAccess = (lessonId, moduleIndex, lessonIndex) => {
+    if (!isEnrolled) {
+      addNotification('Vous devez être inscrit au cours pour accéder au contenu', 'warning');
+      return;
+    }
+
+    // Vérifier si la leçon est accessible
+    if (!isLessonAccessible(moduleIndex, lessonIndex)) {
+      addNotification('Vous devez compléter la leçon précédente avant d\'accéder à celle-ci', 'warning');
+      return;
+    }
+
+    // Rediriger vers la leçon
+    window.location.href = `/lesson/${lessonId}`;
+  };
+
+  const handleModuleClick = (moduleId, moduleIndex) => {
     if (isEnrolled) {
-      handleModuleAccess(moduleId);
+      handleModuleAccess(moduleId, moduleIndex);
     } else {
       addNotification('Inscrivez-vous au cours pour accéder au contenu des modules', 'info');
     }
+  };
+
+  const toggleModuleLessons = (moduleId, e) => {
+    e.stopPropagation(); // Empêcher le clic sur le module
+    setExpandedModules(prev => ({
+      ...prev,
+      [moduleId]: !prev[moduleId]
+    }));
   };
 
   if (loading) {
@@ -310,13 +433,34 @@ const CourseDetail = () => {
     );
   }
 
+  // Debug: Afficher les données du cours
+  console.log('🔍 Course data in render:', course);
+  console.log('🔍 Course title:', course?.title);
+  console.log('🔍 Course loading:', loading);
+
+  // Si le cours n'est pas encore chargé, afficher un message
+  if (!course && !loading) {
+    return (
+      <div className="course-detail-container">
+        <div className="course-hero card">
+          <div className="course-hero-inner">
+            <div className="course-hero-main">
+              <h1 className="course-detail-title">Cours non trouvé</h1>
+              <p className="course-subtitle">Ce cours n'existe pas ou a été supprimé.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="course-detail-container">
       <div className="course-hero card">
         <div className="course-hero-inner">
           <div className="course-hero-main">
-            <h1 className="course-title">{course.title}</h1>
-            <p className="course-subtitle">{course.description}</p>
+            <h1 className="course-detail-title">{course?.title || 'Chargement...'}</h1>
+            <p className="course-subtitle">{course.description || 'Description du cours'}</p>
             <div className="course-tags">
               <span className="tag tag-level">{course.level}</span>
               <span className="tag tag-category">{course.category}</span>
@@ -364,47 +508,131 @@ const CourseDetail = () => {
             <h2 className="card-title">Contenu du cours</h2>
           </div>
           <div className="module-list">
-            {course.modules.map((module) => (
-              <div 
-                key={module._id || module.id} 
-                className="module-item"
-                onClick={() => handleModuleClick(module._id || module.id)}
-              >
-                <div className="module-content">
-                  <div className="module-header">
-                    <h4 className="module-title">{module.title}</h4>
-                    <div className="module-meta">
-                      <span className="module-lessons">
-                        <i className="fas fa-book"></i>
-                        {module.lessons?.length || module.lessons || 0} leçons
-                      </span>
-                      <span className="module-duration">
-                        <i className="fas fa-clock"></i>
-                        {module.duration}
-                      </span>
+            {course.modules.map((module, moduleIndex) => {
+              const moduleId = module._id || module.id;
+              const lessons = lessonsData[moduleId] || [];
+              const isAccessible = isModuleAccessible(moduleIndex);
+              const moduleProgress = courseProgress?.modules?.[moduleIndex];
+              const isExpanded = expandedModules[moduleId] || false;
+              
+              return (
+                <div 
+                  key={moduleId} 
+                  className={`module-item ${!isAccessible ? 'module-locked' : ''}`}
+                  onClick={() => handleModuleClick(moduleId, moduleIndex)}
+                >
+                  <div className="module-content">
+                    <div className="module-header">
+                      <div className="module-title-container">
+                        <h4 className="module-title">
+                          {module.title}
+                          {!isAccessible && <i className="fas fa-lock module-lock-icon"></i>}
+                        </h4>
+                        <button 
+                          className={`module-toggle-btn ${isExpanded ? 'expanded' : ''}`}
+                          onClick={(e) => toggleModuleLessons(moduleId, e)}
+                          title={isExpanded ? 'Masquer les leçons' : 'Afficher les leçons'}
+                        >
+                          <i className="fas fa-chevron-down"></i>
+                        </button>
+                      </div>
+                      <div className="module-meta">
+                        <span className="module-lessons">
+                          <i className="fas fa-book"></i>
+                          {lessons.length} leçons
+                        </span>
+                        <span className="module-duration">
+                          <i className="fas fa-clock"></i>
+                          {module.duration}
+                        </span>
+                        {isEnrolled && moduleProgress && (
+                          <span className="module-progress">
+                            <i className="fas fa-chart-line"></i>
+                            {moduleProgress.progress}% complété
+                          </span>
+                        )}
+                      </div>
                     </div>
+                    {module.description && (
+                      <p className="module-description">
+                        {module.description}
+                      </p>
+                    )}
+                    
+                    {/* Affichage des leçons */}
+                    {lessons.length > 0 && isExpanded && (
+                      <div className="module-lessons-list">
+                        <h5 className="lessons-title">Leçons :</h5>
+                        <div className="lessons-container">
+                          {lessons
+                            .sort((a, b) => (a.order || 0) - (b.order || 0))
+                            .map((lesson, lessonIndex) => {
+                              const isLessonAccessibleValue = isLessonAccessible(moduleIndex, lessonIndex);
+                              const lessonProgress = moduleProgress?.lessons?.[lessonIndex];
+                              
+                              return (
+                                <div 
+                                  key={lesson._id} 
+                                  className={`lesson-item ${!isLessonAccessibleValue ? 'lesson-locked' : ''} ${lessonProgress?.progress?.status === 'completed' ? 'lesson-completed' : ''}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleLessonAccess(lesson._id, moduleIndex, lessonIndex);
+                                  }}
+                                >
+                                  <div className="lesson-content">
+                                    <div className="lesson-header">
+                                      <span className="lesson-number">{lessonIndex + 1}</span>
+                                      <h6 className="lesson-title">
+                                        {lesson.title}
+                                        {!isLessonAccessibleValue && <i className="fas fa-lock lesson-lock-icon"></i>}
+                                        {lessonProgress?.progress?.status === 'completed' && <i className="fas fa-check-circle lesson-completed-icon"></i>}
+                                      </h6>
+                                    </div>
+                                    <div className="lesson-meta">
+                                      <span className="lesson-duration">
+                                        <i className="fas fa-clock"></i>
+                                        {lesson.duration}
+                                      </span>
+                                      <span className="lesson-type">
+                                        <i className={`fas fa-${lesson.type === 'video' ? 'play-circle' : lesson.type === 'text' ? 'file-text' : 'link'}`}></i>
+                                        {lesson.type}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="lesson-actions">
+                                    {isLessonAccessibleValue ? (
+                                      <button className="btn-lesson-access">
+                                        <i className="fas fa-arrow-right"></i>
+                                      </button>
+                                    ) : (
+                                      <div className="lesson-locked-indicator">
+                                        <i className="fas fa-lock"></i>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  {module.description && (
-                    <p className="module-description">
-                      {module.description}
-                    </p>
-                  )}
+                  <div className="module-actions">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleModuleAccess(moduleId, moduleIndex);
+                      }}
+                      className={`btn-play ${!isEnrolled || !isAccessible ? 'btn-play-disabled' : ''}`}
+                      title={!isEnrolled ? "Inscrivez-vous pour accéder" : !isAccessible ? "Module verrouillé" : "Accéder aux leçons"}
+                    >
+                      <i className="fas fa-play"></i>
+                      <span>{lessons.length} leçons</span>
+                    </button>
+                  </div>
                 </div>
-                <div className="module-actions">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleModuleAccess(module._id || module.id);
-                    }}
-                    className={`btn-play ${!isEnrolled ? 'btn-play-disabled' : ''}`}
-                    title={isEnrolled ? "Accéder aux leçons" : "Inscrivez-vous pour accéder"}
-                  >
-                    <i className="fas fa-play"></i>
-                    <span>{module.lessons?.length || module.lessons || 0} leçons</span>
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

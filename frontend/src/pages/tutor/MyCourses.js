@@ -514,7 +514,7 @@ const MyCourses = () => {
                 )}
                 
                 <div className="course-content">
-                  <h3 className="course-title">{course.title}</h3>
+                  <h3 className="tutor-course-title">{course.title}</h3>
                   <p className="course-description">{course.description}</p>
                   
                   <div className="course-meta">

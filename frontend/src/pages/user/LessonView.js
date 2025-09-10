@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { lessonsAPI, modulesAPI, coursesAPI, progressAPI } from '../../services/api';
@@ -20,6 +20,21 @@ const LessonView = () => {
   const [rating, setRating] = useState(0);
   const [savingNotes, setSavingNotes] = useState(false);
   const [savingRating, setSavingRating] = useState(false);
+  const [moduleLessons, setModuleLessons] = useState([]);
+  const [currentLessonIndex, setCurrentLessonIndex] = useState(-1);
+  const [lessonStartTime, setLessonStartTime] = useState(null);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [lessonProgress, setLessonProgress] = useState(null);
+
+  // Fonction pour retourner aux détails du cours
+  const handleBackToCourse = () => {
+    if (course && course._id) {
+      navigate(`/courses/${course._id}`);
+    } else {
+      // Fallback vers la page précédente si pas de cours
+      navigate(-1);
+    }
+  };
 
   useEffect(() => {
     if (!user) {
@@ -29,11 +44,113 @@ const LessonView = () => {
     
     if (lessonId) {
       fetchLessonData();
+      // Marquer automatiquement la leçon comme commencée
+      markLessonAsStarted();
     } else {
       setError('ID de la leçon manquant');
       setLoading(false);
     }
   }, [user, navigate, lessonId]);
+
+  // Fonction pour marquer une leçon comme complétée (automatique uniquement)
+  const markLessonAsCompleted = useCallback(async () => {
+    if (!lessonId || !user || isCompleted) return;
+    
+    try {
+      await progressAPI.markLessonCompleted(lessonId);
+      setIsCompleted(true);
+      console.log('✅ Leçon marquée comme complétée automatiquement');
+    } catch (error) {
+      console.error('❌ Erreur lors du marquage automatique de la leçon:', error);
+    }
+  }, [lessonId, user, isCompleted]);
+
+
+  // Fonction pour marquer une leçon comme commencée
+  const markLessonAsStarted = async () => {
+    if (!lessonId || !user) return;
+    
+    try {
+      // Marquer comme commencée (in_progress)
+      await progressAPI.markLessonStarted(lessonId);
+      setLessonStartTime(Date.now());
+      console.log('✅ Leçon marquée comme commencée');
+    } catch (error) {
+      console.error('❌ Erreur lors du marquage de la leçon comme commencée:', error);
+    }
+  };
+
+  // Effet pour marquer la leçon comme complétée après un certain temps
+  useEffect(() => {
+    if (!lessonStartTime) return;
+
+    const minTimeToComplete = 5000; // 5 secondes minimum (réduit de 30s à 5s)
+    let timeoutId;
+
+    // Programmer la marque comme complétée après le temps minimum
+    timeoutId = setTimeout(() => {
+      markLessonAsCompleted();
+    }, minTimeToComplete);
+
+    // Nettoyer au démontage du composant
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      // Marquer comme complétée si l'utilisateur quitte avant le timeout
+      if (lessonStartTime && (Date.now() - lessonStartTime) >= minTimeToComplete) {
+        markLessonAsCompleted();
+      }
+    };
+  }, [lessonStartTime, markLessonAsCompleted]);
+
+  // Marquer automatiquement comme complétée quand l'utilisateur quitte la page
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (lessonStartTime && (Date.now() - lessonStartTime) >= 2000) { // Au moins 2 secondes
+        markLessonAsCompleted();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Marquer comme complétée au démontage du composant
+      if (lessonStartTime && (Date.now() - lessonStartTime) >= 2000) {
+        markLessonAsCompleted();
+      }
+    };
+  }, [lessonStartTime, markLessonAsCompleted]);
+
+  // Effet pour récupérer la progression quand le cours est chargé
+  useEffect(() => {
+    if (course && course._id && lessonId) {
+      const fetchProgress = async () => {
+        try {
+          // Récupérer la progression du cours pour obtenir l'état de cette leçon
+          const progressResponse = await progressAPI.getCourseProgress(course._id);
+          const courseProgress = progressResponse.data.data;
+          
+          // Trouver la progression de cette leçon
+          for (const module of courseProgress.modules) {
+            for (const lesson of module.lessons) {
+              if (lesson._id === lessonId) {
+                setLessonProgress(lesson.progress);
+                setIsCompleted(lesson.progress.status === 'completed');
+                console.log('🔍 État de progression récupéré:', lesson.progress);
+                return;
+              }
+            }
+          }
+        } catch (error) {
+          console.error('❌ Erreur lors de la récupération de la progression:', error);
+        }
+      };
+      
+      fetchProgress();
+    }
+  }, [course, lessonId]);
 
   const fetchLessonData = async () => {
     try {
@@ -55,6 +172,21 @@ const LessonView = () => {
           const moduleData = moduleResponse.data.data || moduleResponse.data; // Handle both response formats
           console.log('🔍 Module data received:', moduleData);
           setModule(moduleData);
+          
+          // Récupérer toutes les leçons du module pour la navigation
+          try {
+            const lessonsResponse = await lessonsAPI.getByModule(lessonData.module);
+            const lessons = lessonsResponse.data.data || lessonsResponse.data || [];
+            console.log('🔍 Module lessons received:', lessons);
+            setModuleLessons(lessons);
+            
+            // Trouver l'index de la leçon actuelle
+            const currentIndex = lessons.findIndex(l => l._id === lessonId);
+            setCurrentLessonIndex(currentIndex);
+            console.log('🔍 Current lesson index:', currentIndex);
+          } catch (lessonsError) {
+            console.warn('⚠️ Could not fetch module lessons:', lessonsError);
+          }
           
           // Essayer de récupérer le cours si l'ID existe
           if (moduleData.course) {
@@ -219,6 +351,24 @@ const LessonView = () => {
     }
   };
 
+  // Fonctions de navigation entre les leçons
+  const goToNextLesson = () => {
+    if (currentLessonIndex < moduleLessons.length - 1) {
+      const nextLesson = moduleLessons[currentLessonIndex + 1];
+      navigate(`/lesson/${nextLesson._id}`);
+    }
+  };
+
+  const goToPreviousLesson = () => {
+    if (currentLessonIndex > 0) {
+      const previousLesson = moduleLessons[currentLessonIndex - 1];
+      navigate(`/lesson/${previousLesson._id}`);
+    }
+  };
+
+  const canGoToNext = currentLessonIndex < moduleLessons.length - 1 && isCompleted;
+  const canGoToPrevious = currentLessonIndex > 0;
+
   if (loading) {
     return (
       <div className="lesson-view-container">
@@ -241,11 +391,11 @@ const LessonView = () => {
             {error || 'Cette leçon n\'existe pas ou vous n\'y avez pas accès.'}
           </p>
           <button 
-            onClick={() => navigate(-1)}
+            onClick={handleBackToCourse}
             className="btn btn-primary btn-lg"
           >
             <i className="fas fa-arrow-left me-2"></i>
-            Retour
+            Retour au cours
           </button>
         </div>
       </div>
@@ -258,13 +408,62 @@ const LessonView = () => {
       <div className="lesson-hero">
         <div className="container">
           <nav className="lesson-navigation mb-4">
-            <button 
-              onClick={() => navigate(-1)}
-              className="btn btn-outline btn-sm back-btn-flash"
-            >
-              Retour
-              <i className="fas fa-arrow-right ms-2"></i>
-            </button>
+            <div className="navigation-left">
+              <button 
+                onClick={handleBackToCourse}
+                className="btn btn-outline btn-sm back-btn-flash"
+              >
+                Retour au cours
+                <i className="fas fa-arrow-right ms-2"></i>
+              </button>
+            </div>
+            
+            <div className="navigation-center">
+              {course && (
+                <div className="course-info">
+                  <span className="lesson-course-title">
+                    {course.title}
+                  </span>
+                </div>
+              )}
+              {moduleLessons.length > 1 && (
+                <div className="lesson-progress-info">
+                  <span className="lesson-counter">
+                    Leçon {currentLessonIndex + 1} sur {moduleLessons.length}
+                  </span>
+                  {module && (
+                    <span className="module-name">
+                      - {module.title}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            <div className="navigation-right">
+              <div className="lesson-nav-buttons">
+                <button 
+                  onClick={goToPreviousLesson}
+                  disabled={!canGoToPrevious}
+                  className={`btn btn-outline btn-sm ${!canGoToPrevious ? 'disabled' : ''}`}
+                  title={canGoToPrevious ? 'Leçon précédente' : 'Première leçon'}
+                >
+                  <i className="fas fa-chevron-left me-1"></i>
+                  Précédent
+                </button>
+                
+                <button 
+                  onClick={goToNextLesson}
+                  disabled={!canGoToNext}
+                  className={`btn btn-primary btn-sm ${!canGoToNext ? 'disabled' : ''}`}
+                  title={!isCompleted ? 'Complétez cette leçon pour débloquer la suivante' : 
+                         currentLessonIndex < moduleLessons.length - 1 ? 'Leçon suivante' : 'Dernière leçon'}
+                >
+                  Suivant
+                  <i className="fas fa-chevron-right ms-1"></i>
+                </button>
+              </div>
+            </div>
           </nav>
           
           <div className="lesson-info">
@@ -529,7 +728,7 @@ const LessonView = () => {
                 {course ? (
                   <div className="course-info-card">
                     <div className="course-header">
-                      <h3 className="course-title">{course.title}</h3>
+                      <h3 className="lesson-course-title">{course.title}</h3>
                       <div className="course-instructor">
                         <i className="fas fa-user me-1"></i>
                         {course.instructor?.name || 'Instructeur'}
@@ -560,6 +759,49 @@ const LessonView = () => {
                       <div className="alert alert-warning mb-0">
                         <i className="fas fa-exclamation-triangle me-2"></i>
                         <span className="small">Informations du cours non disponibles</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Section Progression */}
+                <div className="sidebar-card">
+                  <div className="sidebar-header">
+                    <h3>Progression</h3>
+                  </div>
+                  <div className="sidebar-body">
+                    {/* État actuel de la leçon */}
+                    <div className="lesson-status">
+                      <div className="status-indicator">
+                        <span className="status-label">État actuel :</span>
+                        <span className={`status-badge ${isCompleted ? 'completed' : lessonProgress?.status === 'in_progress' ? 'in-progress' : 'not-started'}`}>
+                          {isCompleted ? 'Complétée' : 
+                           lessonProgress?.status === 'in_progress' ? 'En cours' : 
+                           'Non commencée'}
+                        </span>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* Message de completion */}
+                {isCompleted && (
+                  <div className="sidebar-card">
+                    <div className="sidebar-header">
+                      <h3>Progression</h3>
+                    </div>
+                    <div className="sidebar-body">
+                      <div className="completion-success">
+                        <div className="text-center">
+                          <i className="fas fa-check-circle text-success mb-2" style={{fontSize: '2rem'}}></i>
+                          <p className="text-success mb-0">
+                            <strong>Leçon complétée !</strong>
+                          </p>
+                          <small className="text-muted">
+                            Votre progression a été mise à jour.
+                          </small>
+                        </div>
                       </div>
                     </div>
                   </div>

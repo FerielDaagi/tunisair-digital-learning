@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { auth } = require('../middleware/auth');
 const {
+  markLessonStarted,
   markLessonCompleted,
   updateVideoProgress,
   getCourseProgress,
@@ -10,6 +11,7 @@ const {
 } = require('../controllers/progressController');
 
 // Routes pour les apprentis
+router.post('/lesson/:lessonId/start', auth, markLessonStarted);
 router.post('/lesson/:lessonId/complete', auth, markLessonCompleted);
 router.put('/lesson/:lessonId/video-progress', auth, updateVideoProgress);
 router.get('/course/:courseId', auth, getCourseProgress);

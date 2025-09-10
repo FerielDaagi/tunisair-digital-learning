@@ -106,7 +106,7 @@ const CourseStats = () => {
         </div>
         
         <div className="course-info">
-          <h1 className="course-title">{stats.course.title}</h1>
+          <h1 className="stats-course-title">{stats.course.title}</h1>
           <p className="course-subtitle">Statistiques et performances du cours</p>
           
           <div className="course-overview">

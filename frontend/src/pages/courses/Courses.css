@@ -193,10 +193,25 @@
   box-shadow: 0 6px 18px rgba(8, 27, 123, 0.08);
 }
 
+.course-list-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #1e293b !important; /* Couleur normale */
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  position: relative;
+  padding-left: 0.75rem; /* barre d'accent à gauche */
+}
+
+/* Garder l'ancienne classe pour compatibilité */
 .course-title {
   font-size: 1.3rem;
   font-weight: 600;
-  color: #330896 !important; /* Rouge pour test */
+  color: #1e293b !important; /* Couleur normale */
   margin-bottom: 0.5rem;
   line-height: 1.3;
   display: -webkit-box;

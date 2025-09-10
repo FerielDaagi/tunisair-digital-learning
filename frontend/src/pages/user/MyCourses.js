@@ -177,7 +177,7 @@ const MyCourses = () => {
 
               <div className="course-content">
                 <div className="course-header">
-                  <h3 className="course-title">{enrollment.course.title}</h3>
+                  <h3 className="user-course-title">{enrollment.course.title}</h3>
                   <div className="course-instructor">
                     <i className="fas fa-user me-1"></i>
                     {enrollment.course.instructor?.firstName && enrollment.course.instructor?.lastName 

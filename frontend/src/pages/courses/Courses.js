@@ -119,7 +119,7 @@ const Courses = () => {
                 </div>
                 <div className="course-content">
                   <div className="course-header">
-                    <h3 className="course-title">{course.title}</h3>
+                    <h3 className="course-list-title">{course.title}</h3>
                     <div className="course-instructor">
                       {course.instructor?.name || course.instructor}
                     </div>

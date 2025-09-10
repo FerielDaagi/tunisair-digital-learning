@@ -47,7 +47,7 @@ const CourseProgress = () => {
 
   const markLessonStarted = async (lessonId) => {
     try {
-      await progressAPI.markLessonCompleted(lessonId);
+      await progressAPI.markLessonStarted(lessonId);
       // Rafraîchir les données
       fetchCourseProgress();
     } catch (error) {
@@ -140,7 +140,7 @@ const CourseProgress = () => {
         </div>
         
         <div className="course-info">
-          <h1 className="course-title">{courseData.course.title}</h1>
+          <h1 className="progress-course-title">{courseData.course.title}</h1>
           <p className="course-description">{courseData.course.description}</p>
           
           <div className="course-stats">

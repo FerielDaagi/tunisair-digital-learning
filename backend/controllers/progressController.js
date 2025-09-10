@@ -4,6 +4,79 @@ const Course = require('../models/Course');
 const Module = require('../models/Module');
 const Lesson = require('../models/Lesson');
 
+// Marquer une leçon comme commencée
+const markLessonStarted = async (req, res) => {
+  try {
+    const { lessonId } = req.params;
+    const studentId = req.user.id;
+
+    // Vérifier que la leçon existe
+    const lesson = await Lesson.findById(lessonId).populate('module');
+    if (!lesson) {
+      return res.status(404).json({
+        success: false,
+        message: 'Leçon non trouvée'
+      });
+    }
+
+    // Vérifier que l'étudiant est inscrit au cours
+    const enrollment = await Enrollment.findOne({
+      student: studentId,
+      course: lesson.module.course
+    });
+
+    if (!enrollment) {
+      return res.status(403).json({
+        success: false,
+        message: 'Vous n\'êtes pas inscrit à ce cours'
+      });
+    }
+
+    // Trouver ou créer l'enregistrement de progression
+    let progress = await Progress.findOne({
+      student: studentId,
+      course: lesson.module.course,
+      module: lesson.module._id,
+      lesson: lessonId
+    });
+
+    if (!progress) {
+      progress = new Progress({
+        student: studentId,
+        course: lesson.module.course,
+        module: lesson.module._id,
+        lesson: lessonId,
+        status: 'in_progress',
+        startedAt: new Date()
+      });
+    } else {
+      progress.markAsStarted();
+    }
+
+    await progress.save();
+
+    res.json({
+      success: true,
+      message: 'Leçon marquée comme commencée',
+      data: {
+        progress: {
+          lessonId: lessonId,
+          status: progress.status,
+          startedAt: progress.startedAt
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur lors du marquage de la leçon comme commencée:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur',
+      error: error.message
+    });
+  }
+};
+
 // Marquer une leçon comme complétée
 const markLessonCompleted = async (req, res) => {
   try {
@@ -57,6 +130,10 @@ const markLessonCompleted = async (req, res) => {
 
     // Mettre à jour l'enrollment
     await enrollment.markLessonCompleted(lessonId);
+    
+    // Recharger l'enrollment pour avoir les données à jour
+    await enrollment.populate('course');
+    const updatedEnrollment = await Enrollment.findById(enrollment._id);
 
     res.json({
       success: true,
@@ -66,7 +143,7 @@ const markLessonCompleted = async (req, res) => {
           lessonId: lessonId,
           status: progress.status,
           completedAt: progress.completedAt,
-          courseProgress: enrollment.progress
+          courseProgress: updatedEnrollment.progress
         }
       }
     });
@@ -199,7 +276,7 @@ const getCourseProgress = async (req, res) => {
     });
 
     // Organiser les données par module
-    const modulesWithProgress = course.modules.map(module => {
+    const modulesWithProgress = course.modules.map((module, moduleIndex) => {
       const moduleProgress = {
         _id: module._id,
         title: module.title,
@@ -243,6 +320,12 @@ const getCourseProgress = async (req, res) => {
       const completedLessons = moduleProgress.lessons.filter(l => l.progress.status === 'completed').length;
       const totalLessons = moduleProgress.lessons.length;
       moduleProgress.progress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
+      // Déterminer si le module est accessible
+      moduleProgress.isAccessible = moduleIndex === 0 || (moduleIndex > 0 && course.modules[moduleIndex - 1] && 
+        course.modules[moduleIndex - 1].lessons.every(lesson => 
+          progressData.some(p => p.lesson.toString() === lesson._id.toString() && p.status === 'completed')
+        ));
 
       return moduleProgress;
     });
@@ -438,6 +521,7 @@ const rateLesson = async (req, res) => {
 };
 
 module.exports = {
+  markLessonStarted,
   markLessonCompleted,
   updateVideoProgress,
   getCourseProgress,

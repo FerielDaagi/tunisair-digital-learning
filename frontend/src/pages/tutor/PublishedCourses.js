@@ -207,7 +207,7 @@ const PublishedCourses = () => {
 
               <div className="course-content">
                 <div className="course-header">
-                  <h3 className="course-title">{course.title}</h3>
+                  <h3 className="tutor-course-title">{course.title}</h3>
                   <div className="course-meta">
                     <div className="meta-item">
                       <i className="fas fa-layer-group me-1"></i>

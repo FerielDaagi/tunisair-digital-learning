@@ -196,6 +196,8 @@ export const enrollmentAPI = {
 
 // Progress API
 export const progressAPI = {
+  // Marquer une leçon comme commencée
+  markLessonStarted: (lessonId) => api.post(`/progress/lesson/${lessonId}/start`),
   // Marquer une leçon comme complétée
   markLessonCompleted: (lessonId) => api.post(`/progress/lesson/${lessonId}/complete`),
   // Mettre à jour le progrès vidéo

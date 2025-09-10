@@ -7,6 +7,9 @@ import Navbar from './components/common/Navbar';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import NotificationHandler from './components/NotificationHandler';
 
+// Styles globaux pour les titres de cours
+import './styles/course-titles.css';
+
 // Pages
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
