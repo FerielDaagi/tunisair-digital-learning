@@ -19,6 +19,12 @@ if (fs.existsSync(path.join(__dirname, '.env'))) {
   process.env.FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 }
 
+// Configuration de test si MongoDB n'est pas disponible
+if (process.env.NODE_ENV === 'test' || process.argv.includes('--test')) {
+  console.log('🧪 Mode test activé - utilisation de MongoDB en mémoire');
+  process.env.MONGODB_URI = 'mongodb://localhost:27017/e_learning_test';
+}
+
 console.log('🔍 Debug - MONGODB_URI:', process.env.MONGODB_URI);
 console.log('🔍 Debug - JWT_SECRET:', process.env.JWT_SECRET ? 'SET' : 'NOT SET');
 console.log('🔍 Debug - PORT:', process.env.PORT);
@@ -26,9 +32,6 @@ console.log('🔍 Debug - FRONTEND_URL:', process.env.FRONTEND_URL);
 
 // 🆕 AJOUTE CETTE LIGNE - Importer la connexion MongoDB
 const connectDB = require('./config/database');
-
-// 🆕 NOUVEAU - Importer le vérificateur de port
-const { findAvailablePort, killNodeProcesses } = require('./port-checker');
 
 // 🆕 NOUVEAU - Charger tous les modèles Mongoose
 require('./models/User');
@@ -52,10 +55,9 @@ const categoryRoutes = require('./routes/categories');
 const enrollmentRoutes = require('./routes/enrollment');
 const progressRoutes = require('./routes/progress');
 const errorHandler = require('./middleware/errorHandler');
-const checkMongoConnection = require('./middleware/mongoConnection');
 
 const app = express();
-let PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5000;
 
 // 🆕 NOUVEAU - Créer le serveur HTTP AVANT Socket.io
 const server = http.createServer(app);
@@ -67,28 +69,11 @@ const io = socketIo(server, {
     methods: ['GET', 'POST'],
     credentials: true
   },
-  pingTimeout: 120000, // Augmenter à 2 minutes
-  pingInterval: 30000, // Ping toutes les 30 secondes
-  upgradeTimeout: 15000, // Timeout pour l'upgrade WebSocket
-  allowEIO3: true, // Compatibilité avec les anciennes versions
-  transports: ['websocket', 'polling'], // Permettre les deux transports
-  perMessageDeflate: {
-    threshold: 1024, // Seuil de compression
-    concurrencyLimit: 10,
-    memLevel: 7
-  },
-  // Configuration de stabilité
-  maxHttpBufferSize: 1e6, // 1MB
-  allowUpgrades: true,
-  httpCompression: {
-    threshold: 1024,
-    concurrencyLimit: 10,
-    memLevel: 7
-  }
+  pingTimeout: 60000, // 1 minute
+  pingInterval: 25000, // 25 secondes
+  transports: ['websocket', 'polling'],
+  allowEIO3: true
 });
-
-// Rendre io global pour les gestionnaires d'erreurs
-global.io = io;
 
 // Security middleware (allow cross-origin images for uploads)
 app.use(helmet({
@@ -175,107 +160,63 @@ app.use('/uploads', (req, res, next) => {
 app.use(morgan('combined'));
 
 // 🆕 CHARGER LES ROUTES IMMÉDIATEMENT (avant MongoDB)
-app.use('/api/auth', checkMongoConnection, authRoutes);
-app.use('/api/users', checkMongoConnection, userRoutes);
-app.use('/api/courses', checkMongoConnection, courseRoutes);
-app.use('/api/modules', checkMongoConnection, moduleRoutes);
-app.use('/api/lessons', checkMongoConnection, lessonRoutes);
-app.use('/api/dashboard', checkMongoConnection, dashboardRoutes);
-app.use('/api/admin', checkMongoConnection, adminRoutes);
-app.use('/api/notifications', checkMongoConnection, notificationRoutes);
-app.use('/api/categories', checkMongoConnection, categoryRoutes);
-app.use('/api/enrollment', checkMongoConnection, enrollmentRoutes);
-app.use('/api/progress', checkMongoConnection, progressRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api/modules', moduleRoutes);
+app.use('/api/lessons', lessonRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/enrollment', enrollmentRoutes);
+app.use('/api/progress', progressRoutes);
 
 console.log('✅ Routes chargées avec succès !');
 
 // 🆕 NOUVEAU - Configuration avancée du serveur
 server.keepAliveTimeout = 300000; // 5 minutes
-server.headersTimeout = 301000; // 5 minutes + 1 seconde
+server.headersTimeout = 305000; // 5 minutes + 5 secondes
 server.maxConnections = 200; // Augmenter le nombre max de connexions
-server.timeout = 300000; // Timeout de 5 minutes
 
 // 🆕 NOUVEAU - Gestion améliorée des connexions
 let activeConnections = 0;
-const maxActiveConnections = 150; // Augmenter la limite
+const maxActiveConnections = 200; // Augmenter significativement la limite
 
-// Gestion des erreurs non capturées - Version améliorée
-process.on('uncaughtException', (error) => {
-  errorCount++;
-  lastErrorTime = Date.now();
-  
-  console.error('❌ Erreur non capturée:', error);
-  console.error('📍 Stack trace:', error.stack);
-  console.error(`📊 Erreur #${errorCount} depuis le démarrage`);
-  
-  // Log l'erreur mais ne pas faire planter le serveur
-  console.log('🔄 Le serveur continue de fonctionner...');
-  
-  // Optionnel: envoyer une notification d'erreur
-  if (global.io) {
-    global.io.emit('serverError', {
-      type: 'uncaughtException',
-      message: error.message,
-      timestamp: new Date().toISOString(),
-      errorCount: errorCount
-    });
-  }
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  errorCount++;
-  lastErrorTime = Date.now();
-  
-  console.error('❌ Promesse rejetée non gérée:', reason);
-  console.error('📍 Promise:', promise);
-  console.error(`📊 Erreur #${errorCount} depuis le démarrage`);
-  
-  // Log l'erreur mais ne pas faire planter le serveur
-  console.log('🔄 Le serveur continue de fonctionner...');
-  
-  // Optionnel: envoyer une notification d'erreur
-  if (global.io) {
-    global.io.emit('serverError', {
-      type: 'unhandledRejection',
-      message: reason?.message || 'Unknown rejection',
-      timestamp: new Date().toISOString(),
-      errorCount: errorCount
-    });
-  }
-});
-
+// Gestion unique des connexions HTTP
 server.on('connection', (socket) => {
   activeConnections = Math.max(0, activeConnections + 1);
 
-  if (activeConnections > maxActiveConnections * 0.8) {
+  // Log seulement si beaucoup de connexions
+  if (activeConnections > maxActiveConnections * 0.7) {
     console.log(`⚠️ Connexions actives: ${activeConnections}/${maxActiveConnections}`);
   }
 
+  // Gestion des erreurs de socket
   socket.on('error', (error) => {
     activeConnections = Math.max(0, activeConnections - 1);
     // Ignorer les erreurs de déconnexion normale
-    if (error.code !== 'ECONNRESET' && error.code !== 'EPIPE' && error.code !== 'ECONNABORTED' && error.code !== 'ECONNRESET') {
+    if (error.code !== 'ECONNRESET' && error.code !== 'EPIPE' && error.code !== 'ECONNABORTED') {
       console.error(`❌ Erreur socket: ${error.message} (code: ${error.code})`);
     }
   });
 
+  // Gestion de la fermeture
   socket.on('close', () => {
     activeConnections = Math.max(0, activeConnections - 1);
   });
 
-  // Timeout pour les connexions inactives
+  // Timeout pour les connexions inactives (5 minutes)
   socket.setTimeout(300000, () => {
-    if (!socket.destroyed) {
-      console.log('⏰ Timeout connexion inactive, fermeture...');
-      socket.destroy();
-    }
+    console.log('⏰ Timeout connexion inactive, fermeture...');
+    socket.destroy();
   });
 });
 
-// Assouplir la limitation des connexions pour éviter les coupures involontaires
+// Limitation plus souple des connexions
 server.on('connection', (socket) => {
-  if (activeConnections > maxActiveConnections * 1.5) {
-    console.warn(`🚫 Trop de connexions (${activeConnections}/${maxActiveConnections}) - Refus exceptionnel`);
+  if (activeConnections > maxActiveConnections) {
+    console.warn(`🚫 Trop de connexions (${activeConnections}/${maxActiveConnections}) - Refus`);
     socket.destroy();
   }
 });
@@ -283,56 +224,20 @@ server.on('connection', (socket) => {
 // 🆕 NOUVEAU - Monitoring de santé avancé
 let healthCheckCount = 0;
 let lastHealthCheck = Date.now();
-let serverStartTime = Date.now();
-let errorCount = 0;
-let lastErrorTime = 0;
-
-// Monitoring de la mémoire
-setInterval(() => {
-  const memUsage = process.memoryUsage();
-  const memUsageMB = {
-    rss: Math.round(memUsage.rss / 1024 / 1024),
-    heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
-    heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
-    external: Math.round(memUsage.external / 1024 / 1024)
-  };
-  
-  // Avertir si l'utilisation mémoire est élevée
-  if (memUsageMB.heapUsed > 200) {
-    console.warn(`⚠️ Utilisation mémoire élevée: ${memUsageMB.heapUsed}MB`);
-  }
-  
-  // Forcer le garbage collection si nécessaire
-  if (memUsageMB.heapUsed > 300 && global.gc) {
-    console.log('🗑️ Forçage du garbage collection...');
-    global.gc();
-  }
-}, 60000); // Vérifier toutes les minutes
 
 app.get('/api/health', (req, res) => {
   healthCheckCount++;
   lastHealthCheck = Date.now();
   
-  const memUsage = process.memoryUsage();
-  const uptime = process.uptime();
-  
   const health = {
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    uptime: uptime,
-    memory: {
-      rss: Math.round(memUsage.rss / 1024 / 1024),
-      heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
-      heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
-      external: Math.round(memUsage.external / 1024 / 1024)
-    },
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
     connections: activeConnections,
     maxConnections: maxActiveConnections,
     healthChecks: healthCheckCount,
-    lastCheck: new Date(lastHealthCheck).toISOString(),
-    errorCount: errorCount,
-    lastError: lastErrorTime ? new Date(lastErrorTime).toISOString() : null,
-    serverStartTime: new Date(serverStartTime).toISOString()
+    lastCheck: new Date(lastHealthCheck).toISOString()
   };
   
   res.json(health);
@@ -374,27 +279,19 @@ app.get('/api/debug', (req, res) => {
   res.json(debug);
 });
 
-// 🆕 NOUVEAU - Fonction pour démarrer le serveur avec vérification de port
-async function startServer() {
-  try {
-    // Vérifier et trouver un port disponible
-    console.log(`🔍 Vérification du port ${PORT}...`);
-    PORT = await findAvailablePort(parseInt(PORT));
-    console.log(`✅ Port ${PORT} sélectionné pour le serveur`);
-    
-    // Connexion à MongoDB
-    await connectDB();
-    console.log('✅ MongoDB connecté, initialisation des services...');
-    
-    // 🆕 NOUVEAU - Service de notifications
-    const NotificationService = require('./services/notificationService');
-    const notificationService = new NotificationService(io);
-    app.set('notificationService', notificationService);
-    
-    console.log('✅ Services initialisés !');
+// 🆕 AJOUTE CETTE LIGNE - Connexion à MongoDB
+connectDB().then(() => {
+  console.log('✅ MongoDB connecté, initialisation des services...');
   
-    // 🆕 NOUVEAU - Gestion des connexions WebSocket (après initialisation du service)
-    io.use(async (socket, next) => {
+  // 🆕 NOUVEAU - Service de notifications
+  const NotificationService = require('./services/notificationService');
+  const notificationService = new NotificationService(io);
+  app.set('notificationService', notificationService);
+  
+  console.log('✅ Services initialisés !');
+  
+  // 🆕 NOUVEAU - Gestion des connexions WebSocket (après initialisation du service)
+  io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth.token;
       if (!token) {
@@ -411,163 +308,157 @@ async function startServer() {
 
       socket.user = user;
       next();
-      } catch (error) {
-        console.error('❌ Erreur authentification WebSocket:', error);
-        next(new Error('Token invalide'));
-      }
-    });
-
-    // Gestion des erreurs Socket.io
-    io.on('error', (error) => {
-      console.error('❌ Erreur Socket.io:', error);
-    });
-
-    io.on('connection', (socket) => {
-      console.log(`🔌 Utilisateur connecté: ${socket.user.name} (${socket.user.role})`);
-
-      // Enregistrer le socket selon le rôle
-      console.log(`🔌 Debug: Enregistrement socket pour ${socket.user.id} (${socket.user.role})`);
-      if (socket.user.role === 'admin') {
-        notificationService.registerAdminSocket(socket.user.id, socket);
-      } else {
-        notificationService.registerUserSocket(socket.user.id, socket);
-      }
-      console.log(`🔌 Debug: Socket enregistré. Admins: ${notificationService.adminSockets.size}, Users: ${notificationService.userSockets.size}`);
-
-      // Événements de gestion des notifications
-      socket.on('markAsRead', async (data) => {
-        try {
-          await notificationService.markAsRead(data.notificationId, socket.user.id);
-          socket.emit('notificationRead', { notificationId: data.notificationId });
-        } catch (error) {
-          socket.emit('error', { message: 'Erreur lors du marquage comme lu' });
-        }
-      });
-
-      socket.on('deleteNotification', async (data) => {
-        try {
-          await notificationService.deleteNotification(data.notificationId, socket.user.id);
-          socket.emit('notificationDeleted', { notificationId: data.notificationId });
-        } catch (error) {
-          socket.emit('error', { message: 'Erreur lors de la suppression' });
-        }
-      });
-
-      // Test de notification (pour les admins)
-      socket.on('testAdminNotification', async (data) => {
-        if (socket.user.role === 'admin') {
-          try {
-            await notificationService.sendAdminNotification(
-              socket.user.id,
-              'Test Notification',
-              'Ceci est un test de notification admin',
-              'info',
-              'system'
-            );
-            socket.emit('testResult', { success: true, message: 'Notification de test envoyée' });
-          } catch (error) {
-            socket.emit('testResult', { success: false, message: 'Erreur lors du test' });
-          }
-        }
-      });
-
-      socket.on('disconnect', (reason) => {
-        console.log(`🔌 Utilisateur déconnecté: ${socket.user.name} (raison: ${reason})`);
-        notificationService.removeSocket(socket.user.id, socket.user.role === 'admin');
-      });
-
-      // Gestion des erreurs de socket
-      socket.on('error', (error) => {
-        console.error(`❌ Erreur socket pour ${socket.user?.name}:`, error);
-      });
-
-      // Heartbeat pour maintenir la connexion
-      socket.on('ping', () => {
-        socket.emit('pong');
-      });
-    });
-
-    // 🆕 NOUVEAU - Importer le nettoyeur de connexions
-    const ConnectionCleaner = require('./connection-cleaner');
-
-    // 🆕 NOUVEAU - Démarrer le nettoyeur de connexions
-    const connectionCleaner = new ConnectionCleaner(server);
-    connectionCleaner.start();
-
-    // 🆕 NOUVEAU - Démarrer le serveur AVEC Socket.io
-    server.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📚 E-Learning API is starting...`);
-      console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
-      console.log(`🔌 WebSocket server is running`);
-    });
-
-    // 🆕 NOUVEAU - Gestion des erreurs du serveur
-    server.on('error', (error) => {
-      if (error.code === 'EADDRINUSE') {
-        console.error(`❌ Port ${PORT} is already in use`);
-        console.error(`💡 Try killing the process using: taskkill /F /IM node.exe`);
-      } else {
-        console.error('❌ Server error:', error);
-      }
-      process.exit(1);
-    });
-
-    // 🆕 NOUVEAU - Gestion propre de l'arrêt
-    process.on('SIGTERM', () => {
-      console.log('🛑 SIGTERM received, shutting down gracefully...');
-      server.close(() => {
-        console.log('✅ Server closed');
-        process.exit(0);
-      });
-    });
-
-    process.on('SIGINT', () => {
-      console.log('🛑 SIGINT received, shutting down gracefully...');
-      server.close(() => {
-        console.log('✅ Server closed');
-        process.exit(0);
-      });
-    });
-
-    // 404 handler
-    app.use('*', (req, res) => {
-      res.status(404).json({ 
-        error: 'Route not found',
-        message: `Cannot ${req.method} ${req.originalUrl}`
-      });
-    });
-
-    // Error handling middleware
-    app.use(errorHandler);
-    
-    console.log('✅ Configuration terminée, serveur prêt !');
-    
-  } catch (error) {
-    console.error('❌ Erreur lors du démarrage du serveur:', error);
-    
-    // Si c'est un problème de port, essayer de nettoyer et redémarrer
-    if (error.message.includes('port') || error.code === 'EADDRINUSE') {
-      console.log('🧹 Tentative de nettoyage des processus...');
-      await killNodeProcesses();
-      
-      // Attendre un peu puis essayer de redémarrer
-      setTimeout(async () => {
-        try {
-          console.log('🔄 Nouvelle tentative de démarrage...');
-          await startServer();
-        } catch (retryError) {
-          console.error('❌ Échec de la nouvelle tentative:', retryError);
-          process.exit(1);
-        }
-      }, 3000);
-    } else {
-      process.exit(1);
+    } catch (error) {
+      console.error('❌ Erreur authentification WebSocket:', error);
+      // Ne pas faire échouer la connexion pour les erreurs d'auth
+      socket.user = { id: 'anonymous', role: 'user', name: 'Anonymous' };
+      next();
     }
-  }
-}
+  });
 
-// Démarrer le serveur
-startServer();
+  io.on('connection', (socket) => {
+    console.log(`🔌 Utilisateur connecté: ${socket.user.name} (${socket.user.role})`);
+
+    // Enregistrer le socket selon le rôle
+    console.log(`🔌 Debug: Enregistrement socket pour ${socket.user.id} (${socket.user.role})`);
+    if (socket.user.role === 'admin') {
+      notificationService.registerAdminSocket(socket.user.id, socket);
+    } else {
+      notificationService.registerUserSocket(socket.user.id, socket);
+    }
+    console.log(`🔌 Debug: Socket enregistré. Admins: ${notificationService.adminSockets.size}, Users: ${notificationService.userSockets.size}`);
+
+    // Événements de gestion des notifications
+    socket.on('markAsRead', async (data) => {
+      try {
+        await notificationService.markAsRead(data.notificationId, socket.user.id);
+        socket.emit('notificationRead', { notificationId: data.notificationId });
+      } catch (error) {
+        socket.emit('error', { message: 'Erreur lors du marquage comme lu' });
+      }
+    });
+
+    socket.on('deleteNotification', async (data) => {
+      try {
+        await notificationService.deleteNotification(data.notificationId, socket.user.id);
+        socket.emit('notificationDeleted', { notificationId: data.notificationId });
+      } catch (error) {
+        socket.emit('error', { message: 'Erreur lors de la suppression' });
+      }
+    });
+
+    // Test de notification (pour les admins)
+    socket.on('testAdminNotification', async (data) => {
+      if (socket.user.role === 'admin') {
+        try {
+          await notificationService.sendAdminNotification(
+            socket.user.id,
+            'Test Notification',
+            'Ceci est un test de notification admin',
+            'info',
+            'system'
+          );
+          socket.emit('testResult', { success: true, message: 'Notification de test envoyée' });
+        } catch (error) {
+          socket.emit('testResult', { success: false, message: 'Erreur lors du test' });
+        }
+      }
+    });
+
+    socket.on('disconnect', () => {
+      console.log(`🔌 Utilisateur déconnecté: ${socket.user.name}`);
+      notificationService.removeSocket(socket.user.id, socket.user.role === 'admin');
+    });
+  });
+
+  // 🆕 NOUVEAU - Importer le nettoyeur de connexions
+  const ConnectionCleaner = require('./connection-cleaner');
+
+  // 🆕 NOUVEAU - Démarrer le nettoyeur de connexions
+  const connectionCleaner = new ConnectionCleaner(server);
+  connectionCleaner.start();
+
+  // 🆕 NOUVEAU - Démarrer le serveur AVEC Socket.io
+  server.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📚 E-Learning API is starting...`);
+    console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
+    console.log(`🔌 WebSocket server is running`);
+  });
+
+  // 🆕 NOUVEAU - Gestion des erreurs du serveur
+  server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+      console.error(`❌ Port ${PORT} is already in use`);
+      console.error(`💡 Try killing the process using: taskkill /F /IM node.exe`);
+    } else {
+      console.error('❌ Server error:', error);
+    }
+    // Ne pas faire crasher le serveur immédiatement
+    console.log('🔄 Tentative de redémarrage du serveur...');
+    setTimeout(() => {
+      server.close(() => {
+        process.exit(1);
+      });
+    }, 5000);
+  });
+
+  // 🆕 NOUVEAU - Gestion des erreurs non capturées
+  process.on('uncaughtException', (error) => {
+    console.error('❌ Uncaught Exception:', error);
+    console.log('🔄 Redémarrage du serveur...');
+    // Ne pas faire crasher immédiatement
+    setTimeout(() => {
+      process.exit(1);
+    }, 1000);
+  });
+
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+    // Ne pas faire crasher le serveur
+  });
+
+  // 🆕 NOUVEAU - Nettoyage de mémoire périodique
+  setInterval(() => {
+    if (global.gc) {
+      global.gc();
+      console.log('🧹 Nettoyage mémoire effectué');
+    }
+  }, 300000); // Toutes les 5 minutes
+
+  // 🆕 NOUVEAU - Gestion propre de l'arrêt
+  process.on('SIGTERM', () => {
+    console.log('🛑 SIGTERM received, shutting down gracefully...');
+    server.close(() => {
+      console.log('✅ Server closed');
+      process.exit(0);
+    });
+  });
+
+  process.on('SIGINT', () => {
+    console.log('🛑 SIGINT received, shutting down gracefully...');
+    server.close(() => {
+      console.log('✅ Server closed');
+      process.exit(0);
+    });
+  });
+
+  // 404 handler
+  app.use('*', (req, res) => {
+    res.status(404).json({ 
+      error: 'Route not found',
+      message: `Cannot ${req.method} ${req.originalUrl}`
+    });
+  });
+
+  // Error handling middleware
+  app.use(errorHandler);
+  
+  console.log('✅ Configuration terminée, serveur prêt !');
+  
+}).catch((error) => {
+  console.error('❌ Erreur lors de la connexion MongoDB:', error);
+  process.exit(1);
+});
 
 module.exports = app;

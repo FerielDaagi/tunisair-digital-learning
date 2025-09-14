@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import api, { coursesAPI } from '../../services/api';
+import { coursesAPI } from '../../services/api';
 import './PublishedCourses.css';
 
 const PublishedCourses = () => {
@@ -285,6 +285,13 @@ const PublishedCourses = () => {
                       >
                         <i className="fas fa-chart-bar me-1"></i>
                         Statistiques
+                      </button>
+                      <button 
+                        className="btn btn-success btn-sm btn-students"
+                        onClick={() => navigate(`/tutor/course-students/${course._id}`)}
+                      >
+                        <i className="fas fa-users me-1"></i>
+                        Étudiants
                       </button>
                       <button 
                         className="btn btn-primary btn-sm btn-manage"

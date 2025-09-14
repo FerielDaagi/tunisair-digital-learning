@@ -36,6 +36,7 @@ import MyCoursesStudent from './pages/user/MyCourses';
 import CourseProgress from './pages/user/CourseProgress';
 import PublishedCourses from './pages/tutor/PublishedCourses';
 import CourseStats from './pages/tutor/CourseStats';
+import CourseStudents from './pages/tutor/CourseStudents';
 
 import './App.css';
 
@@ -118,6 +119,7 @@ const AppContent = () => {
           <Route path="/tutor/my-courses" element={<ProtectedRoute><MyCourses /></ProtectedRoute>} />
           <Route path="/tutor/published-courses" element={<ProtectedRoute><PublishedCourses /></ProtectedRoute>} />
           <Route path="/tutor/course-stats/:courseId" element={<ProtectedRoute><CourseStats /></ProtectedRoute>} />
+          <Route path="/tutor/course-students/:courseId" element={<ProtectedRoute><CourseStudents /></ProtectedRoute>} />
           
           {/* Routes pour les apprentis */}
           <Route path="/my-courses" element={<ProtectedRoute><MyCoursesStudent /></ProtectedRoute>} />

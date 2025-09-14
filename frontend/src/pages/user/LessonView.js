@@ -77,6 +77,10 @@ const LessonView = () => {
       console.log('✅ Leçon marquée comme commencée');
     } catch (error) {
       console.error('❌ Erreur lors du marquage de la leçon comme commencée:', error);
+      // Si l'utilisateur n'est pas inscrit au cours, continuer sans marquer
+      if (error.response?.status === 403) {
+        console.warn('⚠️ Utilisateur non inscrit au cours, ne pas marquer comme commencée');
+      }
     }
   };
 
@@ -145,6 +149,11 @@ const LessonView = () => {
           }
         } catch (error) {
           console.error('❌ Erreur lors de la récupération de la progression:', error);
+          // Ne pas afficher d'erreur si l'utilisateur n'est pas inscrit au cours
+          // car cela peut être normal pour certains cours
+          if (error.response?.status !== 403) {
+            console.warn('⚠️ Impossible de récupérer la progression, continuer sans');
+          }
         }
       };
       

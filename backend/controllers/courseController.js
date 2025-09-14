@@ -1,6 +1,8 @@
 const Course = require('../models/Course');
 const User = require('../models/User');
 const Category = require('../models/Category');
+const Enrollment = require('../models/Enrollment');
+const Progress = require('../models/Progress');
 
 // Obtenir tous les cours publiés
 const getAllCourses = async (req, res) => {
@@ -620,6 +622,253 @@ const getTutorCourses = async (req, res) => {
   }
 };
 
+// Obtenir les étudiants inscrits dans un cours avec leur progression
+const getCourseStudents = async (req, res) => {
+  try {
+    const { id: courseId } = req.params; // Utiliser 'id' au lieu de 'courseId'
+    const tutorId = req.user.id;
+    
+    console.log('🔍 getCourseStudents - courseId:', courseId);
+    console.log('🔍 getCourseStudents - tutorId:', tutorId);
+    console.log('🔍 getCourseStudents - tutor role:', req.user.role);
+    console.log('🔍 getCourseStudents - req.user:', req.user);
+
+    // Vérifier que le cours existe et appartient au tuteur
+    const course = await Course.findById(courseId)
+      .populate({
+        path: 'modules',
+        populate: {
+          path: 'lessons',
+          select: 'title duration type order'
+        }
+      });
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cours non trouvé'
+      });
+    }
+
+    if (course.instructor.toString() !== tutorId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Vous n\'êtes pas autorisé à voir les étudiants de ce cours'
+      });
+    }
+
+    // Récupérer tous les étudiants inscrits
+    const enrollments = await Enrollment.find({ course: courseId })
+      .populate('student', 'firstName lastName email profile.avatar')
+      .sort({ enrolledAt: -1 });
+
+    console.log('🔍 Enrollments trouvés:', enrollments.length);
+
+    // Calculer la progression réelle pour chaque étudiant
+    console.log('📋 Calcul de la progression réelle pour chaque étudiant');
+    const studentsWithProgress = await Promise.all(
+      enrollments.map(async (enrollment) => {
+        // Récupérer la progression réelle depuis le modèle Progress
+        const progressData = await Progress.find({
+          student: enrollment.student._id,
+          course: courseId
+        });
+
+        // Calculer le nombre de leçons complétées
+        const completedLessons = progressData.filter(p => p.status === 'completed').length;
+        const totalLessons = course.modules.reduce((total, module) => total + module.lessons.length, 0);
+        const overallProgress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
+        // Calculer le temps total passé
+        const totalTimeSpent = progressData.reduce((total, p) => total + (p.timeSpent || 0), 0);
+
+        // Trouver la dernière activité
+        const lastActivity = progressData.length > 0 
+          ? progressData.reduce((latest, p) => 
+              !latest || (p.lastAccessedAt && p.lastAccessedAt > latest) ? p.lastAccessedAt : latest, 
+              null
+            )
+          : enrollment.lastAccessedAt;
+
+        return {
+          _id: enrollment.student._id,
+          firstName: enrollment.student.firstName,
+          lastName: enrollment.student.lastName,
+          email: enrollment.student.email,
+          avatar: enrollment.student.profile?.avatar,
+          enrollment: {
+            _id: enrollment._id,
+            enrolledAt: enrollment.enrolledAt,
+            lastAccessedAt: enrollment.lastAccessedAt,
+            status: enrollment.status,
+            progress: overallProgress
+          },
+          progress: {
+            overallProgress: overallProgress,
+            completedLessons: completedLessons,
+            totalLessons: totalLessons,
+            totalTimeSpent: totalTimeSpent,
+            lastActivity: lastActivity,
+            modules: [] // Pas de détails des modules pour la version simplifiée
+          }
+        };
+      })
+    );
+
+    return res.json({
+      success: true,
+      data: {
+        course: {
+          _id: course._id,
+          title: course.title,
+          description: course.description,
+          totalStudents: studentsWithProgress.length,
+          totalLessons: course.modules.reduce((total, module) => total + module.lessons.length, 0),
+          totalModules: course.modules.length
+        },
+        students: studentsWithProgress
+      }
+    });
+
+    // Code commenté pour la version détaillée (si nécessaire plus tard)
+    /*
+    // Récupérer la progression de chaque étudiant (version détaillée)
+    const studentsWithProgress = await Promise.all(
+      enrollments.map(async (enrollment) => {
+        const student = enrollment.student;
+        
+        console.log('🔍 Traitement étudiant:', student.firstName, student.lastName);
+        
+        // Récupérer la progression détaillée de l'étudiant (sans populate pour optimiser)
+        const progressData = await Progress.find({
+          student: student._id,
+          course: courseId
+        }).lean(); // Utiliser lean() pour des performances optimales
+
+        // Organiser la progression par module (optimisé)
+        const moduleProgress = course.modules.map(module => {
+          const moduleLessons = module.lessons.map(lesson => {
+            const lessonProgress = progressData.find(p => 
+              p.lesson && p.lesson.toString() === lesson._id.toString()
+            );
+            
+            return {
+              _id: lesson._id,
+              title: lesson.title,
+              duration: lesson.duration,
+              type: lesson.type,
+              order: lesson.order,
+              progress: lessonProgress ? {
+                status: lessonProgress.status,
+                startedAt: lessonProgress.startedAt,
+                completedAt: lessonProgress.completedAt,
+                timeSpent: lessonProgress.timeSpent,
+                lastAccessedAt: lessonProgress.lastAccessedAt
+              } : {
+                status: 'not_started',
+                startedAt: null,
+                completedAt: null,
+                timeSpent: 0,
+                lastAccessedAt: null
+              }
+            };
+          });
+
+          // Calculer le pourcentage de progression du module
+          const completedLessons = moduleLessons.filter(l => l.progress.status === 'completed').length;
+          const totalLessons = moduleLessons.length;
+          const moduleProgressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
+          return {
+            _id: module._id,
+            title: module.title,
+            description: module.description,
+            order: module.order,
+            progressPercentage: moduleProgressPercentage,
+            completedLessons,
+            totalLessons,
+            lessons: moduleLessons
+          };
+        });
+
+        // Calculer les statistiques globales
+        const totalLessons = course.modules.reduce((total, module) => total + module.lessons.length, 0);
+        const completedLessons = progressData.filter(p => p.status === 'completed').length;
+        const overallProgress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
+        // Calculer le temps total passé
+        const totalTimeSpent = progressData.reduce((total, p) => total + (p.timeSpent || 0), 0);
+
+        // Trouver la dernière activité
+        const lastActivity = progressData.length > 0 
+          ? progressData.reduce((latest, p) => 
+              !latest || (p.lastAccessedAt && p.lastAccessedAt > latest) ? p.lastAccessedAt : latest, 
+              null
+            )
+          : null;
+
+        return {
+          _id: student._id,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          email: student.email,
+          avatar: student.profile?.avatar,
+          enrollment: {
+            _id: enrollment._id,
+            enrolledAt: enrollment.enrolledAt,
+            lastAccessedAt: enrollment.lastAccessedAt,
+            status: enrollment.status,
+            progress: enrollment.progress
+          },
+          progress: {
+            overallProgress,
+            completedLessons,
+            totalLessons,
+            totalTimeSpent,
+            lastActivity,
+            modules: moduleProgress
+          }
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      data: {
+        course: {
+          _id: course._id,
+          title: course.title,
+          description: course.description,
+          totalStudents: studentsWithProgress.length,
+          totalLessons,
+          totalModules: course.modules.length
+        },
+        students: studentsWithProgress
+      }
+    });
+    */
+
+  } catch (error) {
+    console.error('❌ Erreur getCourseStudents:');
+    console.error('Message:', error.message);
+    console.error('Stack:', error.stack);
+    console.error('CourseId:', courseId);
+    console.error('TutorId:', tutorId);
+    console.error('User:', req.user);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Erreur interne du serveur',
+      error: error.message,
+      details: {
+        courseId,
+        tutorId,
+        userRole: req.user?.role
+      }
+    });
+  }
+};
+
 // S'inscrire à un cours
 const enrollInCourse = async (req, res) => {
   try {
@@ -709,6 +958,7 @@ module.exports = {
   deleteCourse,
   publishCourse,
   getTutorCourses,
+  getCourseStudents,
   enrollInCourse,
   getEnrolledCourses
 }; 

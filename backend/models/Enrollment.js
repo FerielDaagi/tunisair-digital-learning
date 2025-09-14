@@ -47,22 +47,19 @@ enrollmentSchema.index({ student: 1, course: 1 }, { unique: true });
 // Méthode pour calculer le progrès
 enrollmentSchema.methods.calculateProgress = async function() {
   const Course = mongoose.model('Course');
-  const Module = mongoose.model('Module');
+  const course = await Course.findById(this.course).populate('modules.lessons');
   
-  // Récupérer tous les modules du cours avec leurs leçons
-  const modules = await Module.find({ course: this.course }).populate('lessons');
-  
-  if (!modules || modules.length === 0) return 0;
+  if (!course) return 0;
   
   let totalLessons = 0;
   let completedLessons = 0;
   
   // Compter toutes les leçons dans tous les modules
-  modules.forEach(module => {
+  course.modules.forEach(module => {
     if (module.lessons && module.lessons.length > 0) {
       totalLessons += module.lessons.length;
       module.lessons.forEach(lesson => {
-        if (this.completedLessons.some(id => id.toString() === lesson._id.toString())) {
+        if (this.completedLessons.includes(lesson._id)) {
           completedLessons++;
         }
       });
@@ -86,16 +83,10 @@ enrollmentSchema.methods.calculateProgress = async function() {
 
 // Méthode pour marquer une leçon comme complétée
 enrollmentSchema.methods.markLessonCompleted = async function(lessonId) {
-  const lessonObjectId = new mongoose.Types.ObjectId(lessonId);
-  
-  // Vérifier si la leçon n'est pas déjà marquée comme complétée
-  const isAlreadyCompleted = this.completedLessons.some(id => id.toString() === lessonObjectId.toString());
-  
-  if (!isAlreadyCompleted) {
-    this.completedLessons.push(lessonObjectId);
+  if (!this.completedLessons.includes(lessonId)) {
+    this.completedLessons.push(lessonId);
     this.lastAccessedAt = new Date();
     await this.calculateProgress();
-    console.log(`✅ Leçon ${lessonId} marquée comme complétée pour l'étudiant ${this.student}`);
   }
 };
 

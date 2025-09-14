@@ -49,10 +49,12 @@ const markLessonStarted = async (req, res) => {
         status: 'in_progress',
         startedAt: new Date()
       });
-    } else {
-      progress.markAsStarted();
+    } else if (progress.status === 'not_started') {
+      progress.status = 'in_progress';
+      progress.startedAt = new Date();
     }
 
+    progress.lastAccessedAt = new Date();
     await progress.save();
 
     res.json({
@@ -62,7 +64,8 @@ const markLessonStarted = async (req, res) => {
         progress: {
           lessonId: lessonId,
           status: progress.status,
-          startedAt: progress.startedAt
+          startedAt: progress.startedAt,
+          lastAccessedAt: progress.lastAccessedAt
         }
       }
     });
@@ -130,10 +133,6 @@ const markLessonCompleted = async (req, res) => {
 
     // Mettre à jour l'enrollment
     await enrollment.markLessonCompleted(lessonId);
-    
-    // Recharger l'enrollment pour avoir les données à jour
-    await enrollment.populate('course');
-    const updatedEnrollment = await Enrollment.findById(enrollment._id);
 
     res.json({
       success: true,
@@ -143,7 +142,7 @@ const markLessonCompleted = async (req, res) => {
           lessonId: lessonId,
           status: progress.status,
           completedAt: progress.completedAt,
-          courseProgress: updatedEnrollment.progress
+          courseProgress: enrollment.progress
         }
       }
     });
@@ -276,7 +275,7 @@ const getCourseProgress = async (req, res) => {
     });
 
     // Organiser les données par module
-    const modulesWithProgress = course.modules.map((module, moduleIndex) => {
+    const modulesWithProgress = course.modules.map(module => {
       const moduleProgress = {
         _id: module._id,
         title: module.title,
@@ -320,12 +319,6 @@ const getCourseProgress = async (req, res) => {
       const completedLessons = moduleProgress.lessons.filter(l => l.progress.status === 'completed').length;
       const totalLessons = moduleProgress.lessons.length;
       moduleProgress.progress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
-
-      // Déterminer si le module est accessible
-      moduleProgress.isAccessible = moduleIndex === 0 || (moduleIndex > 0 && course.modules[moduleIndex - 1] && 
-        course.modules[moduleIndex - 1].lessons.every(lesson => 
-          progressData.some(p => p.lesson.toString() === lesson._id.toString() && p.status === 'completed')
-        ));
 
       return moduleProgress;
     });

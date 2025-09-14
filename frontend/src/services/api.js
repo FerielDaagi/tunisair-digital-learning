@@ -76,6 +76,7 @@ export const coursesAPI = {
   delete: (id) => api.delete(`/courses/${id}`),
   publish: (id) => api.patch(`/courses/${id}/publish`),
   getTutorCourses: (params) => api.get('/courses/tutor/my-courses', { params }),
+  getCourseStudents: (courseId) => api.get(`/courses/${courseId}/students`, { timeout: 30000 }), // 30 secondes
 };
 
 // Modules API

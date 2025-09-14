@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import api, { enrollmentAPI } from '../../services/api';
+import { enrollmentAPI } from '../../services/api';
 import './MyCourses.css';
 
 const MyCourses = () => {
-  const { user, addNotification } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,9 +18,9 @@ const MyCourses = () => {
       return;
     }
     fetchMyCourses();
-  }, [user, navigate, filter]);
+  }, [user, navigate, fetchMyCourses]);
 
-  const fetchMyCourses = async () => {
+  const fetchMyCourses = useCallback(async () => {
     try {
       setLoading(true);
       const response = await enrollmentAPI.getStudentCourses({ status: filter === 'all' ? '' : filter });
@@ -31,7 +31,7 @@ const MyCourses = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
 
   const handleCourseClick = (courseId) => {
     navigate(`/course-progress/${courseId}`);

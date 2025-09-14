@@ -301,6 +301,7 @@
 /* Styles spécifiques pour Statistiques et Gérer */
 /* Laisser le thème gérer les couleurs via .btn-primary / .btn-outline-secondary */
 .published-courses-container .course-actions .btn-stats,
+.published-courses-container .course-actions .btn-students,
 .published-courses-container .course-actions .btn-manage {
   display: inline-flex;
   align-items: center;
@@ -313,6 +314,7 @@
 }
 
 .course-actions .btn-stats i,
+.course-actions .btn-students i,
 .course-actions .btn-manage i {
   margin-right: 0.4rem;
 }

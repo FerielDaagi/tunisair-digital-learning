@@ -5,7 +5,11 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start:robust": "node start-server-robust.js",
+    "dev": "nodemon server.js",
+    "monitor": "node monitor-server.js",
+    "monitor:connections": "node connection-monitor.js",
+    "monitor:health": "node health-monitor.js"
   },
   "dependencies": {
     "axios": "^1.11.0",

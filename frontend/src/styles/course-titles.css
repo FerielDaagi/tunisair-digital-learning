@@ -1,141 +1,67 @@
-/* Styles globaux pour les titres de cours dans différentes pages */
+/* Styles globaux pour les titres de cours */
 
-/* Titre de cours dans la liste des cours */
-.course-list-title {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #1e293b !important;
-  margin-bottom: 0.5rem;
-  line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  position: relative;
-  padding-left: 0.75rem;
-}
-
-/* Titre de cours dans les pages tuteur */
+/* Titre de cours pour les tuteurs */
 .tutor-course-title {
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  color: #1e293b !important;
-  margin-bottom: 0.5rem;
+  color: #2c3e50;
+  margin: 0;
   line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  overflow: hidden;
-  position: relative;
-  padding-left: 0.75rem;
-}
-
-/* Titre de cours dans le dashboard */
-.dashboard-course-title {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #1e293b !important;
-  margin-bottom: 0.5rem;
-  line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  position: relative;
-  padding-left: 0.75rem;
-}
-
-/* Titre de cours dans les pages utilisateur */
-.user-course-title {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #1e293b !important;
-  margin-bottom: 0.5rem;
-  line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  position: relative;
-  padding-left: 0.75rem;
-}
-
-/* Titre de cours dans la page de progression */
-.progress-course-title {
-  font-size: 2.2rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 0.5rem;
-  line-height: 1.2;
-  background: linear-gradient(135deg, #1e293b 0%, #475569 50%, #3b82f6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Titre de cours dans la page de statistiques */
-.stats-course-title {
-  font-size: 2.2rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 0.5rem;
-  line-height: 1.2;
-  background: linear-gradient(135deg, #1e293b 0%, #475569 50%, #3b82f6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Titre de cours dans la page de leçon */
-.lesson-course-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  background: rgba(79, 70, 229, 0.1);
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  border: 1px solid rgba(79, 70, 229, 0.2);
-  display: inline-block;
-  max-width: 300px;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-height: 2.6rem;
 }
 
-/* Titre de cours dans la page de détail */
-.course-detail-title {
-  font-size: 2.8rem;
-  font-weight: 900;
-  color: #1e293b;
-  background: linear-gradient(135deg, #1e293b 0%, #475569 50%, #3b82f6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 1rem;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-  animation: slideInLeft 0.8s ease-out 0.2s both;
-  min-height: 3.5rem;
-  display: block;
+/* Titre de cours pour les utilisateurs/étudiants */
+.user-course-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 2.6rem;
 }
 
-@keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-50px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
+/* Responsive design pour les titres */
+@media (max-width: 768px) {
+  .tutor-course-title,
+  .user-course-title {
+    font-size: 1.1rem;
+    min-height: 2.2rem;
   }
 }
 
-/* Fallback pour les navigateurs qui ne supportent pas background-clip */
-@supports not (-webkit-background-clip: text) {
-  .course-detail-title,
-  .progress-course-title,
-  .stats-course-title {
-    -webkit-text-fill-color: #1e293b;
-    background: none;
+@media (max-width: 480px) {
+  .tutor-course-title,
+  .user-course-title {
+    font-size: 1rem;
+    min-height: 2rem;
   }
+}
+
+/* Hover effects pour les titres */
+.course-card:hover .tutor-course-title,
+.course-card:hover .user-course-title {
+  color: #3498db;
+  transition: color 0.2s ease;
+}
+
+/* Styles pour les titres dans les cartes de cours */
+.course-header .tutor-course-title,
+.course-header .user-course-title {
+  margin-bottom: 0.5rem;
+}
+
+/* Styles pour les titres dans les listes */
+.course-list .tutor-course-title,
+.course-list .user-course-title {
+  margin-bottom: 0.25rem;
 }

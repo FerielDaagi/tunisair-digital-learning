@@ -45,25 +45,7 @@ class ConnectionCleaner {
         if (connections > 15) {
           console.log(`🧹 Nettoyage: ${connections} connexions actives`);
         }
-
-        // Nettoyer les connexions inactives
-        if (connections > 50) {
-          console.log(`⚠️ Beaucoup de connexions (${connections}), nettoyage forcé...`);
-          // Forcer le garbage collection si disponible
-          if (global.gc) {
-            global.gc();
-          }
-        }
       });
-
-      // Nettoyer la mémoire
-      this.stats.cleanedConnections++;
-      
-      // Forcer le garbage collection périodiquement
-      if (this.stats.cleanedConnections % 10 === 0 && global.gc) {
-        global.gc();
-        console.log('🗑️ Garbage collection effectué');
-      }
     } catch (error) {
       console.error('❌ Erreur dans le nettoyeur:', error.message);
     }
