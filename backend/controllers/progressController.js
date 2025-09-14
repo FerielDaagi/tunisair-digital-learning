@@ -3,6 +3,7 @@ const Enrollment = require('../models/Enrollment');
 const Course = require('../models/Course');
 const Module = require('../models/Module');
 const Lesson = require('../models/Lesson');
+const { createCertificateOnCompletion } = require('./certificateController');
 
 // Marquer une leçon comme commencée
 const markLessonStarted = async (req, res) => {
@@ -134,6 +135,19 @@ const markLessonCompleted = async (req, res) => {
     // Mettre à jour l'enrollment
     await enrollment.markLessonCompleted(lessonId);
 
+    // Vérifier si le cours est maintenant complété (100%)
+    let certificateCreated = false;
+    if (enrollment.progress === 100 && enrollment.status === 'completed') {
+      try {
+        await createCertificateOnCompletion(enrollment._id);
+        certificateCreated = true;
+        console.log(`🎓 Certificat créé automatiquement pour ${req.user.name} - Cours: ${lesson.module.course}`);
+      } catch (certError) {
+        console.error('Erreur lors de la création automatique du certificat:', certError);
+        // Ne pas faire échouer la requête si la création du certificat échoue
+      }
+    }
+
     res.json({
       success: true,
       message: 'Leçon marquée comme complétée',
@@ -143,7 +157,9 @@ const markLessonCompleted = async (req, res) => {
           status: progress.status,
           completedAt: progress.completedAt,
           courseProgress: enrollment.progress
-        }
+        },
+        courseCompleted: enrollment.progress === 100,
+        certificateCreated: certificateCreated
       }
     });
 
@@ -358,79 +374,6 @@ const getCourseProgress = async (req, res) => {
   }
 };
 
-// Ajouter des notes à une leçon
-const addLessonNotes = async (req, res) => {
-  try {
-    const { lessonId } = req.params;
-    const { notes } = req.body;
-    const studentId = req.user.id;
-
-    // Vérifier que la leçon existe
-    const lesson = await Lesson.findById(lessonId).populate('module');
-    if (!lesson) {
-      return res.status(404).json({
-        success: false,
-        message: 'Leçon non trouvée'
-      });
-    }
-
-    // Vérifier que l'étudiant est inscrit au cours
-    const enrollment = await Enrollment.findOne({
-      student: studentId,
-      course: lesson.module.course
-    });
-
-    if (!enrollment) {
-      return res.status(403).json({
-        success: false,
-        message: 'Vous n\'êtes pas inscrit à ce cours'
-      });
-    }
-
-    // Trouver ou créer l'enregistrement de progression
-    let progress = await Progress.findOne({
-      student: studentId,
-      course: lesson.module.course,
-      module: lesson.module._id,
-      lesson: lessonId
-    });
-
-    if (!progress) {
-      progress = new Progress({
-        student: studentId,
-        course: lesson.module.course,
-        module: lesson.module._id,
-        lesson: lessonId,
-        status: 'in_progress',
-        startedAt: new Date()
-      });
-    }
-
-    progress.notes = notes;
-    progress.lastAccessedAt = new Date();
-    await progress.save();
-
-    res.json({
-      success: true,
-      message: 'Notes ajoutées avec succès',
-      data: {
-        progress: {
-          lessonId: lessonId,
-          notes: progress.notes,
-          lastAccessedAt: progress.lastAccessedAt
-        }
-      }
-    });
-
-  } catch (error) {
-    console.error('Erreur lors de l\'ajout des notes:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur serveur',
-      error: error.message
-    });
-  }
-};
 
 // Évaluer une leçon
 const rateLesson = async (req, res) => {
@@ -518,6 +461,5 @@ module.exports = {
   markLessonCompleted,
   updateVideoProgress,
   getCourseProgress,
-  addLessonNotes,
   rateLesson
 };

@@ -6,7 +6,6 @@ const {
   markLessonCompleted,
   updateVideoProgress,
   getCourseProgress,
-  addLessonNotes,
   rateLesson
 } = require('../controllers/progressController');
 
@@ -15,7 +14,6 @@ router.post('/lesson/:lessonId/start', auth, markLessonStarted);
 router.post('/lesson/:lessonId/complete', auth, markLessonCompleted);
 router.put('/lesson/:lessonId/video-progress', auth, updateVideoProgress);
 router.get('/course/:courseId', auth, getCourseProgress);
-router.put('/lesson/:lessonId/notes', auth, addLessonNotes);
 router.put('/lesson/:lessonId/rate', auth, rateLesson);
 
 module.exports = router;

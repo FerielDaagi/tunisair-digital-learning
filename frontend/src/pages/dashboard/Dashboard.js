@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { dashboardAPI, coursesAPI } from '../../services/api';
+import { dashboardAPI, coursesAPI, enrollmentAPI } from '../../services/api';
 import { Icon, IconSizes, IconColors } from '../../components/common/IconTheme';
+import './Dashboard.css';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -13,57 +14,124 @@ const Dashboard = () => {
     totalHours: 0
   });
   const [recentCourses, setRecentCourses] = useState([]);
+  const [allCourses, setAllCourses] = useState([]);
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedLevel, setSelectedLevel] = useState('all');
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [statsResponse, coursesResponse] = await Promise.all([
+        const [statsResponse, coursesResponse, enrolledResponse] = await Promise.all([
           dashboardAPI.getStats(),
-          coursesAPI.getAll()
+          coursesAPI.getAll(),
+          user?.role === 'apprenti' ? enrollmentAPI.getStudentCourses() : Promise.resolve({ data: { success: true, data: [] } })
         ]);
         
         setStats(statsResponse.data);
-        setRecentCourses(coursesResponse.data.slice(0, 3)); // Get first 3 courses
+        setAllCourses(coursesResponse.data.data || []);
+        setRecentCourses((coursesResponse.data.data || []).slice(0, 3)); // Get first 3 courses
+        
+        if (enrolledResponse.data.success) {
+          // Extraire les cours depuis les enrollments
+          const courses = enrolledResponse.data.data.enrollments.map(enrollment => enrollment.course);
+          setEnrolledCourses(courses);
+        }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
-        // Use mock data for demo
-        setStats({
-          totalCourses: 12,
-          enrolledCourses: 3,
-          completedCourses: 1,
-          totalHours: 24
-        });
-        setRecentCourses([
-          {
-            id: 1,
-            title: 'Fondamentaux React',
-            description: 'Apprenez les bases du développement React',
-            duration: '8 heures',
-            level: 'Débutant'
-          },
-          {
-            id: 2,
-            title: 'Développement Backend Node.js',
-            description: 'Construisez des APIs robustes avec Node.js',
-            duration: '12 heures',
-            level: 'Intermédiaire'
-          },
-          {
-            id: 3,
-            title: 'JavaScript Avancé',
-            description: 'Maîtrisez les concepts avancés de JavaScript',
-            duration: '10 heures',
-            level: 'Avancé'
+        console.error('Error details:', error.response?.data);
+        
+        // Essayer de récupérer au moins les cours même si les stats échouent
+        try {
+          const coursesResponse = await coursesAPI.getAll();
+          if (coursesResponse.data.success) {
+            setAllCourses(coursesResponse.data.data || []);
+            setRecentCourses((coursesResponse.data.data || []).slice(0, 3));
           }
-        ]);
+        } catch (coursesError) {
+          console.error('Error fetching courses:', coursesError);
+          setAllCourses([]);
+          setRecentCourses([]);
+        }
+        
+        // Utiliser des stats par défaut
+        setStats({
+          totalCourses: 0,
+          enrolledCourses: 0,
+          completedCourses: 0,
+          totalHours: 0
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchDashboardData();
-  }, []);
+  }, [user]);
+
+  // Fonction utilitaire pour vérifier si un cours est inscrit
+  const isCourseEnrolled = (courseId) => {
+    return enrolledCourses.some(course => 
+      (course._id || course.id) === (courseId._id || courseId.id)
+    );
+  };
+
+  // Fonction de filtrage des cours
+  const getFilteredCourses = () => {
+    return allCourses.filter(course => {
+      const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           course.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory === 'all' || course.category?.toLowerCase() === selectedCategory.toLowerCase();
+      const matchesLevel = selectedLevel === 'all' || course.level?.toLowerCase() === selectedLevel.toLowerCase();
+      
+      return matchesSearch && matchesCategory && matchesLevel;
+    });
+  };
+
+  // Obtenir les catégories uniques
+  const categories = ['all', ...new Set(allCourses.map(course => course.category).filter(Boolean))];
+  
+  // Obtenir les niveaux uniques
+  const levels = ['all', ...new Set(allCourses.map(course => course.level).filter(Boolean))];
+
+  const filteredCourses = getFilteredCourses();
+
+  // Fonction utilitaire pour obtenir le nom de l'instructeur
+  const getInstructorName = (instructor) => {
+    if (!instructor) return 'Instructeur';
+    
+    if (typeof instructor === 'string') {
+      return instructor;
+    }
+    
+    if (typeof instructor === 'object') {
+      // Essayer différentes propriétés possibles
+      if (instructor.name) return instructor.name;
+      if (instructor.firstName && instructor.lastName) {
+        return `${instructor.firstName} ${instructor.lastName}`;
+      }
+      if (instructor.firstName) return instructor.firstName;
+      if (instructor.lastName) return instructor.lastName;
+      
+      // Essayer d'autres propriétés possibles
+      if (instructor.username) return instructor.username;
+      if (instructor.displayName) return instructor.displayName;
+      
+      // Si on a un email, créer un nom plus lisible
+      if (instructor.email) {
+        const emailPart = instructor.email.split('@')[0];
+        // Capitaliser la première lettre et remplacer les points par des espaces
+        return emailPart
+          .split('.')
+          .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(' ');
+      }
+    }
+    
+    return 'Instructeur';
+  };
 
   if (loading) {
     return (
@@ -77,10 +145,6 @@ const Dashboard = () => {
 
   return (
     <div className="main-content">
-      <div className="alert alert-info">
-        <strong>Nouveau design !</strong> Nous avons amélioré notre plateforme avec une belle palette de couleurs tout en conservant notre thème signature rouge et blanc. Profitez de l'expérience visuelle améliorée !
-      </div>
-      
       <div className="card">
         <div className="card-header">
           <h1 className="card-title">Bon retour, {user?.name || 'Apprenti'} !</h1>
@@ -143,11 +207,11 @@ const Dashboard = () => {
                 </div>
               </Link>
               
-              <Link to="/my-courses" className="btn btn-secondary btn-lg" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem' }}>
-                <Icon name="bookOpen" size={IconSizes.md} color={IconColors.white} />
+              <Link to="/certificates" className="btn btn-secondary btn-lg" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem' }}>
+                <Icon name="trophy" size={IconSizes.md} color={IconColors.white} />
                 <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontWeight: '600' }}>Mes Cours</div>
-                  <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Continuer mes apprentissages</div>
+                  <div style={{ fontWeight: '600' }}>Mes Certificats</div>
+                  <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Voir mes certificats obtenus</div>
                 </div>
               </Link>
             </div>
@@ -162,8 +226,9 @@ const Dashboard = () => {
             <Icon name="courses" size={IconSizes.lg} color={IconColors.white} />
           </div>
           <div className="stat-content">
-            <div className="stat-number">{stats.totalCourses}</div>
-            <div className="stat-label">Total des cours</div>
+            <div className="stat-number">{allCourses.length}</div>
+            <div className="stat-label">Cours disponibles</div>
+            <div className="stat-description">Total sur la plateforme</div>
           </div>
         </div>
         <div className="stat-card secondary">
@@ -171,202 +236,197 @@ const Dashboard = () => {
             <Icon name="graduation" size={IconSizes.lg} color={IconColors.white} />
           </div>
           <div className="stat-content">
-            <div className="stat-number">{stats.enrolledCourses}</div>
+            <div className="stat-number">{enrolledCourses.length}</div>
             <div className="stat-label">Cours inscrits</div>
-          </div>
-        </div>
-        <div className="stat-card success">
-          <div className="stat-icon">
-            <Icon name="trophy" size={IconSizes.lg} color={IconColors.white} />
-          </div>
-          <div className="stat-content">
-            <div className="stat-number">{stats.completedCourses}</div>
-            <div className="stat-label">Cours terminés</div>
-          </div>
-        </div>
-        <div className="stat-card info">
-          <div className="stat-icon">
-            <Icon name="clock" size={IconSizes.lg} color={IconColors.white} />
-          </div>
-          <div className="stat-content">
-            <div className="stat-number">{stats.totalHours}h</div>
-            <div className="stat-label">Heures d'apprentissage</div>
+            <div className="stat-description">Mes inscriptions</div>
           </div>
         </div>
       </div>
 
-      {/* Recent Courses */}
+      {/* Tous les cours publiés avec recherche et filtrage */}
       <div className="card">
         <div className="card-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <Icon name="courses" size={IconSizes.md} color={IconColors.primary} />
-            <h2 className="card-title">Cours récents</h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <Icon name="courses" size={IconSizes.md} color={IconColors.primary} />
+              <h2 className="card-title">Cours disponibles</h2>
+            </div>
+            <div className="courses-count">
+              <span className="count-badge">{filteredCourses.length} cours</span>
+            </div>
+          </div>
+          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+            {user?.role === 'apprenti' 
+              ? 'Découvrez tous les cours publiés et voyez votre statut d\'inscription'
+              : 'Explorez tous les cours disponibles sur la plateforme'
+            }
+          </p>
+        </div>
+
+        {/* Barre de recherche et filtres */}
+        <div className="search-filters-section">
+          <div className="search-bar">
+            <div className="search-input-container">
+              <Icon name="search" size={IconSizes.sm} color={IconColors.gray} />
+              <input
+                type="text"
+                placeholder="Rechercher un cours..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="search-input"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="clear-search-btn"
+                >
+                  <Icon name="x" size={IconSizes.sm} color={IconColors.gray} />
+                </button>
+              )}
+            </div>
+          </div>
+          
+          <div className="filters-row">
+            <div className="filter-group">
+              <label className="filter-label">Catégorie</label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="filter-select"
+              >
+                {categories.map(category => (
+                  <option key={category} value={category}>
+                    {category === 'all' ? 'Toutes les catégories' : category}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="filter-group">
+              <label className="filter-label">Niveau</label>
+              <select
+                value={selectedLevel}
+                onChange={(e) => setSelectedLevel(e.target.value)}
+                className="filter-select"
+              >
+                {levels.map(level => (
+                  <option key={level} value={level}>
+                    {level === 'all' ? 'Tous les niveaux' : level}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="filter-actions">
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedCategory('all');
+                  setSelectedLevel('all');
+                }}
+                className="btn btn-outline btn-sm"
+              >
+                <Icon name="refresh" size={IconSizes.xs} color={IconColors.primary} />
+                Réinitialiser
+              </button>
+            </div>
           </div>
         </div>
-        <div className="grid grid-3">
-          {recentCourses.map((course, index) => {
-            const courseIcons = ['graduation', 'rocket', 'target', 'star'];
-            const iconName = courseIcons[index % courseIcons.length];
-            
-            return (
-              <div key={course.id} className="course-card">
-                <div className="course-header">
-                  <div className="course-icon">
-                    <Icon name={iconName} size={IconSizes.lg} color={IconColors.white} />
-                  </div>
-                  <div className="course-level">
-                    <Icon name="target" size={IconSizes.xs} color={IconColors.white} />
-                    <span>{course.level}</span>
-                  </div>
-                </div>
-                <div className="course-content">
-                  <h3 className="dashboard-course-title">{course.title}</h3>
-                  <p className="course-description">{course.description}</p>
-                  <div className="course-meta">
-                    <div className="course-duration">
-                      <Icon name="clock" size={IconSizes.xs} color={IconColors.gray} />
-                      <span>{course.duration}</span>
-                    </div>
-                    <div className="course-progress">
-                      <div className="progress-bar">
-                        <div className="progress-fill" style={{ width: '0%' }}></div>
+
+        {/* Grille des cours */}
+        {filteredCourses.length === 0 ? (
+          <div className="no-courses">
+            <div className="no-courses-icon">🔍</div>
+            <h3>Aucun cours trouvé</h3>
+            <p>
+              {searchTerm || selectedCategory !== 'all' || selectedLevel !== 'all'
+                ? 'Aucun cours ne correspond à vos critères de recherche. Essayez de modifier vos filtres.'
+                : 'Aucun cours n\'est disponible pour le moment.'
+              }
+            </p>
+            {(searchTerm || selectedCategory !== 'all' || selectedLevel !== 'all') && (
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedCategory('all');
+                  setSelectedLevel('all');
+                }}
+                className="btn btn-primary"
+              >
+                Voir tous les cours
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="courses-grid">
+            {filteredCourses.map((course) => {
+              const hasThumbnail = !!course.thumbnail;
+              const courseId = course._id || course.id;
+              const isEnrolled = user?.role === 'apprenti' ? isCourseEnrolled(course) : false;
+              
+              return (
+                <div key={course._id || course.id} className="course-card">
+                  <div className="course-thumbnail">
+                    {hasThumbnail ? (
+                      <img src={course.thumbnail} alt={course.title} onError={(e) => { e.target.style.display = 'none'; }} />
+                    ) : (
+                      <div className="course-thumbnail-placeholder">
+                        {course.title?.charAt(0) || 'C'}
                       </div>
-                      <span>0%</span>
+                    )}
+                    {isEnrolled && (
+                      <div className="enrollment-badge-overlay">
+                        <i className="fas fa-check-circle"></i>
+                        <span>Inscrit</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="course-content">
+                    <div className="course-header">
+                      <h3 className="course-list-title">{course.title}</h3>
+                      <div className="course-instructor">
+                        {getInstructorName(course.instructor)}
+                      </div>
+                    </div>
+                    <p className="course-description">{course.description}</p>
+                    <div className="course-meta">
+                      <div className="meta-item">
+                        <i className="fas fa-clock" /> {course.duration}
+                      </div>
+                      <div className="meta-item">
+                        <i className="fas fa-signal" /> {course.level}
+                      </div>
+                      {course.category && (
+                        <div className="meta-item">
+                          <i className="fas fa-tag" /> {course.category}
+                        </div>
+                      )}
+                    </div>
+                    <div className="course-actions">
+                      <Link 
+                        to={`/courses/${course._id || course.id}`}
+                        className={`btn ${isEnrolled ? 'btn-success' : 'btn-primary'}`}
+                      >
+                        {isEnrolled ? 'Continuer le cours' : 'Voir le cours'}
+                      </Link>
                     </div>
                   </div>
-                  <Link 
-                    to={`/courses/${course.id}`} 
-                    className="btn btn-primary course-btn"
-                  >
-                    <Icon name="arrowRight" size={IconSizes.xs} color={IconColors.white} />
-                    Commencer
-                  </Link>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
+        
         <div className="text-center mt-3">
           <Link to="/courses" className="btn btn-secondary">
             <Icon name="courses" size={IconSizes.sm} color={IconColors.white} />
-            Voir tous les cours
+            Mes cours
           </Link>
         </div>
       </div>
 
-      {/* Achievements */}
-      <div className="card">
-        <div className="card-header">
-          <h2 className="card-title">Réalisations</h2>
-        </div>
-        <div className="achievements-grid">
-          {[
-            {
-              id: 1,
-              title: 'First Steps',
-              description: 'Complete your first lesson',
-              icon: 'target',
-              earned: true,
-              earnedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-            },
-            {
-              id: 2,
-              title: 'Course Champion',
-              description: 'Complete your first course',
-              icon: 'trophy',
-              earned: true,
-              earnedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
-            },
-            {
-              id: 3,
-              title: 'Streak Master',
-              description: 'Maintain a 7-day learning streak',
-              icon: 'flame',
-              earned: false,
-              progress: 5,
-              required: 7
-            },
-            {
-              id: 4,
-              title: 'Knowledge Seeker',
-              description: 'Enroll in 5 courses',
-              icon: 'graduation',
-              earned: false,
-              progress: 3,
-              required: 5
-            }
-          ].map((achievement) => (
-            <div key={achievement.id} className={`achievement-card ${achievement.earned ? 'earned' : 'locked'}`}>
-              <div className="achievement-icon">
-                <Icon 
-                  name={achievement.icon} 
-                  size={IconSizes.lg} 
-                  color={achievement.earned ? IconColors.success : IconColors.gray} 
-                />
-              </div>
-              <div className="achievement-content">
-                <h3 className="achievement-title">{achievement.title}</h3>
-                <p className="achievement-description">{achievement.description}</p>
-                {achievement.earned ? (
-                  <span className="achievement-date">
-                    Obtenu le {achievement.earnedAt.toLocaleDateString('fr-FR')}
-                  </span>
-                ) : (
-                  <div className="achievement-progress">
-                    <div className="progress-bar">
-                      <div 
-                        className="progress-fill" 
-                        style={{ width: `${(achievement.progress / achievement.required) * 100}%` }}
-                      ></div>
-                    </div>
-                    <span className="progress-text">
-                      {achievement.progress}/{achievement.required}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Quick Actions */}
-      <div className="card">
-        <div className="card-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <Icon name="zap" size={IconSizes.md} color={IconColors.warning} />
-            <h2 className="card-title">Actions rapides</h2>
-          </div>
-        </div>
-        <div className="grid grid-2">
-          <div className="quick-action-card">
-            <div className="quick-action-icon success">
-              <Icon name="play" size={IconSizes.lg} color={IconColors.white} />
-            </div>
-            <div className="quick-action-content">
-              <h3>Continuer l'apprentissage</h3>
-              <p>Reprenez là où vous vous êtes arrêté dans vos cours inscrits</p>
-              <Link to="/courses" className="btn btn-success">
-                <Icon name="play" size={IconSizes.xs} color={IconColors.white} />
-                Reprendre
-              </Link>
-            </div>
-          </div>
-          <div className="quick-action-card">
-            <div className="quick-action-icon info">
-              <Icon name="search" size={IconSizes.lg} color={IconColors.white} />
-            </div>
-            <div className="quick-action-content">
-              <h3>Explorer de nouveaux cours</h3>
-              <p>Découvrez de nouveaux sujets et développez vos compétences</p>
-              <Link to="/courses" className="btn btn-info">
-                <Icon name="search" size={IconSizes.xs} color={IconColors.white} />
-                Explorer
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
+
     </div>
   );
 };

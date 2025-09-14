@@ -205,10 +205,52 @@ export const progressAPI = {
   updateVideoProgress: (lessonId, data) => api.put(`/progress/lesson/${lessonId}/video-progress`, data),
   // Obtenir la progression d'un cours
   getCourseProgress: (courseId) => api.get(`/progress/course/${courseId}`),
-  // Ajouter des notes à une leçon
-  addLessonNotes: (lessonId, notes) => api.put(`/progress/lesson/${lessonId}/notes`, { notes }),
   // Évaluer une leçon
   rateLesson: (lessonId, rating) => api.put(`/progress/lesson/${lessonId}/rate`, { rating }),
+};
+
+// Course Reviews API
+export const courseReviewsAPI = {
+  // Créer ou mettre à jour un commentaire/évaluation
+  createOrUpdateReview: (courseId, reviewData) => api.post(`/reviews/course/${courseId}/review`, reviewData),
+  // Obtenir les commentaires d'un cours
+  getCourseReviews: (courseId, params) => api.get(`/reviews/course/${courseId}/reviews`, { params }),
+  // Obtenir le commentaire de l'utilisateur pour un cours
+  getUserReview: (courseId) => api.get(`/reviews/course/${courseId}/my-review`),
+  // Supprimer un commentaire
+  deleteReview: (courseId) => api.delete(`/reviews/course/${courseId}/review`),
+  // Voter utile/pas utile pour un commentaire
+  toggleHelpfulVote: (reviewId) => api.post(`/reviews/review/${reviewId}/helpful`)
+};
+
+// Replies API
+export const repliesAPI = {
+  // Créer une réponse à un commentaire
+  createReply: (reviewId, replyData) => api.post(`/replies/review/${reviewId}`, replyData),
+  // Obtenir les réponses d'un commentaire
+  getRepliesByReview: (reviewId, params) => api.get(`/replies/review/${reviewId}`, { params }),
+  // Supprimer une réponse
+  deleteReply: (replyId) => api.delete(`/replies/${replyId}`)
+};
+
+// Certificates API
+export const certificatesAPI = {
+  // Obtenir tous les certificats de l'étudiant
+  getStudentCertificates: () => api.get('/certificates'),
+  // Obtenir un certificat spécifique
+  getCertificate: (certificateId) => api.get(`/certificates/${certificateId}`),
+  // Afficher un certificat HTML (authentifié)
+  viewCertificateHTML: (certificateId) => api.get(`/certificates/${certificateId}/html`),
+  // Afficher un certificat HTML (public)
+  viewCertificatePublic: (certificateNumber) => api.get(`/certificates/public/${certificateNumber}`),
+  // Télécharger un certificat PDF
+  downloadCertificate: (certificateId) => api.get(`/certificates/${certificateId}/download`, {
+    responseType: 'blob'
+  }),
+  // Vérifier un certificat par numéro (route publique)
+  verifyCertificate: (certificateNumber) => api.get(`/certificates/verify/${certificateNumber}`),
+  // Forcer la création d'un certificat pour un cours
+  createCertificate: (courseId) => api.post(`/certificates/create/${courseId}`)
 };
 
 export default api; 

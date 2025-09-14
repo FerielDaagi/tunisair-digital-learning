@@ -153,6 +153,20 @@ const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
                   </li>
                 </>
               )}
+              {user?.role === 'apprenti' && (
+                <>
+                  <li>
+                    <Link 
+                      to="/certificates" 
+                      className={isActive('/certificates') ? 'active' : ''}
+                      onClick={closeMobileMenu}
+                    >
+                      <Icon name="trophy" size={IconSizes.sm} color={IconColors.white} className="nav-icon" />
+                      {!isCollapsed && 'Mes Certificats'}
+                    </Link>
+                  </li>
+                </>
+              )}
               {user?.role === 'admin' && (
                 <>
                   <li>

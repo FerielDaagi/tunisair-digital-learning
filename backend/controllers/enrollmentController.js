@@ -131,10 +131,12 @@ const enrollInCourse = async (req, res) => {
     });
 
     if (existingEnrollment) {
-      return res.status(400).json({
-        success: false,
-        message: 'Vous êtes déjà inscrit à ce cours'
-      });
+      console.log('⚠️ Tentative d\'inscription multiple, mais on autorise quand même');
+      // Pour l'instant, on autorise les inscriptions multiples
+      // return res.status(400).json({
+      //   success: false,
+      //   message: 'Vous êtes déjà inscrit à ce cours'
+      // });
     }
 
     // Créer l'inscription

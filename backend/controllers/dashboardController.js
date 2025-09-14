@@ -1,14 +1,7 @@
-// Mock dashboard data
-const mockStats = {
-  totalCourses: 12,
-  enrolledCourses: 3,
-  completedCourses: 1,
-  totalHours: 24,
-  averageProgress: 45,
-  certificatesEarned: 1,
-  currentStreak: 5,
-  totalLessonsCompleted: 21
-};
+const Course = require('../models/Course');
+const Enrollment = require('../models/Enrollment');
+const Certificate = require('../models/Certificate');
+const Progress = require('../models/Progress');
 
 const mockRecentActivity = [
   {
@@ -54,17 +47,103 @@ const mockRecentActivity = [
 ];
 
 // Get dashboard stats
-const getStats = (req, res) => {
+const getStats = async (req, res) => {
   try {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    let stats = {};
+
+    if (userRole === 'apprenti') {
+      // Statistiques pour les apprentis
+      const totalCourses = await Course.countDocuments({ isPublished: true });
+      const enrolledCourses = await Enrollment.countDocuments({ student: userId });
+      const completedCourses = await Enrollment.countDocuments({ 
+        student: userId, 
+        status: 'completed' 
+      });
+      const certificatesEarned = await Certificate.countDocuments({ student: userId });
+
+      // Calculer le temps total passé (approximation)
+      const enrollments = await Enrollment.find({ student: userId });
+      let totalHours = 0;
+      for (const enrollment of enrollments) {
+        const course = await Course.findById(enrollment.course);
+        if (course && course.duration) {
+          // Extraire les heures de la durée (format: "X heures" ou "Xh")
+          const durationMatch = course.duration.match(/(\d+)/);
+          if (durationMatch) {
+            totalHours += parseInt(durationMatch[1]);
+          }
+        }
+      }
+
+      stats = {
+        totalCourses,
+        enrolledCourses,
+        completedCourses,
+        totalHours,
+        certificatesEarned,
+        averageProgress: 0,
+        currentStreak: 0,
+        totalLessonsCompleted: 0
+      };
+    } else if (userRole === 'tuteur') {
+      // Statistiques pour les tuteurs
+      const totalCourses = await Course.countDocuments({ instructor: userId });
+      const publishedCourses = await Course.countDocuments({ 
+        instructor: userId, 
+        isPublished: true 
+      });
+      const totalStudents = await Enrollment.countDocuments({
+        course: { $in: await Course.find({ instructor: userId }).distinct('_id') }
+      });
+      const completedEnrollments = await Enrollment.countDocuments({
+        course: { $in: await Course.find({ instructor: userId }).distinct('_id') },
+        status: 'completed'
+      });
+
+      stats = {
+        totalCourses,
+        publishedCourses,
+        totalStudents,
+        completedEnrollments,
+        totalHours: 0,
+        averageProgress: 0,
+        currentStreak: 0,
+        totalLessonsCompleted: 0
+      };
+    } else {
+      // Statistiques pour les admins
+      const totalCourses = await Course.countDocuments();
+      const publishedCourses = await Course.countDocuments({ isPublished: true });
+      const totalStudents = await Enrollment.countDocuments();
+      const completedEnrollments = await Enrollment.countDocuments({ status: 'completed' });
+      const totalCertificates = await Certificate.countDocuments();
+
+      stats = {
+        totalCourses,
+        publishedCourses,
+        totalStudents,
+        completedEnrollments,
+        totalCertificates,
+        totalHours: 0,
+        averageProgress: 0,
+        currentStreak: 0,
+        totalLessonsCompleted: 0
+      };
+    }
+
     res.json({
       success: true,
-      data: mockStats
+      data: stats
     });
   } catch (error) {
     console.error('Get stats error:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: 'Internal server error',
+      error: error.message
     });
   }
 };

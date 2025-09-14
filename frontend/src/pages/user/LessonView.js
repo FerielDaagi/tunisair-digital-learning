@@ -8,7 +8,7 @@ import './LessonView.css';
 
 const LessonView = () => {
   const { lessonId } = useParams();
-  const { user } = useAuth();
+  const { user, addNotification } = useAuth();
   const navigate = useNavigate();
   
   const [lesson, setLesson] = useState(null);
@@ -16,10 +16,6 @@ const LessonView = () => {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [notes, setNotes] = useState('');
-  const [rating, setRating] = useState(0);
-  const [savingNotes, setSavingNotes] = useState(false);
-  const [savingRating, setSavingRating] = useState(false);
   const [moduleLessons, setModuleLessons] = useState([]);
   const [currentLessonIndex, setCurrentLessonIndex] = useState(-1);
   const [lessonStartTime, setLessonStartTime] = useState(null);
@@ -57,13 +53,25 @@ const LessonView = () => {
     if (!lessonId || !user || isCompleted) return;
     
     try {
-      await progressAPI.markLessonCompleted(lessonId);
+      const response = await progressAPI.markLessonCompleted(lessonId);
       setIsCompleted(true);
       console.log('✅ Leçon marquée comme complétée automatiquement');
+      
+      // Vérifier si le cours est complété et si un certificat a été créé
+      if (response.data?.data?.courseCompleted && response.data?.data?.certificateCreated) {
+        // Afficher une notification de félicitations avec un lien vers les certificats
+        setTimeout(() => {
+          addNotification(
+            '🎓 Félicitations ! Vous avez terminé le cours et obtenu un certificat !',
+            'success',
+            8000
+          );
+        }, 1000);
+      }
     } catch (error) {
       console.error('❌ Erreur lors du marquage automatique de la leçon:', error);
     }
-  }, [lessonId, user, isCompleted]);
+  }, [lessonId, user, isCompleted, addNotification]);
 
 
   // Fonction pour marquer une leçon comme commencée
@@ -254,36 +262,7 @@ const LessonView = () => {
     }
   };
 
-  // Fonction pour sauvegarder les notes
-  const handleSaveNotes = async () => {
-    if (!lesson || !user) return;
-    
-    setSavingNotes(true);
-    try {
-      await progressAPI.addLessonNotes(lessonId, notes);
-      console.log('✅ Notes sauvegardées avec succès');
-    } catch (error) {
-      console.error('❌ Erreur lors de la sauvegarde des notes:', error);
-    } finally {
-      setSavingNotes(false);
-    }
-  };
 
-  // Fonction pour sauvegarder l'évaluation
-  const handleSaveRating = async (newRating) => {
-    if (!lesson || !user) return;
-    
-    setSavingRating(true);
-    try {
-      await progressAPI.rateLesson(lessonId, newRating);
-      setRating(newRating);
-      console.log('✅ Évaluation sauvegardée avec succès');
-    } catch (error) {
-      console.error('❌ Erreur lors de la sauvegarde de l\'évaluation:', error);
-    } finally {
-      setSavingRating(false);
-    }
-  };
 
   const getLessonTypeIcon = (type) => {
     switch (type) {
@@ -602,92 +581,6 @@ const LessonView = () => {
                   )}
                 </div>
 
-                {/* Section Commentaires et Évaluations */}
-                <div className="comments-section">
-                  <div className="comments-header">
-                    <h3>
-                      <i className="fas fa-comments me-2"></i>
-                      Vos commentaires et notes
-                    </h3>
-                    <p className="text-muted">Partagez vos impressions sur cette leçon</p>
-                  </div>
-
-                  {/* Section Notes personnelles */}
-                  <div className="notes-section">
-                    <h4>
-                      <i className="fas fa-sticky-note me-2"></i>
-                      Notes personnelles
-                    </h4>
-                    <div className="notes-form">
-                      <textarea
-                        className="form-control notes-textarea"
-                        placeholder="Ajoutez vos notes personnelles sur cette leçon..."
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        rows={4}
-                      />
-                      <div className="notes-actions">
-                        <button
-                          className="btn btn-primary btn-sm"
-                          onClick={handleSaveNotes}
-                          disabled={savingNotes}
-                        >
-                          {savingNotes ? (
-                            <>
-                              <i className="fas fa-spinner fa-spin me-1"></i>
-                              Sauvegarde...
-                            </>
-                          ) : (
-                            <>
-                              <i className="fas fa-save me-1"></i>
-                              Sauvegarder
-                            </>
-                          )}
-                        </button>
-                        <small className="text-muted ms-2">
-                          {notes.length}/1000 caractères
-                        </small>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Section Évaluation */}
-                  <div className="rating-section">
-                    <h4>
-                      <i className="fas fa-star me-2"></i>
-                      Évaluez cette leçon
-                    </h4>
-                    <div className="rating-form">
-                      <div className="rating-stars">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            key={star}
-                            className={`star-btn ${star <= rating ? 'active' : ''}`}
-                            onClick={() => handleSaveRating(star)}
-                            disabled={savingRating}
-                          >
-                            <i className="fas fa-star"></i>
-                          </button>
-                        ))}
-                      </div>
-                      <div className="rating-labels">
-                        <span className="rating-label">
-                          {rating === 0 ? 'Pas encore évalué' :
-                           rating === 1 ? 'Très mauvais' :
-                           rating === 2 ? 'Mauvais' :
-                           rating === 3 ? 'Moyen' :
-                           rating === 4 ? 'Bon' : 'Excellent'}
-                        </span>
-                        {savingRating && (
-                          <span className="text-muted ms-2">
-                            <i className="fas fa-spinner fa-spin me-1"></i>
-                            Sauvegarde...
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
 

@@ -237,30 +237,6 @@ const PublishedCourses = () => {
                   {course.description}
                 </p>
 
-                <div className="course-stats">
-                  <div className="stat-item">
-                    <div className="stat-value">{Array.isArray(course.modules) ? course.modules.length : 0}</div>
-                    <div className="stat-label">Modules</div>
-                  </div>
-                  <div className="stat-item">
-                    <div className="stat-value">
-                      {Array.isArray(course.modules)
-                        ? course.modules.reduce((total, module) => {
-                            const count = Array.isArray(module.lessons)
-                              ? module.lessons.length
-                              : (typeof module.lessons === 'number' ? module.lessons : 0);
-                            return total + count;
-                          }, 0)
-                        : 0}
-                    </div>
-                    <div className="stat-label">Leçons</div>
-                  </div>
-                  <div className="stat-item">
-                    <div className="stat-value">{Array.isArray(course.enrolledStudents) ? course.enrolledStudents.length : 0}</div>
-                    <div className="stat-label">Étudiants</div>
-                  </div>
-                </div>
-
                 <div className="course-footer">
                   <div className="course-dates">
                     <div className="date-item">
@@ -280,18 +256,11 @@ const PublishedCourses = () => {
                   {course.status === 'published' ? (
                     <>
                       <button 
-                        className="btn btn-primary btn-sm btn-stats"
-                        onClick={() => handleViewStats(course._id)}
-                      >
-                        <i className="fas fa-chart-bar me-1"></i>
-                        Statistiques
-                      </button>
-                      <button 
                         className="btn btn-success btn-sm btn-students"
                         onClick={() => navigate(`/tutor/course-students/${course._id}`)}
                       >
                         <i className="fas fa-users me-1"></i>
-                        Étudiants
+                        Suivi des étudiants
                       </button>
                       <button 
                         className="btn btn-primary btn-sm btn-manage"

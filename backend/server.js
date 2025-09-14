@@ -42,6 +42,9 @@ require('./models/Category');
 require('./models/Notification');
 require('./models/Enrollment');
 require('./models/Progress');
+require('./models/CourseReview');
+require('./models/Reply');
+require('./models/Certificate');
 
 const authRoutes = require('./routes/auth');
 const courseRoutes = require('./routes/courses');
@@ -54,6 +57,9 @@ const adminRoutes = require('./routes/admin');
 const categoryRoutes = require('./routes/categories');
 const enrollmentRoutes = require('./routes/enrollment');
 const progressRoutes = require('./routes/progress');
+const courseReviewRoutes = require('./routes/courseReviews');
+const replyRoutes = require('./routes/replies');
+const certificateRoutes = require('./routes/certificates');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -82,9 +88,9 @@ app.use(helmet({
 }));
 
 // 🆕 NOUVEAU - Rate limiting amélioré
-const limiter = rateLimit({
+const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 200, // limit each IP to 200 requests per windowMs (augmenté)
   message: {
     error: 'Trop de requêtes depuis cette IP, veuillez réessayer plus tard.'
   },
@@ -92,8 +98,19 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Appliquer le rate limiting aux routes API
-app.use('/api/', limiter);
+// Rate limiter spécifique pour les certificats (plus permissif)
+const certificateLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 20, // 20 téléchargements de certificats par 5 minutes
+  message: {
+    error: 'Trop de téléchargements de certificats, veuillez attendre quelques minutes.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Appliquer le rate limiting général aux routes API
+app.use('/api/', generalLimiter);
 
 // CORS
 app.use(cors({
@@ -128,6 +145,10 @@ app.use('/api/enrollment', express.json());
 app.use('/api/enrollment', express.urlencoded({ extended: true }));
 app.use('/api/progress', express.json());
 app.use('/api/progress', express.urlencoded({ extended: true }));
+app.use('/api/reviews', express.json());
+app.use('/api/reviews', express.urlencoded({ extended: true }));
+app.use('/api/replies', express.json());
+app.use('/api/replies', express.urlencoded({ extended: true }));
 
 // Middleware spécifique pour les routes lessons
 app.use('/api/lessons', (req, res, next) => {
@@ -171,6 +192,9 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/enrollment', enrollmentRoutes);
 app.use('/api/progress', progressRoutes);
+app.use('/api/reviews', courseReviewRoutes);
+app.use('/api/replies', replyRoutes);
+app.use('/api/certificates', certificateLimiter, certificateRoutes);
 
 console.log('✅ Routes chargées avec succès !');
 
@@ -386,36 +410,34 @@ connectDB().then(() => {
     console.log(`🔌 WebSocket server is running`);
   });
 
-  // 🆕 NOUVEAU - Gestion des erreurs du serveur
+  // 🆕 NOUVEAU - Gestion des erreurs du serveur (plus douce)
   server.on('error', (error) => {
     if (error.code === 'EADDRINUSE') {
       console.error(`❌ Port ${PORT} is already in use`);
       console.error(`💡 Try killing the process using: taskkill /F /IM node.exe`);
+      // Seulement pour EADDRINUSE, on peut faire un exit
+      setTimeout(() => {
+        process.exit(1);
+      }, 2000);
     } else {
       console.error('❌ Server error:', error);
+      console.log('🔄 Tentative de récupération...');
+      // Pour les autres erreurs, continuer à fonctionner
     }
-    // Ne pas faire crasher le serveur immédiatement
-    console.log('🔄 Tentative de redémarrage du serveur...');
-    setTimeout(() => {
-      server.close(() => {
-        process.exit(1);
-      });
-    }, 5000);
   });
 
-  // 🆕 NOUVEAU - Gestion des erreurs non capturées
+  // 🆕 NOUVEAU - Gestion des erreurs non capturées (plus douce)
   process.on('uncaughtException', (error) => {
     console.error('❌ Uncaught Exception:', error);
-    console.log('🔄 Redémarrage du serveur...');
-    // Ne pas faire crasher immédiatement
-    setTimeout(() => {
-      process.exit(1);
-    }, 1000);
+    console.log('🔄 Tentative de récupération...');
+    // Ne pas faire crasher le serveur immédiatement
+    // Laisser le serveur continuer à fonctionner
   });
 
   process.on('unhandledRejection', (reason, promise) => {
     console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
     // Ne pas faire crasher le serveur
+    console.log('🔄 Continuation du serveur malgré l\'erreur...');
   });
 
   // 🆕 NOUVEAU - Nettoyage de mémoire périodique

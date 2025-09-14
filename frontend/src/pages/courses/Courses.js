@@ -1,24 +1,100 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { coursesAPI } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
+import { coursesAPI, enrollmentAPI } from '../../services/api';
 import './Courses.css';
 
 const Courses = () => {
+  const { user } = useAuth();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
+
+  // Fonction utilitaire pour obtenir le nom de l'instructeur
+  const getInstructorName = (instructor) => {
+    if (!instructor) return 'Instructeur';
+    
+    if (typeof instructor === 'string') {
+      return instructor;
+    }
+    
+    if (typeof instructor === 'object') {
+      // Essayer différentes propriétés possibles
+      if (instructor.name) return instructor.name;
+      if (instructor.firstName && instructor.lastName) {
+        return `${instructor.firstName} ${instructor.lastName}`;
+      }
+      if (instructor.firstName) return instructor.firstName;
+      if (instructor.lastName) return instructor.lastName;
+      
+      // Essayer d'autres propriétés possibles
+      if (instructor.username) return instructor.username;
+      if (instructor.displayName) return instructor.displayName;
+      
+      // Si on a un email, créer un nom plus lisible
+      if (instructor.email) {
+        const emailPart = instructor.email.split('@')[0];
+        // Capitaliser la première lettre et remplacer les points par des espaces
+        return emailPart
+          .split('.')
+          .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(' ');
+      }
+    }
+    
+    return 'Instructeur';
+  };
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await coursesAPI.getAll();
-        console.log('📚 Réponse API cours:', response.data);
-        if (response.data.success) {
-          setCourses(response.data.data);
+        // Pour les apprentis : récupérer seulement les cours où ils sont inscrits
+        if (user?.role === 'apprenti') {
+          try {
+            const enrollmentResponse = await enrollmentAPI.getStudentCourses();
+            console.log('📚 Réponse API cours inscrits:', enrollmentResponse.data);
+            if (enrollmentResponse.data.success) {
+              // Extraire les cours depuis les enrollments
+              const enrolledCoursesData = enrollmentResponse.data.data.enrollments.map(
+                enrollment => enrollment.course
+              );
+              
+              // Récupérer les cours complets pour avoir toutes les infos de l'instructeur
+              const courseIds = enrolledCoursesData.map(course => course._id || course.id);
+              const fullCoursesResponse = await coursesAPI.getAll();
+              
+              if (fullCoursesResponse.data.success) {
+                // Filtrer seulement les cours où l'utilisateur est inscrit
+                const fullCourses = fullCoursesResponse.data.data.filter(course => 
+                  courseIds.includes(course._id || course.id)
+                );
+                setCourses(fullCourses);
+                setEnrolledCourses(courseIds);
+              } else {
+                setCourses(enrolledCoursesData);
+                setEnrolledCourses(courseIds);
+              }
+            } else {
+              setCourses([]);
+              setEnrolledCourses([]);
+            }
+          } catch (enrollmentError) {
+            console.error('❌ Erreur lors de la récupération des inscriptions:', enrollmentError);
+            setCourses([]);
+            setEnrolledCourses([]);
+          }
         } else {
-          console.error('Erreur API:', response.data.message);
-          setCourses([]);
+          // Pour les tuteurs : récupérer tous les cours (comme avant)
+          const response = await coursesAPI.getAll();
+          console.log('📚 Réponse API cours:', response.data);
+          if (response.data.success) {
+            setCourses(response.data.data);
+          } else {
+            console.error('Erreur API:', response.data.message);
+            setCourses([]);
+          }
         }
       } catch (error) {
         console.error('❌ Erreur lors de la récupération des cours:', error);
@@ -30,7 +106,7 @@ const Courses = () => {
     };
 
     fetchCourses();
-  }, []);
+  }, [user]);
 
   const filteredCourses = filter === 'all' 
     ? courses 
@@ -72,8 +148,15 @@ const Courses = () => {
   return (
     <div className="courses-container">
       <div className="courses-header">
-        <h1 className="courses-title">Tous les cours</h1>
-        <p className="courses-subtitle">Explorez notre collection complète de cours</p>
+        <h1 className="courses-title">
+          {user?.role === 'apprenti' ? 'Mes cours inscrits' : 'Tous les cours'}
+        </h1>
+        <p className="courses-subtitle">
+          {user?.role === 'apprenti' 
+            ? 'Continuez votre apprentissage avec vos cours inscrits' 
+            : 'Explorez notre collection complète de cours'
+          }
+        </p>
       </div>
 
       <div className="filter-tabs">
@@ -92,20 +175,41 @@ const Courses = () => {
       {filteredCourses.length === 0 ? (
         <div className="no-courses">
           <div className="no-courses-icon">📚</div>
-          <h3>Aucun cours disponible</h3>
+          <h3>
+            {user?.role === 'apprenti' ? 'Aucun cours inscrit' : 'Aucun cours disponible'}
+          </h3>
           <p>
-            {courses.length === 0 
-              ? 'Aucun cours n\'a encore été publié par les tuteurs.' 
-              : 'Aucun cours ne correspond à votre filtre.'}
+            {user?.role === 'apprenti' 
+              ? 'Vous n\'êtes inscrit à aucun cours pour le moment. Explorez les cours disponibles et inscrivez-vous pour commencer votre apprentissage.'
+              : courses.length === 0 
+                ? 'Aucun cours n\'a encore été publié par les tuteurs.' 
+                : 'Aucun cours ne correspond à votre filtre.'
+            }
           </p>
+          {user?.role === 'apprenti' && (
+            <div style={{ marginTop: '1rem' }}>
+              <Link to="/" className="btn btn-primary">
+                Découvrir les cours disponibles
+              </Link>
+            </div>
+          )}
           {courses.length === 0 && (
-            <p>Les tuteurs peuvent publier leurs cours depuis leur tableau de bord.</p>
+            <p>
+              {user?.role === 'apprenti' 
+                ? 'Aucun cours disponible pour le moment.' 
+                : 'Les tuteurs peuvent publier leurs cours depuis leur tableau de bord.'}
+            </p>
           )}
         </div>
       ) : (
         <div className="courses-grid">
           {filteredCourses.map((course) => {
             const hasThumbnail = !!course.thumbnail;
+            const courseId = course._id || course.id;
+            // Pour les apprentis, tous les cours affichés sont inscrits
+            // Pour les tuteurs, aucun cours n'est considéré comme inscrit
+            const isEnrolled = user?.role === 'apprenti';
+            
             return (
               <div key={course._id || course.id} className="course-card">
                 <div className="course-thumbnail">
@@ -116,12 +220,18 @@ const Courses = () => {
                       {course.title?.charAt(0) || 'C'}
                     </div>
                   )}
+                  {isEnrolled && (
+                    <div className="enrollment-badge-overlay">
+                      <i className="fas fa-check-circle"></i>
+                      <span>Inscrit</span>
+                    </div>
+                  )}
                 </div>
                 <div className="course-content">
                   <div className="course-header">
                     <h3 className="course-list-title">{course.title}</h3>
                     <div className="course-instructor">
-                      {course.instructor?.name || course.instructor}
+                      {getInstructorName(course.instructor)}
                     </div>
                   </div>
                   <p className="course-description">{course.description}</p>
@@ -132,13 +242,18 @@ const Courses = () => {
                     <div className="meta-item">
                       <i className="fas fa-signal" /> {course.level}
                     </div>
+                    {course.category && (
+                      <div className="meta-item">
+                        <i className="fas fa-tag" /> {course.category}
+                      </div>
+                    )}
                   </div>
                   <div className="course-actions">
                     <Link 
                       to={`/courses/${course._id || course.id}`}
-                      className="btn btn-primary"
+                      className={`btn ${isEnrolled ? 'btn-success' : 'btn-primary'}`}
                     >
-                      Voir le cours
+                      {isEnrolled ? 'Continuer le cours' : 'Voir le cours'}
                     </Link>
                   </div>
                 </div>

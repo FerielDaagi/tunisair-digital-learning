@@ -16,7 +16,11 @@ const connectDB = async () => {
   } catch (error) {
     console.error('❌ Erreur de connexion MongoDB:', error.message);
     console.error('❌ URI utilisée:', process.env.MONGODB_URI);
-    process.exit(1);
+    console.log('🔄 Tentative de reconnexion dans 5 secondes...');
+    // Ne pas faire crasher immédiatement, essayer de se reconnecter
+    setTimeout(() => {
+      connectDB();
+    }, 5000);
   }
 };
 module.exports = connectDB;

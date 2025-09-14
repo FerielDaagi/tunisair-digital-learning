@@ -34,6 +34,8 @@ import MyCourses from './pages/tutor/MyCourses';
 import QuickCreateModule from './pages/tutor/QuickCreateModule';
 import MyCoursesStudent from './pages/user/MyCourses';
 import CourseProgress from './pages/user/CourseProgress';
+import Certificates from './pages/user/Certificates';
+import CertificateVerification from './pages/public/CertificateVerification';
 import PublishedCourses from './pages/tutor/PublishedCourses';
 import CourseStats from './pages/tutor/CourseStats';
 import CourseStudents from './pages/tutor/CourseStudents';
@@ -122,8 +124,9 @@ const AppContent = () => {
           <Route path="/tutor/course-students/:courseId" element={<ProtectedRoute><CourseStudents /></ProtectedRoute>} />
           
           {/* Routes pour les apprentis */}
-          <Route path="/my-courses" element={<ProtectedRoute><MyCoursesStudent /></ProtectedRoute>} />
           <Route path="/course-progress/:courseId" element={<ProtectedRoute><CourseProgress /></ProtectedRoute>} />
+          <Route path="/certificates" element={<ProtectedRoute><Certificates /></ProtectedRoute>} />
+          <Route path="/verify-certificate" element={<CertificateVerification />} />
         </Routes>
       </div>
     </div>

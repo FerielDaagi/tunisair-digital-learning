@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificat d'Accomplissement - Tunisair Academy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .certificate-container {
+            background: white;
+            width: 100%;
+            max-width: 1000px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .certificate-header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+            position: relative;
+        }
+
+        .certificate-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .certificate-title {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .certificate-subtitle {
+            font-size: 1rem;
+            font-weight: 300;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .certificate-body {
+            padding: 40px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-height: 400px;
+        }
+
+        .certificate-body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #f59e0b, #f97316, #f59e0b);
+        }
+
+        .certificate-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .certificate-text {
+            font-size: 1.2rem;
+            color: #374151;
+            margin-bottom: 40px;
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        .student-info {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border: 2px solid #e5e7eb;
+            border-radius: 15px;
+            padding: 40px;
+            margin: 20px 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .info-label {
+            font-weight: 700;
+            color: #1e3a8a;
+            font-size: 1.1rem;
+            min-width: 150px;
+            text-align: left;
+        }
+
+        .info-value {
+            color: #1f2937;
+            font-size: 1.1rem;
+            font-weight: 500;
+            flex: 1;
+            text-align: right;
+        }
+
+        .course-title {
+            color: #1e3a8a;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .certificate-footer {
+            background: #f8fafc;
+            padding: 30px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .signature-section {
+            text-align: center;
+        }
+
+        .signature-line {
+            width: 200px;
+            height: 2px;
+            background: #374151;
+            margin: 10px auto;
+        }
+
+        .signature-text {
+            font-size: 0.875rem;
+            color: #6b7280;
+            font-weight: 600;
+        }
+
+        .certificate-number {
+            text-align: right;
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .cert-number {
+            font-weight: 700;
+            color: #1e3a8a;
+        }
+
+        .date-issued {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-top: 5px;
+        }
+
+        .decoration {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            opacity: 0.1;
+        }
+
+        .decoration.top-left {
+            top: 20px;
+            left: 20px;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="%231e3a8a" stroke-width="2"/><circle cx="50" cy="50" r="20" fill="none" stroke="%231e3a8a" stroke-width="1"/></svg>');
+        }
+
+        .decoration.bottom-right {
+            bottom: 20px;
+            right: 20px;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="50,10 90,90 10,90" fill="%23f59e0b" opacity="0.3"/></svg>');
+        }
+
+        .trophy-icon {
+            font-size: 3rem;
+            color: #f59e0b;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .certificate-container {
+                box-shadow: none;
+                border-radius: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .certificate-container {
+                margin: 10px;
+            }
+            
+            .certificate-header {
+                padding: 30px 20px;
+            }
+            
+            .certificate-title {
+                font-size: 2rem;
+            }
+            
+            .certificate-body {
+                padding: 30px 20px;
+            }
+            
+            .info-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            
+            .info-value {
+                text-align: left;
+            }
+            
+            .certificate-footer {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="certificate-container">
+        <div class="decoration top-left"></div>
+        <div class="decoration bottom-right"></div>
+        
+        <div class="certificate-header">
+            <div class="trophy-icon">🏆</div>
+            <h1 class="certificate-title">CERTIFICAT D'ACCOMPLISSEMENT</h1>
+            <p class="certificate-subtitle">Centre de Formation Tunisair Academy</p>
+        </div>
+
+        <div class="certificate-body">
+            <div class="certificate-content">
+                <p class="certificate-text">
+                    Nous certifions que <strong>Ahmed Ben Ali</strong> a suivi avec succès 
+                    la formation et a satisfait à toutes les exigences requises.
+                </p>
+
+                <div class="student-info">
+                    <div class="info-row">
+                        <span class="info-label">Participant :</span>
+                        <span class="info-value">Ahmed Ben Ali</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email :</span>
+                        <span class="info-value">ahmed.benali@tunisair.com.tn</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Formation :</span>
+                        <span class="info-value course-title">« Formation Avancée en Maintenance Aéronautique »</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Durée :</span>
+                        <span class="info-value">1 heure 2 minutes</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Catégorie :</span>
+                        <span class="info-value">IA</span>
+                    </div>
+                </div>
+
+                <p class="certificate-text">
+                    Ce certificat atteste que le participant a démontré une compréhension 
+                    approfondie des concepts enseignés et a atteint les objectifs d'apprentissage 
+                    définis pour cette formation.
+                </p>
+            </div>
+        </div>
+
+        <div class="certificate-footer">
+            <div class="signature-section">
+                <div class="signature-line"></div>
+                <p class="signature-text">Signature et cachet</p>
+                <p class="signature-text" style="font-style: italic; margin-top: 5px;">
+                    Le Responsable du Centre de Formation
+                </p>
+                <p class="date-issued">Fait à Tunis, le 14 septembre 2025</p>
+            </div>
+            
+            <div class="certificate-number">
+                <p class="cert-number">Certificat #CERT-TUNISAIR-2024-001</p>
+                <p style="font-size: 0.75rem; color: #9ca3af; margin-top: 5px;">
+                    Plateforme E-Learning Tunisair
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

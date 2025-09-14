@@ -66,11 +66,6 @@ const progressSchema = new mongoose.Schema({
     fileName: String,
     fileSize: Number
   }],
-  // Notes ou commentaires de l'étudiant
-  notes: {
-    type: String,
-    maxlength: 1000
-  },
   // Évaluation de la leçon par l'étudiant
   rating: {
     type: Number,

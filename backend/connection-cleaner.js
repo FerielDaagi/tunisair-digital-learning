@@ -41,13 +41,14 @@ class ConnectionCleaner {
         this.stats.activeConnections = connections || 0;
         this.stats.lastCleanup = new Date().toISOString();
         
-        // Log seulement si beaucoup de connexions
-        if (connections > 15) {
+        // Log seulement si beaucoup de connexions (seuil plus élevé)
+        if (connections > 50) {
           console.log(`🧹 Nettoyage: ${connections} connexions actives`);
         }
       });
     } catch (error) {
       console.error('❌ Erreur dans le nettoyeur:', error.message);
+      // Ne pas faire crasher le serveur
     }
   }
 
