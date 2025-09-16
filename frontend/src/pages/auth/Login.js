@@ -52,6 +52,17 @@ const Login = () => {
       let errorMessage = 'Échec de la connexion. Veuillez réessayer.';
       
       if (err.response?.status === 401) {
+        const responseMessage = err.response.data.message;
+        if (responseMessage && responseMessage.includes('vérifié')) {
+          // Si le compte n'est pas vérifié, rediriger vers la vérification
+          navigate('/verify-email', { 
+            state: { 
+              email: formData.email,
+              message: 'Veuillez vérifier votre email avant de vous connecter.' 
+            }
+          });
+          return;
+        }
         errorMessage = 'Email ou mot de passe incorrect.';
       } else if (err.response?.status === 404) {
         errorMessage = 'Utilisateur non trouvé.';
@@ -139,7 +150,9 @@ const Login = () => {
         </div>
         
         <div className="text-center mt-3">
-       
+          <Link to="/forgot-password" style={{ color: 'var(--primary-blue)', textDecoration: 'none', fontWeight: '600' }}>
+            Mot de passe oublié ?
+          </Link>
         </div>
       </div>
     </div>

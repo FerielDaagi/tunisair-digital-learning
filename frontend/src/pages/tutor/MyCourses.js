@@ -18,7 +18,8 @@ const MyCourses = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, courseId: null, courseTitle: '' });
   const [publishConfirm, setPublishConfirm] = useState({ show: false, courseId: null, courseTitle: '' });
-  const [actionLoading, setActionLoading] = useState({ publish: null, delete: null });
+  const [archiveConfirm, setArchiveConfirm] = useState({ show: false, courseId: null, courseTitle: '' });
+  const [actionLoading, setActionLoading] = useState({ publish: null, delete: null, archive: null });
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [styledError, setStyledError] = useState({ show: false, message: '', details: '', type: '' });
@@ -172,6 +173,38 @@ const MyCourses = () => {
     }
   };
 
+  const handleArchive = async (courseId) => {
+    try {
+      setActionLoading(prev => ({ ...prev, archive: courseId }));
+      const response = await coursesAPI.archive(courseId);
+      if (response.data.success) {
+        setSuccess('Cours archivé avec succès');
+        setTimeout(() => setSuccess(''), 5000);
+        hideArchiveConfirm();
+        fetchCourses();
+      } else {
+        setError(response.data.message || 'Erreur lors de l\'archivage');
+        setTimeout(() => setError(''), 5000);
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'archivage:', error);
+      if (error.response?.data?.message) {
+        setError(error.response.data.message);
+      } else {
+        setError('Erreur lors de l\'archivage du cours. Veuillez réessayer.');
+      }
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setActionLoading(prev => ({ ...prev, archive: null }));
+    }
+  };
+
+  const confirmArchive = async () => {
+    if (archiveConfirm.courseId) {
+      await handleArchive(archiveConfirm.courseId);
+    }
+  };
+
   const showDeleteConfirm = (courseId, courseTitle) => {
     setDeleteConfirm({ show: true, courseId, courseTitle });
   };
@@ -188,14 +221,36 @@ const MyCourses = () => {
     setPublishConfirm({ show: false, courseId: null, courseTitle: '' });
   };
 
+  const showArchiveConfirm = (courseId, courseTitle) => {
+    setArchiveConfirm({ show: true, courseId, courseTitle });
+  };
+
+  const hideArchiveConfirm = () => {
+    setArchiveConfirm({ show: false, courseId: null, courseTitle: '' });
+  };
+
   const hideStyledError = () => {
     setStyledError({ show: false, message: '', details: '', type: '' });
   };
 
   const confirmDelete = async () => {
     try {
+      // Vérifier si des apprentis sont inscrits avant d'appeler l'API
+      const course = Array.isArray(courses) ? courses.find(c => c._id === deleteConfirm.courseId) : null;
+      const enrolledCount = Array.isArray(course?.enrolledStudents) ? course.enrolledStudents.length : 0;
+      if (enrolledCount > 0) {
+        hideDeleteConfirm();
+        setStyledError({
+          show: true,
+          message: 'Suppression impossible',
+          details: `Vous ne pouvez pas supprimer ce cours car ${enrolledCount} apprenti${enrolledCount > 1 ? 's' : ''} y est/ sont inscrit${enrolledCount > 1 ? 's' : ''}. Veuillez d'abord désinscrire tous les apprentis ou archiver le cours.`,
+          type: 'general'
+        });
+        return;
+      }
+
       setActionLoading(prev => ({ ...prev, delete: deleteConfirm.courseId }));
-      
+
       const response = await coursesAPI.delete(deleteConfirm.courseId);
       
       if (response.data.success) {
@@ -553,68 +608,87 @@ const MyCourses = () => {
                       )}
                     </div>
                   )}
-                </div>
-                
-                <div className="course-actions">
-                  {course.status === 'draft' && (
-                    <>
-                      {/* Bouton de publication */}
-                      <button
-                        onClick={() => showPublishConfirm(course._id, course.title)}
-                        className="btn btn-success"
-                        title="Publier le cours"
-                        disabled={actionLoading.publish === course._id}
-                      >
-                        {actionLoading.publish === course._id ? (
-                          <Icon name="loader" size={IconSizes.xs} color={IconColors.white} className="spin" />
-                        ) : (
-                          <Icon name="checkCircle" size={IconSizes.xs} color={IconColors.white} />
-                        )}
-                        {actionLoading.publish === course._id ? 'Publication...' : 'Publier'}
-                      </button>
-                      
 
-                    </>
-                  )}
-                  
-                  {/* Bouton Modules - TOUJOURS visible */}
-                  <button
-                    onClick={() => handleAddModules(course._id)}
-                    className="btn btn-primary"
-                    title="Gérer les modules du cours"
-                  >
-                    <Icon name="layers" size={IconSizes.xs} color={IconColors.white} />
-                    Modules ({getModuleCount(course)})
-                  </button>
-                  
-
-                  
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleEdit(course._id);
-                    }}
-                    className="btn btn-secondary"
-                    title="Modifier le cours"
-                  >
-                    <Icon name="edit" size={IconSizes.xs} color={IconColors.white} />
-                    Modifier
-                  </button>
-                  
-                  <button
-                    onClick={() => showDeleteConfirm(course._id, course.title)}
-                    className="btn btn-danger"
-                    title="Supprimer le cours"
-                    disabled={actionLoading.delete === course._id}
-                  >
-                    {actionLoading.delete === course._id ? (
-                      <Icon name="loader" size={IconSizes.xs} color={IconColors.white} className="spin" />
-                    ) : (
-                      <Icon name="trash" size={IconSizes.xs} color={IconColors.white} />
+                  {/* Actions déplacées dans le même conteneur que le titre/description */}
+                  <div className="course-actions">
+                    {/* Déterminer si des apprentis sont inscrits (désactive la suppression) */}
+                    {(() => {
+                      const hasEnrolled = Array.isArray(course?.enrolledStudents) && course.enrolledStudents.length > 0;
+                      const canDelete = course.status === 'draft' && !hasEnrolled;
+                      return null;
+                    })()}
+                    {course.status === 'draft' && (
+                      <>
+                        {/* Bouton de publication */}
+                        <button
+                          onClick={() => showPublishConfirm(course._id, course.title)}
+                          className="btn btn-success"
+                          title="Publier le cours"
+                          disabled={actionLoading.publish === course._id}
+                        >
+                          {actionLoading.publish === course._id ? (
+                            <Icon name="loader" size={IconSizes.xs} color={IconColors.white} className="spin" />
+                          ) : (
+                            <Icon name="checkCircle" size={IconSizes.xs} color={IconColors.white} />
+                          )}
+                          {actionLoading.publish === course._id ? 'Publication...' : 'Publier'}
+                        </button>
+                      </>
                     )}
-                    {actionLoading.delete === course._id ? 'Suppression...' : 'Supprimer'}
-                  </button>
+                    {/* Bouton Modules - TOUJOURS visible */}
+                    <button
+                      onClick={() => handleAddModules(course._id)}
+                      className="btn btn-primary"
+                      title="Gérer les modules du cours"
+                    >
+                      <Icon name="layers" size={IconSizes.xs} color={IconColors.white} />
+                      Modules ({getModuleCount(course)})
+                    </button>
+                    {/* Bouton Archiver */}
+                    <button
+                      onClick={() => showArchiveConfirm(course._id, course.title)}
+                      className="btn btn-outline"
+                      title="Archiver le cours"
+                      disabled={actionLoading.archive === course._id}
+                    >
+                      {actionLoading.archive === course._id ? (
+                        <Icon name="archive" size={IconSizes.xs} color={IconColors.primary} className="spin" />
+                      ) : (
+                        <Icon name="archive" size={IconSizes.xs} color={IconColors.primary} />
+                      )}
+                      {actionLoading.archive === course._id ? 'Archivage...' : 'Archiver'}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleEdit(course._id);
+                      }}
+                      className="btn btn-secondary"
+                      title="Modifier le cours"
+                    >
+                      <Icon name="edit" size={IconSizes.xs} color={IconColors.white} />
+                      Modifier
+                    </button>
+                    {(() => {
+                      const disabled = actionLoading.delete === course._id;
+                      return (
+                        <button
+                          onClick={() => showDeleteConfirm(course._id, course.title)}
+                          className="btn btn-danger"
+                          title="Supprimer le cours"
+                          disabled={disabled}
+                        >
+                          {actionLoading.delete === course._id ? (
+                            <Icon name="loader" size={IconSizes.xs} color={IconColors.white} className="spin" />
+                          ) : (
+                            <Icon name="trash" size={IconSizes.xs} color={IconColors.white} />
+                          )}
+                          {actionLoading.delete === course._id ? 'Suppression...' : 'Supprimer'}
+                        </button>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
             ))}
@@ -827,6 +901,52 @@ const MyCourses = () => {
                   Modules
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmation d'archivage */}
+      {archiveConfirm.show && (
+        <div className="modal-overlay" onClick={hideArchiveConfirm}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <Icon name="archive" size={IconSizes.lg} color={IconColors.primary} />
+              <h3>Archiver le cours</h3>
+            </div>
+            <div className="modal-body">
+              <p>
+                Archiver le cours <strong>"{archiveConfirm.courseTitle}"</strong> ?
+              </p>
+              <p className="info-text">
+                Le cours ne sera plus disponible à l'inscription ni à la consultation publique. Vous pourrez le republier après modifications.
+              </p>
+            </div>
+            <div className="modal-actions">
+              <button
+                onClick={hideArchiveConfirm}
+                className="btn btn-secondary"
+                disabled={actionLoading.archive === archiveConfirm.courseId}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmArchive}
+                className="btn btn-outline"
+                disabled={actionLoading.archive === archiveConfirm.courseId}
+              >
+                {actionLoading.archive === archiveConfirm.courseId ? (
+                  <>
+                    <Icon name="archive" size={IconSizes.xs} color={IconColors.primary} className="spin" />
+                    Archivage...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="archive" size={IconSizes.xs} color={IconColors.primary} />
+                    Archiver
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

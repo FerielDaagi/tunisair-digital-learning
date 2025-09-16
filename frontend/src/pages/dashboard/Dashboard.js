@@ -231,16 +231,18 @@ const Dashboard = () => {
             <div className="stat-description">Total sur la plateforme</div>
           </div>
         </div>
-        <div className="stat-card secondary">
-          <div className="stat-icon">
-            <Icon name="graduation" size={IconSizes.lg} color={IconColors.white} />
+        {(user?.role === 'apprenti' || user?.role === 'tuteur') && (
+          <div className="stat-card secondary">
+            <div className="stat-icon">
+              <Icon name="graduation" size={IconSizes.lg} color={IconColors.white} />
+            </div>
+            <div className="stat-content">
+              <div className="stat-number">{enrolledCourses.length}</div>
+              <div className="stat-label">Cours inscrits</div>
+              <div className="stat-description">Mes inscriptions</div>
+            </div>
           </div>
-          <div className="stat-content">
-            <div className="stat-number">{enrolledCourses.length}</div>
-            <div className="stat-label">Cours inscrits</div>
-            <div className="stat-description">Mes inscriptions</div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Tous les cours publiés avec recherche et filtrage */}

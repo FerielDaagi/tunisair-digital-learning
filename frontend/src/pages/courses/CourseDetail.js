@@ -49,10 +49,25 @@ const CourseDetail = () => {
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [downloadingCertificate, setDownloadingCertificate] = useState(false);
 
+  // Helpers d'identification
+  const getEntityId = (entity) => {
+    if (!entity) return undefined;
+    if (typeof entity === 'string') return entity;
+    if (typeof entity === 'object') return entity._id || entity.id || entity.toString?.();
+    return undefined;
+  };
+  const currentUserId = user?._id || user?.id;
+  const instructorId = getEntityId(course?.instructor);
+  
+  // Déterminer les contextes d'accès selon le rôle et la propriété du cours
+  const isOwnerTutor = user?.role === 'tuteur' && !!instructorId && !!currentUserId && instructorId === currentUserId;
+  const isLearnerView = !!user && (user.role === 'apprenti' || (user.role === 'tuteur' && !isOwnerTutor));
+
   // Fonction pour vérifier si un module est accessible
   const isModuleAccessible = useCallback((moduleIndex) => {
-    // Les tuteurs peuvent accéder à tous les modules
-    if (user?.role === 'tuteur') return true;
+    // Un tuteur propriétaire du cours a un accès total; sinon il doit être inscrit
+    const localIsOwnerTutor = user?.role === 'tuteur' && !!instructorId && !!currentUserId && instructorId === currentUserId;
+    if (localIsOwnerTutor) return true;
     
     if (!isEnrolled || !courseProgress) return moduleIndex === 0;
     
@@ -62,12 +77,13 @@ const CourseDetail = () => {
     // Vérifier si le module précédent est complété
     const previousModule = courseProgress.modules[moduleIndex - 1];
     return previousModule && previousModule.progress === 100;
-  }, [isEnrolled, courseProgress, user?.role]);
+  }, [isEnrolled, courseProgress, user?.role, instructorId, currentUserId]);
 
   // Fonction pour vérifier si une leçon est accessible
   const isLessonAccessible = useCallback((moduleIndex, lessonIndex) => {
-    // Les tuteurs peuvent accéder à toutes les leçons
-    if (user?.role === 'tuteur') return true;
+    // Un tuteur propriétaire du cours a un accès total; sinon il doit être inscrit
+    const localIsOwnerTutor = user?.role === 'tuteur' && !!instructorId && !!currentUserId && instructorId === currentUserId;
+    if (localIsOwnerTutor) return true;
     
     if (!isEnrolled || !courseProgress) return lessonIndex === 0;
     
@@ -80,15 +96,16 @@ const CourseDetail = () => {
     
     const previousLesson = currentModule.lessons[lessonIndex - 1];
     return previousLesson && (previousLesson.progress.status === 'completed' || previousLesson.progress.status === 'in_progress');
-  }, [isEnrolled, courseProgress, isModuleAccessible, user?.role]);
+  }, [isEnrolled, courseProgress, isModuleAccessible, user?.role, instructorId, currentUserId]);
 
   // Fonction pour vérifier si le cours est terminé à 100%
   const isCourseCompleted = useCallback(() => {
-    if (!isEnrolled || !courseProgress || user?.role === 'tuteur') return false;
+    // Les certificats sont réservés au mode apprenant (apprentis et tuteurs non-propriétaires)
+    if (!isEnrolled || !courseProgress || !isLearnerView) return false;
     
     // Vérifier si tous les modules sont complétés à 100%
     return courseProgress.modules.every(module => module.progress === 100);
-  }, [isEnrolled, courseProgress, user?.role]);
+  }, [isEnrolled, courseProgress, isLearnerView]);
 
   // Fonction pour vérifier si l'utilisateur a commencé le cours
   const hasStartedCourse = useCallback(() => {
@@ -115,6 +132,38 @@ const CourseDetail = () => {
     return enrollments[courseId] || false;
   };
 
+  // Fonction pour valider et nettoyer le localStorage
+  const validateAndCleanLocalStorage = async (courseId) => {
+    try {
+      console.log('🔍 Validation du localStorage pour le cours:', courseId);
+      const localEnrollment = getEnrollmentStatus(courseId);
+      
+      if (localEnrollment) {
+        // Vérifier via l'API si l'inscription est vraiment valide
+        const response = await enrollmentAPI.getStudentCourses();
+        if (response.data.success && response.data.data) {
+          const studentCourses = response.data.data.enrollments.map(enrollment => enrollment.course);
+          const isReallyEnrolled = studentCourses.some(studentCourse => 
+            studentCourse._id === courseId || studentCourse.id === courseId
+          );
+          
+          if (!isReallyEnrolled) {
+            console.log('⚠️ localStorage incorrect détecté, nettoyage...');
+            saveEnrollmentStatus(courseId, false);
+            return false;
+          }
+        }
+      }
+      
+      return localEnrollment;
+    } catch (error) {
+      console.error('❌ Erreur lors de la validation du localStorage:', error);
+      // En cas d'erreur, nettoyer le localStorage pour ce cours
+      saveEnrollmentStatus(courseId, false);
+      return false;
+    }
+  };
+
   // Fonction pour récupérer les leçons d'un module
   const fetchModuleLessons = async (moduleId) => {
     try {
@@ -122,6 +171,9 @@ const CourseDetail = () => {
       return response.data.data || response.data || [];
     } catch (error) {
       console.error('Erreur lors de la récupération des leçons:', error);
+      if (error.response?.status === 403) {
+        addNotification('Inscrivez-vous pour voir le contenu de ce module.', 'warning');
+      }
       return [];
     }
   };
@@ -137,6 +189,9 @@ const CourseDetail = () => {
       }
     } catch (error) {
       console.error('Erreur lors de la récupération de la progression:', error);
+      if (error.response?.status === 403) {
+        addNotification('Inscrivez-vous pour voir votre progression de cours.', 'warning');
+      }
     }
   }, [user, isEnrolled, id]);
 
@@ -284,6 +339,12 @@ const CourseDetail = () => {
         if (response.data.success) {
           setCourse(response.data.data);
           console.log('✅ Course set successfully:', response.data.data);
+          
+          // Debug: Afficher l'état du localStorage
+          const courseId = response.data.data._id || response.data.data.id;
+          const localEnrollment = getEnrollmentStatus(courseId);
+          console.log('🔍 État localStorage pour ce cours:', localEnrollment);
+          
           // Vérifier si l'utilisateur est inscrit
           await checkEnrollmentStatus(response.data.data);
         } else {
@@ -393,58 +454,83 @@ const CourseDetail = () => {
     }
   }, [course, user]);
 
-  // Charger les leçons pour chaque module
+  // Charger les leçons pour chaque module (seulement si autorisé)
   useEffect(() => {
-    if (course && course.modules) {
-      const loadLessons = async () => {
-        const lessonsPromises = course.modules.map(async (module) => {
-          const lessons = await fetchModuleLessons(module._id || module.id);
-          return { moduleId: module._id || module.id, lessons };
-        });
-        
-        const results = await Promise.all(lessonsPromises);
-        const lessonsMap = {};
-        results.forEach(({ moduleId, lessons }) => {
-          lessonsMap[moduleId] = lessons;
-        });
-        setLessonsData(lessonsMap);
-      };
-      
-      loadLessons();
-    }
-  }, [course]);
+    if (!course || !course.modules) return;
+    const isOwnerTutor = user?.role === 'tuteur' && course?.instructor?._id === user?.id;
+    const canLoadLessons = isOwnerTutor || isEnrolled;
+    if (!canLoadLessons) return; // Éviter requêtes 403 tant que non inscrit
 
-  const checkEnrollmentStatus = useCallback(async (courseData) => {
+    const loadLessons = async () => {
+      const lessonsPromises = course.modules.map(async (module) => {
+        const lessons = await fetchModuleLessons(module._id || module.id);
+        return { moduleId: module._id || module.id, lessons };
+      });
+      
+      const results = await Promise.all(lessonsPromises);
+      const lessonsMap = {};
+      results.forEach(({ moduleId, lessons }) => {
+        lessonsMap[moduleId] = lessons;
+      });
+      setLessonsData(lessonsMap);
+    };
+
+    loadLessons();
+  }, [course, user?.role, user?.id, isEnrolled]);
+
+  const checkEnrollmentStatus = useCallback(async (courseData, forceRefresh = false) => {
     if (!user) {
       setIsEnrolled(false);
       setCheckingEnrollment(false);
       return;
     }
 
-    // Les tuteurs sont considérés comme ayant accès à tous les cours
+    // Les tuteurs propriétaires sont considérés comme inscrits automatiquement
+    let isOwner = false;
     if (user.role === 'tuteur') {
-      setIsEnrolled(true);
-      setCheckingEnrollment(false);
-      return;
+      const courseInstructorId = (courseData?.instructor && (courseData.instructor._id || courseData.instructor.id)) || (typeof courseData?.instructor === 'string' ? courseData.instructor : undefined);
+      isOwner = !!(courseInstructorId && (courseInstructorId === (user._id || user.id)));
+      if (isOwner) {
+        setIsEnrolled(true);
+        setCheckingEnrollment(false);
+        return;
+      } else {
+        // Non-propriétaire: s'assurer que le bouton n'affiche pas par erreur "Annuler" avant vérification serveur
+        setIsEnrolled(false);
+        // Continuer la vérification comme pour un apprenti
+      }
     }
 
     setCheckingEnrollment(true);
     const courseId = courseData._id || courseData.id;
+    const mustForce = forceRefresh || (user.role === 'tuteur' && !isOwner);
 
-    // 1. Vérifier d'abord dans localStorage (le plus rapide)
-    const localEnrollment = getEnrollmentStatus(courseId);
-    if (localEnrollment) {
-      console.log('✅ Inscription trouvée dans localStorage');
-      setIsEnrolled(true);
-      setCheckingEnrollment(false);
-      return;
+    // Si forceRefresh est true, ignorer le localStorage et forcer une vérification complète
+    if (!mustForce) {
+      // 1. Vérifier d'abord dans localStorage (le plus rapide) avec validation
+      const localEnrollment = await validateAndCleanLocalStorage(courseId);
+      if (localEnrollment) {
+        console.log('✅ Inscription trouvée dans localStorage et validée');
+        setIsEnrolled(true);
+        setCheckingEnrollment(false);
+        return;
+      }
+    } else {
+      console.log('🔄 Force refresh - Ignorer localStorage et vérifier via API');
+      // Nettoyer le localStorage pour ce cours
+      saveEnrollmentStatus(courseId, false);
     }
 
-    // 2. Vérifier dans la liste des étudiants inscrits du cours
-    if (courseData.enrolledStudents && courseData.enrolledStudents.length > 0) {
-      const enrolled = courseData.enrolledStudents.some(student => 
-        student._id === user.id || student === user.id
-      );
+    // 2. Vérifier dans la liste des étudiants inscrits du cours (formats variés)
+    if (Array.isArray(courseData.enrolledStudents) && courseData.enrolledStudents.length > 0) {
+      const enrolled = courseData.enrolledStudents.some(studentEntry => {
+        // Supporte les formats: ObjectId string, {_id}, {id}, {student: id}
+        if (!studentEntry) return false;
+        if (typeof studentEntry === 'string') return studentEntry === user.id;
+        if (studentEntry._id || studentEntry.id) return (studentEntry._id || studentEntry.id) === user.id;
+        if (studentEntry.student) return (studentEntry.student._id || studentEntry.student.id || studentEntry.student) === user.id;
+        return false;
+      });
       console.log('🔍 Vérification dans enrolledStudents:', enrolled);
       if (enrolled) {
         // Sauvegarder dans localStorage pour la prochaine fois
@@ -455,14 +541,15 @@ const CourseDetail = () => {
       return;
     }
 
-    // 3. Vérifier via l'API des cours de l'étudiant
+    // 3. Vérifier via l'API des cours de l'étudiant (toujours côté serveur pour éviter caches locaux)
     try {
       console.log('🔍 Vérification via API des cours de l\'étudiant pour le cours:', courseId);
       const response = await enrollmentAPI.getStudentCourses();
       if (response.data.success && response.data.data) {
-        const studentCourses = response.data.data.courses || response.data.data;
+        // Extraire les cours depuis les enrollments (comme dans Dashboard.js)
+        const studentCourses = response.data.data.enrollments.map(enrollment => enrollment.course);
         const enrolled = studentCourses.some(studentCourse => 
-          studentCourse._id === courseId || studentCourse.id === courseId
+          (studentCourse?._id || studentCourse?.id)?.toString() === courseId
         );
         console.log('🔍 Vérification dans les cours de l\'étudiant:', enrolled);
         if (enrolled) {
@@ -904,19 +991,29 @@ const CourseDetail = () => {
             </div>
           </div>
           <div className="course-hero-actions">
-            <button
-              onClick={handleEnroll}
-              disabled={enrolling || checkingEnrollment}
-              className={`btn btn-lg ${isEnrolled ? 'btn-danger' : 'btn-primary'}`}
-            >
-              {checkingEnrollment ? (
-                'Vérification...'
-              ) : enrolling ? (
-                isEnrolled ? 'Annulation...' : 'Inscription...'
-              ) : (
-                isEnrolled ? 'Annuler l\'inscription' : 'S\'inscrire maintenant'
-              )}
-            </button>
+            {isOwnerTutor ? (
+              <div className="owner-badge">
+                <span className="badge badge-info">
+                  <i className="fas fa-chalkboard-teacher me-1"></i>
+                  Vous êtes l'instructeur de ce cours
+                </span>
+              </div>
+            ) : (
+              <button
+                onClick={handleEnroll}
+                disabled={enrolling || checkingEnrollment}
+                className={`btn btn-lg ${isEnrolled ? 'btn-danger' : 'btn-primary'}`}
+              >
+                {checkingEnrollment ? (
+                  'Vérification...'
+                ) : enrolling ? (
+                  isEnrolled ? 'Annulation...' : 'Inscription...'
+                ) : (
+                  isEnrolled ? 'Annuler l\'inscription' : 'S\'inscrire maintenant'
+                )}
+              </button>
+            )}
+            
             {isEnrolled && (
               <div className="enrollment-status">
                 <div className="enrollment-badge">
@@ -928,7 +1025,7 @@ const CourseDetail = () => {
                 </Link>
               </div>
             )}
-            {isEnrolled && isCourseCompleted() && user?.role === 'apprenti' && (
+            {isEnrolled && isCourseCompleted() && isLearnerView && (
               <div className="certificate-section">
                 <div className="certificate-badge">
                   <i className="fas fa-certificate"></i>

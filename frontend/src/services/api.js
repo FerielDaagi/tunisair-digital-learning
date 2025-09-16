@@ -56,6 +56,10 @@ export const authAPI = {
   signup: (userData) => api.post('/auth/register', userData), // Alias pour signup
   logout: () => api.post('/auth/logout'),
   deleteAccount: () => api.delete('/auth/delete'),
+  verifyEmail: (data) => api.post('/auth/verify-email', data),
+  resendVerification: (email) => api.post('/auth/resend-verification', { email }),
+  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+  resetPassword: (data) => api.post('/auth/reset-password', data),
 };
 
 // Courses API
@@ -75,6 +79,7 @@ export const coursesAPI = {
   },
   delete: (id) => api.delete(`/courses/${id}`),
   publish: (id) => api.patch(`/courses/${id}/publish`),
+  archive: (id) => api.patch(`/courses/${id}/archive`),
   getTutorCourses: (params) => api.get('/courses/tutor/my-courses', { params }),
   getCourseStudents: (courseId) => api.get(`/courses/${courseId}/students`, { timeout: 30000 }), // 30 secondes
 };
@@ -166,6 +171,8 @@ export const userAPI = {
   promoteToTutor: (userId) => api.put(`/users/admin/${userId}/promote`),
   rejectTutorRequest: (userId, reason) => api.put(`/users/admin/${userId}/reject-tutor`, { reason }),
   demoteToApprentice: (userId) => api.put(`/users/admin/${userId}/demote`),
+  promoteToAdmin: (userId) => api.put(`/users/admin/${userId}/promote-admin`),
+  demoteFromAdmin: (userId) => api.put(`/users/admin/${userId}/demote-admin`),
   deleteUser: (userId) => api.delete(`/users/admin/${userId}`),
 };
 
@@ -173,6 +180,14 @@ export const userAPI = {
 export const dashboardAPI = {
   getStats: () => api.get('/dashboard/stats'),
   getRecentActivity: () => api.get('/dashboard/recent-activity'),
+};
+
+// Admin API
+export const adminAPI = {
+  // Statistiques globales des cours et avis
+  getCourseStats: () => api.get('/admin/course-stats'),
+  // Liste paginée de tous les avis/commentaires
+  getAllReviews: (params) => api.get('/admin/reviews', { params }),
 };
 
 // Notifications API

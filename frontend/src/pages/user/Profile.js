@@ -34,7 +34,9 @@ const Profile = () => {
       setFormData({
         name: user.name || '',
         bio: user.profile?.bio || '',
-        phone: user.profile?.phone || '',
+        phone: user.profile?.phone && user.profile.phone.trim() !== '' 
+          ? user.profile.phone 
+          : '+216 ',
         dateOfBirth: user.profile?.dateOfBirth ? user.profile.dateOfBirth.split('T')[0] : '',
       });
       
@@ -98,6 +100,16 @@ const Profile = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
+  };
+
+  // Gestion spécifique du numéro de téléphone tunisien (+216 + 8 chiffres)
+  const handlePhoneChange = (e) => {
+    const raw = e.target.value || '';
+    let value = raw.startsWith('+216') ? raw : `+216 ${raw.replace(/^\+/, '')}`;
+    const afterPrefix = value.replace(/^\+216\s*/, '');
+    const digitsOnly = afterPrefix.replace(/\D/g, '').slice(0, 8);
+    value = `+216 ${digitsOnly}`;
+    setFormData({ ...formData, phone: value });
   };
 
   const handleAvatarSelect = (file) => {
@@ -430,8 +442,13 @@ const Profile = () => {
                   name="phone"
                   className="form-control"
                   value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="+33 1 23 45 67 89"
+                  onChange={handlePhoneChange}
+                  onFocus={() => {
+                    if (!formData.phone || !formData.phone.startsWith('+216')) {
+                      setFormData(prev => ({ ...prev, phone: '+216 ' }));
+                    }
+                  }}
+                  placeholder="+216 XXXXXXXX"
                 />
               </div>
 

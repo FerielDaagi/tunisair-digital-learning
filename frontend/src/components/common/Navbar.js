@@ -186,7 +186,27 @@ const Navbar = ({ onSidebarToggle, isSidebarCollapsed }) => {
                       onClick={closeMobileMenu}
                     >
                       <Icon name="barChart" size={IconSizes.sm} color={IconColors.white} className="nav-icon" />
-                      {!isCollapsed && 'Statistiques'}
+                      {!isCollapsed && 'Statistiques Utilisateurs'}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      to="/admin/course-stats" 
+                      className={isActive('/admin/course-stats') ? 'active' : ''}
+                      onClick={closeMobileMenu}
+                    >
+                      <Icon name="barChart" size={IconSizes.sm} color={IconColors.white} className="nav-icon" />
+                      {!isCollapsed && 'Statistique Cours'}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      to="/admin/reviews" 
+                      className={isActive('/admin/reviews') ? 'active' : ''}
+                      onClick={closeMobileMenu}
+                    >
+                      <Icon name="comment" size={IconSizes.sm} color={IconColors.white} className="nav-icon" />
+                      {!isCollapsed && 'Avis & Évaluations'}
                     </Link>
                   </li>
                 </>

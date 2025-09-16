@@ -24,7 +24,8 @@ const publishCourse = async (req, res) => {
       });
     }
 
-    if (course.instructor._id.toString() !== instructorId) {
+    // Autoriser l'admin à publier n'importe quel cours
+    if (course.instructor._id.toString() !== instructorId && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Vous n\'êtes pas autorisé à publier ce cours'
@@ -131,12 +132,20 @@ const enrollInCourse = async (req, res) => {
     });
 
     if (existingEnrollment) {
-      console.log('⚠️ Tentative d\'inscription multiple, mais on autorise quand même');
-      // Pour l'instant, on autorise les inscriptions multiples
-      // return res.status(400).json({
-      //   success: false,
-      //   message: 'Vous êtes déjà inscrit à ce cours'
-      // });
+      console.log('ℹ️ Utilisateur déjà inscrit, retour succès idempotent');
+      return res.json({
+        success: true,
+        message: 'Vous êtes déjà inscrit à ce cours',
+        data: {
+          enrollment: {
+            id: existingEnrollment._id,
+            courseId: course._id,
+            courseTitle: course.title,
+            enrolledAt: existingEnrollment.enrolledAt,
+            progress: existingEnrollment.progress
+          }
+        }
+      });
     }
 
     // Créer l'inscription
@@ -149,30 +158,43 @@ const enrollInCourse = async (req, res) => {
 
     await enrollment.save();
 
-    // Ajouter l'étudiant à la liste des inscrits du cours
-    course.enrolledStudents.push({
-      student: studentId,
-      enrolledAt: new Date(),
-      progress: 0,
-      completedLessons: [],
-      lastAccessed: new Date()
+    // Ajouter l'étudiant à la liste des inscrits du cours (éviter les doublons)
+    const alreadyInCourseList = Array.isArray(course.enrolledStudents) && course.enrolledStudents.some((entry) => {
+      if (!entry) return false;
+      const entryStudentId = (entry.student && (entry.student._id || entry.student.id || entry.student.toString?.())) || entry._id || entry.id || entry;
+      return entryStudentId?.toString() === studentId;
     });
+    if (!alreadyInCourseList) {
+      course.enrolledStudents.push({
+        student: studentId,
+        enrolledAt: new Date(),
+        progress: 0,
+        completedLessons: [],
+        lastAccessed: new Date()
+      });
+    }
 
     await course.save();
 
-    // Créer les enregistrements de progression pour toutes les leçons
+    // Créer les enregistrements de progression pour toutes les leçons (avec garde)
     const allLessons = [];
-    for (const module of course.modules) {
-      const moduleWithLessons = await Module.findById(module._id).populate('lessons');
-      if (moduleWithLessons.lessons) {
-        for (const lesson of moduleWithLessons.lessons) {
-          allLessons.push({
-            student: studentId,
-            course: courseId,
-            module: module._id,
-            lesson: lesson._id,
-            status: 'not_started'
-          });
+    if (Array.isArray(course.modules)) {
+      for (const courseModule of course.modules) {
+        const moduleId = courseModule?._id || courseModule;
+        if (!moduleId) continue;
+        const moduleWithLessons = await Module.findById(moduleId).populate('lessons');
+        const lessons = moduleWithLessons?.lessons || [];
+        if (Array.isArray(lessons) && lessons.length > 0) {
+          for (const lesson of lessons) {
+            if (!lesson?._id) continue;
+            allLessons.push({
+              student: studentId,
+              course: courseId,
+              module: moduleId,
+              lesson: lesson._id,
+              status: 'not_started'
+            });
+          }
         }
       }
     }
@@ -182,8 +204,8 @@ const enrollInCourse = async (req, res) => {
     }
 
     // Notifier l'instructeur
-    const instructor = await User.findById(course.instructor);
-    if (instructor) {
+    const instructor = course?.instructor ? await User.findById(course.instructor) : null;
+    if (instructor && studentId) {
       const notification = new Notification({
         sender: studentId, // L'étudiant qui s'inscrit
         recipient: 'specific',
@@ -217,6 +239,13 @@ const enrollInCourse = async (req, res) => {
     });
 
   } catch (error) {
+    // Gérer proprement l'unicité (duplicate key)
+    if (error && error.code === 11000) {
+      return res.json({
+        success: true,
+        message: 'Vous êtes déjà inscrit à ce cours',
+      });
+    }
     console.error('Erreur lors de l\'inscription au cours:', error);
     res.status(500).json({
       success: false,
@@ -332,7 +361,8 @@ const getCourseStats = async (req, res) => {
 
     // Vérifier que le cours appartient à l'instructeur
     const course = await Course.findById(courseId);
-    if (!course || course.instructor.toString() !== instructorId) {
+    // Autoriser l'admin à voir les stats de n'importe quel cours
+    if (!course || (course.instructor.toString() !== instructorId && req.user.role !== 'admin')) {
       return res.status(403).json({
         success: false,
         message: 'Accès non autorisé'

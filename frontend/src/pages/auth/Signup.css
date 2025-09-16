@@ -1,0 +1,655 @@
+/* Design horizontal avec image de fond complète */
+.signup-page {
+  min-height: 100vh;
+  width: 100vw;
+  background: 
+    linear-gradient(135deg, rgba(79, 70, 229, 0.8), rgba(118, 75, 162, 0.8)),
+    linear-gradient(45deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+}
+
+.signup-container {
+  width: 100%;
+  max-width: 1200px;
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  position: relative;
+  min-height: 700px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Section gauche - Hero avec dégradé coloré */
+.signup-info {
+  background: linear-gradient(135deg, 
+    rgba(102, 126, 234, 0.95) 0%, 
+    rgba(118, 75, 162, 0.95) 50%, 
+    rgba(240, 147, 251, 0.95) 100%);
+  padding: 2rem 1.5rem;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.signup-info::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #ffffff, rgba(255, 255, 255, 0.8));
+  border-radius: 12px 0 0 0;
+}
+
+.signup-info h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 0.8rem;
+  line-height: 1.2;
+  position: relative;
+  z-index: 1;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.signup-info .subtitle {
+  font-size: 0.9rem;
+  margin-bottom: 1.2rem;
+  opacity: 0.9;
+  line-height: 1.5;
+  position: relative;
+  z-index: 1;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.signup-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.signup-features li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.6rem;
+  font-size: 0.85rem;
+  opacity: 0.95;
+  transition: transform 0.3s ease;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.signup-features li:hover {
+  transform: translateX(8px);
+  color: white;
+}
+
+.signup-features .feature-icon {
+  width: 40px;
+  height: 40px;
+  margin-right: 0.8rem;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+/* Section droite - Formulaire horizontal */
+.signup-form-section {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.95) 0%, 
+    rgba(248, 250, 252, 0.95) 100%);
+  padding: 3.5rem 3rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  position: relative;
+  overflow-y: auto;
+  max-height: 700px;
+  border-left: 1px solid rgba(226, 232, 240, 0.3);
+  backdrop-filter: blur(15px);
+}
+
+.form-header {
+  text-align: left;
+  margin-bottom: 2.5rem;
+}
+
+.form-header h2 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.025em;
+}
+
+.form-header p {
+  color: #64748b;
+  font-size: 1.1rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Formulaire minimaliste */
+.signup-form {
+  width: 100%;
+}
+
+.form-section {
+  margin-bottom: 2rem;
+}
+
+.form-section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  position: relative;
+  padding-left: 1.2rem;
+}
+
+.form-section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 16px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 2px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+  margin-bottom: 1.2rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.95rem;
+  letter-spacing: 0.025em;
+}
+
+.form-control {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: #ffffff;
+  color: #2d3748;
+  box-sizing: border-box;
+  font-weight: 400;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+  background: #fafbfc;
+  transform: translateY(-1px);
+}
+
+.form-control:hover {
+  border-color: #cbd5e0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.form-control::placeholder {
+  color: #a0aec0;
+  font-weight: 400;
+}
+
+/* Avatar upload horizontal */
+.avatar-section {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.avatar-upload {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 0.5rem;
+}
+
+.avatar-preview {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 3px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  background: #f7fafc;
+  transition: all 0.2s ease;
+  margin: 0 auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.avatar-preview:hover {
+  border-color: #667eea;
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.25);
+}
+
+.avatar-preview.has-image {
+  border-color: #667eea;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+}
+
+.avatar-placeholder {
+  text-align: center;
+  color: #a0aec0;
+}
+
+.avatar-placeholder .icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.avatar-placeholder .text {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  border-radius: 50%;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.avatar-preview:hover .avatar-overlay {
+  opacity: 1;
+}
+
+.avatar-remove {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #e53e3e;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(229, 62, 62, 0.3);
+  transition: all 0.2s ease;
+}
+
+.avatar-remove:hover {
+  background: #c53030;
+  transform: scale(1.1);
+}
+
+.avatar-info {
+  font-size: 0.75rem;
+  color: #a0aec0;
+  margin-bottom: 0.5rem;
+}
+
+.avatar-file-info {
+  background: #f7fafc;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #4a5568;
+  margin-bottom: 0.5rem;
+  border: 1px solid #e2e8f0;
+}
+
+/* Bouton de soumission horizontal */
+.submit-section {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 1.2rem 2rem;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.025em;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-submit:hover {
+  background: linear-gradient(135deg, #5a67d8, #6b46c1);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-submit:active {
+  transform: translateY(0);
+}
+
+.btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-submit.loading {
+  color: transparent;
+}
+
+.btn-submit.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 18px;
+  border: 2px solid transparent;
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Lien de connexion horizontal */
+.login-link {
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.login-link p {
+  color: #718096;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.login-link a {
+  color: #4a5568;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.login-link a:hover {
+  color: #2d3748;
+  text-decoration: underline;
+}
+
+/* Alertes minimalistes */
+.alert {
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.alert-success {
+  background: #f0fff4;
+  color: #22543d;
+  border-color: #9ae6b4;
+}
+
+.alert-error {
+  background: #fed7d7;
+  color: #742a2a;
+  border-color: #feb2b2;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .signup-container {
+    grid-template-columns: 1fr;
+    max-width: 600px;
+  }
+  
+  .signup-info {
+    text-align: center;
+    order: 2;
+    padding: 3rem 2rem;
+  }
+  
+  .signup-info h1 {
+    font-size: 2.2rem;
+  }
+  
+  .signup-form-section {
+    order: 1;
+    padding: 3rem 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .signup-page {
+    padding: 1rem;
+  }
+  
+  .signup-container {
+    border-radius: 16px;
+  }
+  
+  .signup-info {
+    padding: 2rem 1.5rem;
+  }
+  
+  .signup-info h1 {
+    font-size: 1.8rem;
+  }
+  
+  .signup-info .subtitle {
+    font-size: 1rem;
+  }
+  
+  .signup-form-section {
+    padding: 2rem 1.5rem;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .form-section-title {
+    font-size: 0.9rem;
+  }
+  
+  .avatar-preview {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .avatar-placeholder .icon {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .signup-form-section {
+    padding: 1.5rem 1rem;
+  }
+  
+  .form-header h2 {
+    font-size: 1.8rem;
+  }
+  
+  .btn-submit {
+    padding: 0.875rem 1.25rem;
+    font-size: 0.95rem;
+  }
+  
+  .signup-info {
+    padding: 1.5rem 1rem;
+  }
+  
+  .signup-info h1 {
+    font-size: 1.6rem;
+  }
+  
+  .signup-features .feature-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+}
+
+/* Animations subtiles */
+.signup-container {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.signup-info {
+  animation: slideInLeft 0.6s ease-out;
+}
+
+.signup-form-section {
+  animation: slideInRight 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Accessibilité */
+.form-control:focus-visible {
+  outline: 2px solid #4a5568;
+  outline-offset: 2px;
+}
+
+.btn-submit:focus-visible {
+  outline: 2px solid #4a5568;
+  outline-offset: 2px;
+}
+
+/* États de validation */
+.form-control.valid {
+  border-color: #38a169;
+}
+
+.form-control.invalid {
+  border-color: #e53e3e;
+}
+
+/* Transitions douces */
+* {
+  transition: all 0.2s ease;
+}

@@ -75,9 +75,12 @@ const getCourseById = async (req, res) => {
       });
     }
     
-    // Vérifier si l'utilisateur est inscrit
+    // Vérifier si l'utilisateur est inscrit et déterminer les droits
     let isEnrolled = false;
     let userProgress = null;
+    const isAuthenticated = !!req.user;
+    const isAdmin = isAuthenticated && req.user.role === 'admin';
+    const isOwner = isAuthenticated && course.instructor && course.instructor._id && course.instructor._id.toString() === req.user.id;
     
     if (req.user) {
       const enrollment = course.enrolledStudents.find(
@@ -87,6 +90,14 @@ const getCourseById = async (req, res) => {
         isEnrolled = true;
         userProgress = enrollment;
       }
+    }
+
+    // Règle: Un tuteur ne peut pas voir le contenu détaillé d'un cours d'un autre tuteur s'il n'est pas inscrit
+    if (isAuthenticated && req.user.role === 'tuteur' && !isOwner && !isAdmin && !isEnrolled) {
+      return res.status(403).json({
+        success: false,
+        message: 'Inscription requise pour consulter ce cours'
+      });
     }
     
     res.json({
@@ -121,8 +132,8 @@ const createCourse = async (req, res) => {
       tags: tags?.length || 0
     });
     
-    // Vérifier que l'utilisateur est un tuteur
-    if (req.user.role !== 'tuteur') {
+    // Vérifier que l'utilisateur est un tuteur (ou admin)
+    if (req.user.role !== 'tuteur' && req.user.role !== 'admin') {
       console.log('🚫 Tentative de création par un non-tuteur:', req.user.role);
       return res.status(403).json({
         success: false,
@@ -325,8 +336,8 @@ const updateCourse = async (req, res) => {
       });
     }
     
-    // Vérifier que l'utilisateur est le propriétaire du cours
-    if (course.instructor.toString() !== req.user.id) {
+    // Vérifier que l'utilisateur est le propriétaire du cours (sauf admin)
+    if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Vous n\'êtes pas autorisé à modifier ce cours'
@@ -372,8 +383,8 @@ const deleteCourse = async (req, res) => {
       });
     }
     
-    // Vérifier que l'utilisateur est le propriétaire du cours
-    if (course.instructor.toString() !== req.user.id) {
+    // Vérifier que l'utilisateur est le propriétaire du cours (sauf admin)
+    if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Vous n\'êtes pas autorisé à supprimer ce cours'
@@ -396,6 +407,46 @@ const deleteCourse = async (req, res) => {
     });
   } catch (error) {
     console.error('Erreur deleteCourse:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur interne du serveur'
+    });
+  }
+};
+
+// Archiver un cours (propriétaire ou admin)
+const archiveCourse = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cours introuvable'
+      });
+    }
+
+    // Vérifier que l'utilisateur est le propriétaire du cours (sauf admin)
+    if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Vous n\'êtes pas autorisé à archiver ce cours'
+      });
+    }
+
+    // Mettre le cours en archivé (désactiver la publication)
+    course.status = 'archived';
+    course.isPublished = false;
+    await course.save();
+
+    res.json({
+      success: true,
+      message: 'Cours archivé avec succès',
+      data: course
+    });
+  } catch (error) {
+    console.error('Erreur archiveCourse:', error);
     res.status(500).json({
       success: false,
       message: 'Erreur interne du serveur'
@@ -460,8 +511,8 @@ const publishCourse = async (req, res) => {
       console.log('❌ Aucun module trouvé dans le cours');
     }
     
-    // Vérifier que l'utilisateur est le propriétaire du cours
-    if (course.instructor.toString() !== req.user.id) {
+    // Vérifier que l'utilisateur est le propriétaire du cours (sauf admin)
+    if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
       console.log('🚫 Utilisateur non autorisé:', {
         courseInstructor: course.instructor.toString(),
         currentUser: req.user.id
@@ -562,7 +613,8 @@ const getTutorCourses = async (req, res) => {
     const skip = (page - 1) * limit;
     const q = (req.query.q || '').toString().trim();
     
-    let query = { instructor: req.user.id };
+    // Pour admin: voir tous les cours, sinon seulement les siens
+    let query = req.user.role === 'admin' ? {} : { instructor: req.user.id };
     
     // Filtre par statut
     if (status) {
@@ -960,5 +1012,6 @@ module.exports = {
   getTutorCourses,
   getCourseStudents,
   enrollInCourse,
-  getEnrolledCourses
+  getEnrolledCourses,
+  archiveCourse
 }; 

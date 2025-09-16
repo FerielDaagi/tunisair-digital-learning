@@ -237,15 +237,13 @@ const UserStats = () => {
 
   if (user?.role !== 'admin') {
     return (
-      <div className="main-content">
-        <div className="container">
-          <div className="card">
-            <div className="card-header">
-              <h2>Accès refusé</h2>
-            </div>
-            <div className="card-body">
-              <p>Vous n'avez pas les permissions nécessaires pour accéder à cette page.</p>
-            </div>
+      <div className="container" style={{ padding: '1rem' }}>
+        <div className="card">
+          <div className="card-header">
+            <h2>Accès refusé</h2>
+          </div>
+          <div className="card-body">
+            <p>Vous n'avez pas les permissions nécessaires pour accéder à cette page.</p>
           </div>
         </div>
       </div>
@@ -254,13 +252,11 @@ const UserStats = () => {
 
   if (loading) {
     return (
-      <div className="main-content">
-        <div className="container">
-          <div className="card">
-            <div className="card-body text-center">
-              <Icon name="loading" size={IconSizes.xl} className="spin" />
-              <p>Chargement des statistiques...</p>
-            </div>
+      <div className="container" style={{ padding: '1rem' }}>
+        <div className="card">
+          <div className="card-body text-center">
+            <Icon name="loading" size={IconSizes.xl} className="spin" />
+            <p>Chargement des statistiques...</p>
           </div>
         </div>
       </div>
@@ -269,16 +265,14 @@ const UserStats = () => {
 
   if (error) {
     return (
-      <div className="main-content">
-        <div className="container">
-          <div className="card">
-            <div className="card-body text-center">
-              <Icon name="error" size={IconSizes.xl} color={IconColors.danger} />
-              <p className="text-danger">{error}</p>
-              <button onClick={fetchUserStats} className="btn">
-                Réessayer
-              </button>
-            </div>
+      <div className="container" style={{ padding: '1rem' }}>
+        <div className="card">
+          <div className="card-body text-center">
+            <Icon name="error" size={IconSizes.xl} color={IconColors.danger} />
+            <p className="text-danger">{error}</p>
+            <button onClick={fetchUserStats} className="btn">
+              Réessayer
+            </button>
           </div>
         </div>
       </div>
@@ -286,8 +280,7 @@ const UserStats = () => {
   }
 
   return (
-    <div className="main-content">
-      <div className="container">
+    <div className="container" style={{ padding: '1rem' }}>
         {/* En-tête */}
         <div className="card">
           <div className="card-header">
@@ -516,7 +509,6 @@ const UserStats = () => {
             </div>
           </div>
         </div>
-      </div>
     </div>
   );
 };

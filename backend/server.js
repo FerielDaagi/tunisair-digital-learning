@@ -96,6 +96,7 @@ const generalLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.method === 'OPTIONS', // Ne jamais limiter les preflight
 });
 
 // Rate limiter spécifique pour les certificats (plus permissif)
@@ -109,20 +110,29 @@ const certificateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Appliquer le rate limiting général aux routes API
-app.use('/api/', generalLimiter);
-
-// CORS
+// CORS - doit être AVANT le rate limiter et les routes
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept', 'X-Requested-With'],
   optionsSuccessStatus: 200
 }));
 
-// Preflight pour toutes les routes
-app.options('*', cors());
+// Réponse rapide pour toutes les requêtes preflight
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    res.header('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:3000');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept, X-Requested-With');
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+// Appliquer le rate limiting général aux routes API (APRÈS CORS / preflight)
+app.use('/api/', generalLimiter);
 
 // Body parsing middleware - seulement pour les routes qui n'utilisent pas multer
 app.use('/api/auth', express.json());

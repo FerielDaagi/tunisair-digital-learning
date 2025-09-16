@@ -471,6 +471,20 @@ const getModuleLessons = async (req, res) => {
     const lessons = await Lesson.find({ module: moduleId })
       .sort('order');
     
+    // Règle d'accès: si utilisateur est tuteur mais pas propriétaire/admin ni inscrit, interdire
+    if (req.user && req.user.role === 'tuteur') {
+      const moduleDoc = await Module.findById(moduleId);
+      if (moduleDoc) {
+        const course = await Course.findById(moduleDoc.course);
+        const isOwner = course && course.instructor && course.instructor.toString() === req.user.id;
+        const isAdmin = req.user.role === 'admin';
+        const isEnrolled = course && Array.isArray(course.enrolledStudents) && course.enrolledStudents.some(e => e.student.toString() === req.user.id);
+        if (!isOwner && !isAdmin && !isEnrolled) {
+          return res.status(403).json({ success: false, message: 'Inscription requise pour consulter ces leçons' });
+        }
+      }
+    }
+    
     res.json({
       success: true,
       data: lessons
@@ -539,6 +553,17 @@ const getLessonById = async (req, res) => {
       }
     }
     
+    // Règle d'accès: si utilisateur est tuteur mais pas propriétaire/admin ni inscrit, interdire
+    if (req.user && req.user.role === 'tuteur') {
+      const course = await Course.findById(lesson.course);
+      const isOwner = course && course.instructor && course.instructor.toString() === req.user.id;
+      const isAdmin = req.user.role === 'admin';
+      const isEnrolled = course && Array.isArray(course.enrolledStudents) && course.enrolledStudents.some(e => e.student.toString() === req.user.id);
+      if (!isOwner && !isAdmin && !isEnrolled) {
+        return res.status(403).json({ success: false, message: 'Inscription requise pour consulter cette leçon' });
+      }
+    }
+
     // Refresh the lesson from database to get the updated data
     const updatedLesson = await Lesson.findById(id);
     console.log('🔍 Final lesson data being returned:', {

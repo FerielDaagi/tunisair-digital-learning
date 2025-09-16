@@ -20,17 +20,30 @@ const markLessonStarted = async (req, res) => {
       });
     }
 
-    // Vérifier que l'étudiant est inscrit au cours
-    const enrollment = await Enrollment.findOne({
+    // Vérifier l'accès: autoriser le tuteur propriétaire, sinon exiger l'inscription
+    let enrollment = await Enrollment.findOne({
       student: studentId,
       course: lesson.module.course
     });
 
+    const isTutorOwner = req.user && req.user.role === 'tuteur' && String(req.user.id) === String((lesson.module && lesson.module.course && lesson.module.course.instructor) ? lesson.module.course.instructor : null);
+
     if (!enrollment) {
-      return res.status(403).json({
-        success: false,
-        message: 'Vous n\'êtes pas inscrit à ce cours'
-      });
+      // Si l'utilisateur est le tuteur propriétaire du cours, bypass l'inscription
+      if (req.user && req.user.role === 'tuteur') {
+        // Récupérer le cours pour vérifier la propriété
+        const courseDoc = await Course.findById(lesson.module.course);
+        if (!courseDoc) {
+          return res.status(404).json({ success: false, message: 'Cours non trouvé' });
+        }
+        const isOwner = String(courseDoc.instructor) === String(req.user.id);
+        if (!isOwner) {
+          return res.status(403).json({ success: false, message: 'Vous n\'êtes pas inscrit à ce cours' });
+        }
+        // Laisser continuer sans enrollment
+      } else {
+        return res.status(403).json({ success: false, message: 'Vous n\'êtes pas inscrit à ce cours' });
+      }
     }
 
     // Trouver ou créer l'enregistrement de progression
@@ -96,17 +109,26 @@ const markLessonCompleted = async (req, res) => {
       });
     }
 
-    // Vérifier que l'étudiant est inscrit au cours
-    const enrollment = await Enrollment.findOne({
+    // Vérifier l'accès: autoriser le tuteur propriétaire, sinon exiger l'inscription
+    let enrollment = await Enrollment.findOne({
       student: studentId,
       course: lesson.module.course
     });
 
     if (!enrollment) {
-      return res.status(403).json({
-        success: false,
-        message: 'Vous n\'êtes pas inscrit à ce cours'
-      });
+      if (req.user && req.user.role === 'tuteur') {
+        const courseDoc = await Course.findById(lesson.module.course);
+        if (!courseDoc) {
+          return res.status(404).json({ success: false, message: 'Cours non trouvé' });
+        }
+        const isOwner = String(courseDoc.instructor) === String(req.user.id);
+        if (!isOwner) {
+          return res.status(403).json({ success: false, message: 'Vous n\'êtes pas inscrit à ce cours' });
+        }
+        // Laisser continuer
+      } else {
+        return res.status(403).json({ success: false, message: 'Vous n\'êtes pas inscrit à ce cours' });
+      }
     }
 
     // Trouver ou créer l'enregistrement de progression
@@ -189,17 +211,26 @@ const updateVideoProgress = async (req, res) => {
       });
     }
 
-    // Vérifier que l'étudiant est inscrit au cours
-    const enrollment = await Enrollment.findOne({
+    // Vérifier l'accès: autoriser le tuteur propriétaire, sinon exiger l'inscription
+    let enrollment = await Enrollment.findOne({
       student: studentId,
       course: lesson.module.course
     });
 
     if (!enrollment) {
-      return res.status(403).json({
-        success: false,
-        message: 'Vous n\'êtes pas inscrit à ce cours'
-      });
+      if (req.user && req.user.role === 'tuteur') {
+        const courseDoc = await Course.findById(lesson.module.course);
+        if (!courseDoc) {
+          return res.status(404).json({ success: false, message: 'Cours non trouvé' });
+        }
+        const isOwner = String(courseDoc.instructor) === String(req.user.id);
+        if (!isOwner) {
+          return res.status(403).json({ success: false, message: 'Vous n\'êtes pas inscrit à ce cours' });
+        }
+        // Laisser continuer
+      } else {
+        return res.status(403).json({ success: false, message: 'Vous n\'êtes pas inscrit à ce cours' });
+      }
     }
 
     // Trouver ou créer l'enregistrement de progression
@@ -261,20 +292,7 @@ const getCourseProgress = async (req, res) => {
     const { courseId } = req.params;
     const studentId = req.user.id;
 
-    // Vérifier que l'étudiant est inscrit au cours
-    const enrollment = await Enrollment.findOne({
-      student: studentId,
-      course: courseId
-    }).populate('course');
-
-    if (!enrollment) {
-      return res.status(403).json({
-        success: false,
-        message: 'Vous n\'êtes pas inscrit à ce cours'
-      });
-    }
-
-    // Obtenir tous les modules et leçons du cours
+    // Charger le cours d'abord pour vérifier la propriété
     const course = await Course.findById(courseId)
       .populate({
         path: 'modules',
@@ -283,6 +301,25 @@ const getCourseProgress = async (req, res) => {
           model: 'Lesson'
         }
       });
+
+    if (!course) {
+      return res.status(404).json({ success: false, message: 'Cours non trouvé' });
+    }
+
+    // Vérifier l'inscription
+    let enrollment = await Enrollment.findOne({
+      student: studentId,
+      course: courseId
+    });
+
+    if (!enrollment) {
+      // Autoriser le tuteur propriétaire à voir sa progression sans inscription
+      const isTutorOwner = req.user && req.user.role === 'tuteur' && String(course.instructor) === String(req.user.id);
+      if (!isTutorOwner) {
+        return res.status(403).json({ success: false, message: 'Vous n\'êtes pas inscrit à ce cours' });
+      }
+      // Pas d'enrollment: on générera des valeurs dérivées plus bas
+    }
 
     // Obtenir la progression pour chaque leçon
     const progressData = await Progress.find({
@@ -339,6 +376,16 @@ const getCourseProgress = async (req, res) => {
       return moduleProgress;
     });
 
+    // Calculer la progression totale si pas d'enrollment
+    let totalProgress = enrollment ? enrollment.progress : 0;
+    if (!enrollment) {
+      const totalLessons = course.modules.reduce((acc, m) => acc + m.lessons.length, 0);
+      if (totalLessons > 0) {
+        const completedLessons = progressData.filter(p => p.status === 'completed').length;
+        totalProgress = Math.round((completedLessons / totalLessons) * 100);
+      }
+    }
+
     res.json({
       success: true,
       data: {
@@ -347,20 +394,20 @@ const getCourseProgress = async (req, res) => {
           title: course.title,
           description: course.description,
           instructor: course.instructor,
-          totalProgress: enrollment.progress,
-          enrolledAt: enrollment.enrolledAt,
-          lastAccessedAt: enrollment.lastAccessedAt,
-          status: enrollment.status
+          totalProgress: totalProgress,
+          enrolledAt: enrollment ? enrollment.enrolledAt : null,
+          lastAccessedAt: enrollment ? enrollment.lastAccessedAt : null,
+          status: enrollment ? enrollment.status : 'owner'
         },
         modules: modulesWithProgress,
-        enrollment: {
+        enrollment: enrollment ? {
           _id: enrollment._id,
           progress: enrollment.progress,
           completedLessons: enrollment.completedLessons,
           enrolledAt: enrollment.enrolledAt,
           lastAccessedAt: enrollment.lastAccessedAt,
           status: enrollment.status
-        }
+        } : null
       }
     });
 

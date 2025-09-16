@@ -47,7 +47,7 @@
   /* Dimensions sidebar */
   --sidebar-width: 280px;
   --sidebar-collapsed-width: 80px;
-  --main-content-margin: -90px;
+  --main-content-margin: 24px;
 }
 
 body {
@@ -696,6 +696,8 @@ body {
 .info-btn { background: var(--secondary-purple); }
 .promote-btn { background: var(--success); }
 .demote-btn { background: var(--primary-blue); }
+.promote-admin-btn { background: var(--warning); }
+.demote-admin-btn { background: var(--danger); }
 .activate-btn { background: var(--success); }
 .deactivate-btn { background: var(--warning); }
 .delete-btn { background: var(--danger); }
@@ -1009,6 +1011,37 @@ body.route-published-courses .main-content {
 
 body.route-published-courses .main-content.sidebar-collapsed {
   margin-left: var(--sidebar-collapsed-width);
+}
+
+/* Réduction de l'espace pour toutes les pages admin */
+body.route-admin .main-content {
+  margin-left: var(--sidebar-width);
+}
+
+body.route-admin .main-content.sidebar-collapsed {
+  margin-left: var(--sidebar-collapsed-width);
+}
+
+/* Réduction de l'espace pour la page d'accueil (dashboard) */
+body.route-dashboard .main-content {
+  margin-left: calc(var(--sidebar-width) - 110px);
+  padding-left: 0;
+}
+
+body.route-dashboard .main-content.sidebar-collapsed {
+  margin-left: calc(var(--sidebar-collapsed-width) -110px);
+  padding-left: 0;
+}
+
+/* Même réduction pour la page courses */
+body.route-courses .main-content {
+  margin-left: calc(var(--sidebar-width) - 110px);
+  padding-left: 0;
+}
+
+body.route-courses .main-content.sidebar-collapsed {
+  margin-left: calc(var(--sidebar-collapsed-width) -110px);
+  padding-left: 0;
 }
 
 /* Bouton toggle sidebar */

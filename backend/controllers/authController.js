@@ -3,6 +3,8 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const User = require('../models/User');
+const { generateVerificationCode, sendVerificationEmail, sendActivationConfirmation, sendPasswordResetEmail } = require('../services/emailService');
+const crypto = require('crypto');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -147,17 +149,35 @@ const register = async (req, res) => {
           };
         }
 
+        // Générer le code de vérification
+        const verificationCode = generateVerificationCode();
+        const verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+        // Ajouter les données de vérification
+        newUserData.verificationCode = verificationCode;
+        newUserData.verificationCodeExpires = verificationCodeExpires;
+
         // Créer nouvel utilisateur
         const newUser = await User.create(newUserData);
 
-        // Générer token
-        const token = generateToken(newUser);
+        // Envoyer l'email de vérification
+        const emailResult = await sendVerificationEmail(newUser.email, verificationCode);
+        
+        if (!emailResult.success) {
+          console.error('Erreur envoi email:', emailResult.error);
+          // Supprimer l'utilisateur si l'email n'a pas pu être envoyé
+          await User.findByIdAndDelete(newUser._id);
+          return res.status(500).json({
+            success: false,
+            message: 'Erreur lors de l\'envoi de l\'email de vérification'
+          });
+        }
 
         res.status(201).json({
           success: true,
-          message: 'Inscription réussie',
+          message: 'Inscription réussie. Veuillez vérifier votre email pour activer votre compte.',
           user: newUser.toJSON(),
-          token
+          requiresVerification: true
         });
 
       } catch (error) {
@@ -451,11 +471,194 @@ const deleteAccount = async (req, res) => {
   }
 };
 
+// Vérifier le code de vérification email
+const verifyEmail = async (req, res) => {
+  try {
+    const { email, verificationCode } = req.body;
+
+    if (!email || !verificationCode) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email et code de vérification sont obligatoires'
+      });
+    }
+
+    // Trouver l'utilisateur avec le code de vérification
+    const user = await User.findOne({ 
+      email,
+      verificationCode,
+      verificationCodeExpires: { $gt: Date.now() }
+    }).select('+verificationCode +verificationCodeExpires');
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Code de vérification invalide ou expiré'
+      });
+    }
+
+    // Activer le compte
+    user.emailVerified = true;
+    user.isActive = true;
+    user.verificationCode = undefined;
+    user.verificationCodeExpires = undefined;
+    await user.save();
+
+    // Envoyer email de confirmation
+    await sendActivationConfirmation(user.email, user.name);
+
+    res.json({
+      success: true,
+      message: 'Email vérifié avec succès. Votre compte est maintenant actif.',
+      user: user.toJSON()
+    });
+
+  } catch (error) {
+    console.error('Erreur verifyEmail:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur interne du serveur'
+    });
+  }
+};
+
+// Renvoyer le code de vérification
+const resendVerificationCode = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email obligatoire'
+      });
+    }
+
+    // Trouver l'utilisateur
+    const user = await User.findOne({ email }).select('+verificationCode +verificationCodeExpires');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur non trouvé'
+      });
+    }
+
+    if (user.emailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email déjà vérifié'
+      });
+    }
+
+    // Générer un nouveau code
+    const verificationCode = generateVerificationCode();
+    const verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    user.verificationCode = verificationCode;
+    user.verificationCodeExpires = verificationCodeExpires;
+    await user.save();
+
+    // Envoyer le nouvel email
+    const emailResult = await sendVerificationEmail(user.email, verificationCode);
+    
+    if (!emailResult.success) {
+      return res.status(500).json({
+        success: false,
+        message: 'Erreur lors de l\'envoi de l\'email'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Nouveau code de vérification envoyé'
+    });
+
+  } catch (error) {
+    console.error('Erreur resendVerificationCode:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur interne du serveur'
+    });
+  }
+};
+
+// Demande de réinitialisation de mot de passe
+const requestPasswordReset = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email obligatoire' });
+    }
+
+    const user = await User.findOne({ email }).select('+resetPasswordToken +resetPasswordExpires');
+    if (!user) {
+      // Ne pas révéler si l'email existe
+      return res.json({ success: true, message: 'Si un compte existe, un email a été envoyé' });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1h
+
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = resetExpires;
+    await user.save();
+
+    const emailResult = await sendPasswordResetEmail(user.email, resetToken);
+    if (!emailResult.success) {
+      return res.status(500).json({ success: false, message: 'Erreur lors de l\'envoi de l\'email' });
+    }
+
+    res.json({ success: true, message: 'Email de réinitialisation envoyé' });
+  } catch (error) {
+    console.error('Erreur requestPasswordReset:', error);
+    res.status(500).json({ success: false, message: 'Erreur interne du serveur' });
+  }
+};
+
+// Réinitialisation du mot de passe via token
+const resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) {
+      return res.status(400).json({ success: false, message: 'Token et nouveau mot de passe sont obligatoires' });
+    }
+
+    if (typeof password !== 'string' || password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Mot de passe invalide (min 6 caractères)' });
+    }
+
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }
+    }).select('+password +resetPasswordToken +resetPasswordExpires');
+
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'Token invalide ou expiré' });
+    }
+
+    user.password = password; // sera hashé par le pre-save
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.json({ success: true, message: 'Mot de passe réinitialisé avec succès' });
+  } catch (error) {
+    console.error('Erreur resetPassword:', error);
+    res.status(500).json({ success: false, message: 'Erreur interne du serveur' });
+  }
+};
+
 module.exports = {
   register,
   login,
   logout,
   getCurrentUser,
-  updateAvatar, // Nouvelle fonction exportée
-  deleteAccount  // Fonction pour supprimer le compte
+  updateAvatar,
+  deleteAccount,
+  verifyEmail,
+  resendVerificationCode,
+  // Expose handlers for password reset (defined below)
+  requestPasswordReset,
+  resetPassword
 };

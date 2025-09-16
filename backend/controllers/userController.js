@@ -694,6 +694,115 @@ const demoteToApprentice = async (req, res) => {
   }
 };
 
+// Promouvoir un utilisateur au rôle d'administrateur (admin seulement)
+const promoteToAdmin = async (req, res) => {
+  try {
+    // Vérifier que l'utilisateur est admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès refusé. Rôle administrateur requis.'
+      });
+    }
+
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur introuvable'
+      });
+    }
+
+    // Empêcher l'admin de se promouvoir lui-même
+    if (userId === req.user.id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vous ne pouvez pas modifier votre propre rôle'
+      });
+    }
+
+    // Vérifier que l'utilisateur n'est pas déjà admin
+    if (user.role === 'admin') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cet utilisateur est déjà administrateur'
+      });
+    }
+
+    user.role = 'admin';
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Utilisateur promu administrateur avec succès',
+      user: user.toJSON()
+    });
+  } catch (error) {
+    console.error('Erreur promoteToAdmin:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur interne du serveur'
+    });
+  }
+};
+
+// Rétrograder un administrateur au rôle d'apprenti (admin seulement)
+const demoteFromAdmin = async (req, res) => {
+  try {
+    // Vérifier que l'utilisateur est admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès refusé. Rôle administrateur requis.'
+      });
+    }
+
+    const { userId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur introuvable'
+      });
+    }
+
+    // Empêcher l'admin de se rétrograder lui-même
+    if (userId === req.user.id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vous ne pouvez pas modifier votre propre rôle'
+      });
+    }
+
+    // Vérifier que l'utilisateur est bien admin
+    if (user.role !== 'admin') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cet utilisateur n\'est pas administrateur'
+      });
+    }
+
+    user.role = 'apprenti';
+    user.tutorRequestStatus = 'none';
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Utilisateur rétrogradé au rôle d\'apprenti avec succès',
+      user: user.toJSON()
+    });
+  } catch (error) {
+    console.error('Erreur demoteFromAdmin:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur interne du serveur'
+    });
+  }
+};
+
 // Supprimer un utilisateur (admin seulement)
 const deleteUser = async (req, res) => {
   try {
@@ -787,5 +896,7 @@ module.exports = {
   promoteToTutor,
   rejectTutorRequest,
   demoteToApprentice,
+  promoteToAdmin,
+  demoteFromAdmin,
   deleteUser
 };

@@ -16,13 +16,13 @@ const AdminDashboard = () => {
   const [success, setSuccess] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterAdmin, setFilterAdmin] = useState('all');
   // UI state for professional confirmations and inputs
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectUserId, setRejectUserId] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [confirmAction, setConfirmAction] = useState(null); // 'approve' | 'demote'
+  const [confirmAction, setConfirmAction] = useState(null); // 'approve' | 'demote' | 'promote-admin' | 'demote-admin'
   const [targetUserId, setTargetUserId] = useState(null);
   const [confirmTitle, setConfirmTitle] = useState('');
   const [confirmMessage, setConfirmMessage] = useState('');
@@ -31,7 +31,7 @@ const AdminDashboard = () => {
   
   // États de pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [usersPerPage, setUsersPerPage] = useState(3);
+  const [usersPerPage, setUsersPerPage] = useState(10);
 
 
   useEffect(() => {
@@ -108,11 +108,11 @@ const AdminDashboard = () => {
       const matchesSearch = userItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            userItem.email.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesRole = filterRole === 'all' || userItem.role === filterRole;
-      const matchesStatus = filterStatus === 'all' || 
-                           (filterStatus === 'active' && userItem.isActive !== false) ||
-                           (filterStatus === 'inactive' && userItem.isActive === false);
+      const matchesAdmin = filterAdmin === 'all' || 
+                           (filterAdmin === 'admin' && userItem.role === 'admin') ||
+                           (filterAdmin === 'non-admin' && userItem.role !== 'admin');
       
-      return matchesSearch && matchesRole && matchesStatus;
+      return matchesSearch && matchesRole && matchesAdmin;
     });
     
     return filtered;
@@ -158,7 +158,7 @@ const AdminDashboard = () => {
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterRole, filterStatus]);
+  }, [searchTerm, filterRole, filterAdmin]);
 
   const handleToggleStatus = async (userId, currentStatus) => {
     try {
@@ -209,6 +209,12 @@ const AdminDashboard = () => {
       } else if (confirmAction === 'demote') {
         await userAPI.demoteToApprentice(targetUserId);
         setSuccess("Utilisateur rétrogradé au rôle d'apprenti");
+      } else if (confirmAction === 'promote-admin') {
+        await userAPI.promoteToAdmin(targetUserId);
+        setSuccess('Utilisateur promu administrateur avec succès');
+      } else if (confirmAction === 'demote-admin') {
+        await userAPI.demoteFromAdmin(targetUserId);
+        setSuccess("Utilisateur rétrogradé au rôle d'apprenti");
       }
       setShowConfirmModal(false);
       setConfirmAction(null);
@@ -240,11 +246,11 @@ const AdminDashboard = () => {
     const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = filterRole === 'all' || user.role === filterRole;
-    const matchesStatus = filterStatus === 'all' || 
-                         (filterStatus === 'active' && user.isActive !== false) ||
-                         (filterStatus === 'inactive' && user.isActive === false);
+    const matchesAdmin = filterAdmin === 'all' || 
+                         (filterAdmin === 'admin' && user.role === 'admin') ||
+                         (filterAdmin === 'non-admin' && user.role !== 'admin');
     
-    return matchesSearch && matchesRole && matchesStatus;
+    return matchesSearch && matchesRole && matchesAdmin;
   });
 
   // Statistiques
@@ -253,22 +259,19 @@ const AdminDashboard = () => {
     apprentices: users.filter(u => u.role === 'apprenti').length,
     tutors: users.filter(u => u.role === 'tuteur').length,
     admins: users.filter(u => u.role === 'admin').length,
-    active: users.filter(u => u.isActive !== false).length,
-    inactive: users.filter(u => u.isActive === false).length,
+    nonAdmins: users.filter(u => u.role !== 'admin').length,
   };
 
   if (user?.role !== 'admin') {
     return (
-      <div className="main-content">
-        <div style={{ maxWidth: '600px', margin: '0 auto', paddingTop: '2rem' }}>
-          <div className="card">
-            <div style={{ textAlign: 'center', padding: '2rem' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚫</div>
-              <h2 style={{ color: 'var(--danger)', marginBottom: '1rem' }}>Accès refusé</h2>
-              <p style={{ color: '#6c757d' }}>
-                Vous devez être administrateur pour accéder à cette page.
-              </p>
-            </div>
+      <div className="container" style={{ maxWidth: '600px', margin: '0 auto', padding: '1rem' }}>
+        <div className="card">
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚫</div>
+            <h2 style={{ color: 'var(--danger)', marginBottom: '1rem' }}>Accès refusé</h2>
+            <p style={{ color: '#6c757d' }}>
+              Vous devez être administrateur pour accéder à cette page.
+            </p>
           </div>
         </div>
       </div>
@@ -276,8 +279,7 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="main-content">
-      <div style={{ maxWidth: '1200px', margin: '0 auto', paddingTop: '2rem' }}>
+    <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '1rem' }}>
 
         <ConfirmModal
           open={confirmDeleteState.open}
@@ -357,15 +359,9 @@ const AdminDashboard = () => {
           </div>
           
           <div className="card" style={{ textAlign: 'center', padding: '1.5rem' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>✅</div>
-            <h3 style={{ margin: '0 0 0.5rem 0', color: '#495057' }}>{stats.active}</h3>
-            <p style={{ margin: 0, color: '#6c757d', fontSize: '0.9rem' }}>Comptes Actifs</p>
-          </div>
-          
-          <div className="card" style={{ textAlign: 'center', padding: '1.5rem' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>❌</div>
-            <h3 style={{ margin: '0 0 0.5rem 0', color: '#495057' }}>{stats.inactive}</h3>
-            <p style={{ margin: 0, color: '#6c757d', fontSize: '0.9rem' }}>Comptes Inactifs</p>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>👤</div>
+            <h3 style={{ margin: '0 0 0.5rem 0', color: '#495057' }}>{stats.nonAdmins}</h3>
+            <p style={{ margin: 0, color: '#6c757d', fontSize: '0.9rem' }}>Non-Administrateurs</p>
           </div>
         </div>
 
@@ -422,11 +418,11 @@ const AdminDashboard = () => {
               
               <div>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                  Statut
+                  Rôle Admin
                 </label>
                 <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
+                  value={filterAdmin}
+                  onChange={(e) => setFilterAdmin(e.target.value)}
                   style={{
                     width: '100%',
                     padding: '0.75rem',
@@ -435,9 +431,9 @@ const AdminDashboard = () => {
                     fontSize: '1rem'
                   }}
                 >
-                  <option value="all">Tous les statuts</option>
-                  <option value="active">Actifs</option>
-                  <option value="inactive">Inactifs</option>
+                  <option value="all">Tous les rôles</option>
+                  <option value="admin">Administrateurs</option>
+                  <option value="non-admin">Non-Administrateurs</option>
                 </select>
               </div>
             </div>
@@ -473,7 +469,7 @@ const AdminDashboard = () => {
                     <th>Utilisateur</th>
                     <th>Email</th>
                     <th style={{ textAlign: 'center' }}>Rôle</th>
-                    <th style={{ textAlign: 'center' }}>Statut</th>
+                    <th style={{ textAlign: 'center' }}>Admin</th>
                     <th style={{ textAlign: 'center' }}>Date d'inscription</th>
                     <th style={{ textAlign: 'center' }}>Demande Tuteur</th>
                     <th style={{ textAlign: 'center' }}>Actions</th>
@@ -548,9 +544,37 @@ const AdminDashboard = () => {
                       </td>
                       
                       <td style={{ textAlign: 'center' }}>
-                        <span className={`status-badge ${userItem.isActive === false ? 'inactive' : 'active'}`}>
-                          {userItem.isActive === false ? 'Inactif' : 'Actif'}
-                        </span>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                          {userItem.role === 'admin' ? (
+                            <button
+                              onClick={() => handleOpenConfirm(
+                                'demote-admin',
+                                userItem._id,
+                                'Rétrograder administrateur',
+                                `Confirmez-vous la rétrogradation de ${userItem.name} au rôle d'apprenti ?`
+                              )}
+                              className="admin-action-btn demote-admin-btn"
+                              title="Rétrograder de admin"
+                              disabled={userItem._id === user._id}
+                            >
+                              <Icon name="user" size={IconSizes.xs} color={IconColors.white} />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleOpenConfirm(
+                                'promote-admin',
+                                userItem._id,
+                                'Promouvoir administrateur',
+                                `Confirmez-vous la promotion de ${userItem.name} au rôle d'administrateur ?`
+                              )}
+                              className="admin-action-btn promote-admin-btn"
+                              title="Promouvoir en admin"
+                              disabled={userItem._id === user._id}
+                            >
+                              <Icon name="crown" size={IconSizes.xs} color={IconColors.white} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                       
                       <td style={{ padding: '1rem', textAlign: 'center', color: '#6c757d' }}>
@@ -684,21 +708,6 @@ const AdminDashboard = () => {
                       
                       <td style={{ padding: '1rem', textAlign: 'center' }}>
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                          {/* Toggle Status */}
-                          {userItem._id !== user._id && (
-                            <button
-                              onClick={() => handleToggleStatus(userItem._id, userItem.isActive === false)}
-                              className={`admin-action-btn ${userItem.isActive === false ? 'activate-btn' : 'deactivate-btn'}`}
-                              title={userItem.isActive === false ? 'Activer' : 'Désactiver'}
-                            >
-                              {userItem.isActive === false ? (
-                                <Icon name="unlock" size={IconSizes.xs} color={IconColors.white} />
-                              ) : (
-                                <Icon name="lock" size={IconSizes.xs} color={IconColors.white} />
-                              )}
-                            </button>
-                          )}
-                          
                           {/* Delete User */}
                           {userItem._id !== user._id && (
                             <button
@@ -892,7 +901,6 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 };

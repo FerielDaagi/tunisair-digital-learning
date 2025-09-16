@@ -13,7 +13,7 @@ const MyCourses = () => {
   const [filter, setFilter] = useState('all'); // all, active, completed
 
   useEffect(() => {
-    if (!user || user.role !== 'apprenti') {
+    if (!user) {
       navigate('/dashboard');
       return;
     }

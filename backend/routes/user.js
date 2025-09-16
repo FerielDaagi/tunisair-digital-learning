@@ -16,6 +16,8 @@ const {
   promoteToTutor,
   rejectTutorRequest,
   demoteToApprentice,
+  promoteToAdmin,
+  demoteFromAdmin,
   deleteUser
 } = require('../controllers/userController');
 const { auth } = require('../middleware/auth');
@@ -48,6 +50,8 @@ router.put('/admin/:userId/status', toggleUserStatus);
 router.put('/admin/:userId/promote', promoteToTutor);
 router.put('/admin/:userId/reject-tutor', rejectTutorRequest);
 router.put('/admin/:userId/demote', demoteToApprentice);
+router.put('/admin/:userId/promote-admin', promoteToAdmin);
+router.put('/admin/:userId/demote-admin', demoteFromAdmin);
 router.delete('/admin/:userId', deleteUser);
 
 module.exports = router; 

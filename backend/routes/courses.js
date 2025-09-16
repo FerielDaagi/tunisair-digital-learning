@@ -10,7 +10,8 @@ const {
   getTutorCourses,
   getCourseStudents,
   enrollInCourse, 
-  getEnrolledCourses 
+  getEnrolledCourses,
+  archiveCourse
 } = require('../controllers/courseController');
 const { auth } = require('../middleware/auth');
 const upload = require('../middleware/upload');
@@ -31,6 +32,7 @@ router.post('/:id/enroll', auth, enrollInCourse);
 router.put('/:id', auth, upload.single('thumbnail'), updateCourse);
 router.delete('/:id', auth, deleteCourse);
 router.patch('/:id/publish', auth, publishCourse);
+router.patch('/:id/archive', auth, archiveCourse);
 router.get('/:id', getCourseById);
 
 module.exports = router; 

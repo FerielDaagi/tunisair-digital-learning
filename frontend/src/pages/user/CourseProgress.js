@@ -14,7 +14,7 @@ const CourseProgress = () => {
   const [activeModule, setActiveModule] = useState(null);
 
   useEffect(() => {
-    if (!user || user.role !== 'apprenti') {
+    if (!user) {
       navigate('/dashboard');
       return;
     }

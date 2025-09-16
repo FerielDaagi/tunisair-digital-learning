@@ -82,7 +82,29 @@ const UserSchema = new mongoose.Schema({
   },
   isActive: {
     type: Boolean,
-    default: true
+    default: false
+  },
+  // Email verification
+  emailVerified: {
+    type: Boolean,
+    default: false
+  },
+  verificationCode: {
+    type: String,
+    select: false
+  },
+  verificationCodeExpires: {
+    type: Date,
+    select: false
+  },
+  // Password reset
+  resetPasswordToken: {
+    type: String,
+    select: false
+  },
+  resetPasswordExpires: {
+    type: Date,
+    select: false
   },
   // Tutor request workflow
   tutorRequestStatus: {

@@ -13,6 +13,9 @@ import './styles/course-titles.css';
 // Pages
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
+import EmailVerification from './pages/auth/EmailVerification';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 import Dashboard from './pages/dashboard/Dashboard';
 import Courses from './pages/courses/Courses';
 import CourseDetail from './pages/courses/CourseDetail';
@@ -39,14 +42,34 @@ import CertificateVerification from './pages/public/CertificateVerification';
 import PublishedCourses from './pages/tutor/PublishedCourses';
 import CourseStats from './pages/tutor/CourseStats';
 import CourseStudents from './pages/tutor/CourseStudents';
+import StatistiqueCours from './pages/admin/CourseStats';
+import AdminReviews from './pages/admin/Reviews';
 
 import './App.css';
 
 // Composant pour détecter la page courante
 const AppContent = () => {
   const location = useLocation();
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
+  const isAuthPage = ['/login','/signup','/verify-email','/forgot-password','/reset-password'].includes(location.pathname);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  
+  // Ajouter une classe body spécifique aux pages admin pour ajuster l'espacement
+  React.useEffect(() => {
+    const isAdminRoute = location.pathname.startsWith('/admin');
+    document.body.classList.toggle('route-admin', isAdminRoute);
+  }, [location.pathname]);
+  
+  // Ajouter une classe body spécifique au tableau de bord (route "/") pour réduire l'espace
+  React.useEffect(() => {
+    const isDashboardRoute = location.pathname === '/';
+    document.body.classList.toggle('route-dashboard', isDashboardRoute);
+  }, [location.pathname]);
+
+  // Ajouter une classe body spécifique à la page cours (route "/courses")
+  React.useEffect(() => {
+    const isCoursesRoute = location.pathname === '/courses';
+    document.body.classList.toggle('route-courses', isCoursesRoute);
+  }, [location.pathname]);
   
   const handleSidebarToggle = (collapsed) => {
     setIsSidebarCollapsed(collapsed);
@@ -63,6 +86,9 @@ const AppContent = () => {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/verify-email" element={<EmailVerification />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/" element={
             <ProtectedRoute>
               <Dashboard />
@@ -98,9 +124,19 @@ const AppContent = () => {
               <UserStats />
             </ProtectedRoute>
           } />
+          <Route path="/admin/course-stats" element={
+            <ProtectedRoute>
+              <StatistiqueCours />
+            </ProtectedRoute>
+          } />
           <Route path="/admin/notifications" element={
             <ProtectedRoute>
               <NotificationCenter />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/reviews" element={
+            <ProtectedRoute>
+              <AdminReviews />
             </ProtectedRoute>
           } />
           <Route path="/test-notifications" element={
@@ -131,7 +167,7 @@ const AppContent = () => {
       </div>
     </div>
   );
-};
+}
 
 function App() {
   return (

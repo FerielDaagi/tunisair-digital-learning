@@ -18,17 +18,21 @@ const createOrUpdateReview = async (req, res) => {
       });
     }
 
-    // Vérifier que l'étudiant est inscrit au cours
-    const enrollment = await Enrollment.findOne({
+    // Vérifier l'accès: autoriser le tuteur propriétaire à commenter même sans inscription
+    let enrollment = await Enrollment.findOne({
       student: studentId,
       course: courseId
     });
 
     if (!enrollment) {
-      return res.status(403).json({
-        success: false,
-        message: 'Vous devez être inscrit au cours pour le commenter'
-      });
+      if (req.user && req.user.role === 'tuteur' && String(course.instructor) === String(req.user.id)) {
+        // Autoriser sans enrollment
+      } else {
+        return res.status(403).json({
+          success: false,
+          message: 'Vous devez être inscrit au cours pour le commenter'
+        });
+      }
     }
 
     // Vérifier que l'étudiant a au moins commencé le cours (plus souple)
@@ -62,7 +66,9 @@ const createOrUpdateReview = async (req, res) => {
       // Mettre à jour le commentaire existant
       review.rating = rating;
       review.comment = comment || '';
-      review.isVerified = true; // Marquer comme vérifié car l'étudiant est inscrit
+      // Marquer comme vérifié si inscrit ou si propriétaire
+      const isOwner = String(course.instructor) === String(req.user.id);
+      review.isVerified = Boolean(enrollment) || isOwner;
     } else {
       // Créer un nouveau commentaire
       review = new CourseReview({
@@ -70,7 +76,7 @@ const createOrUpdateReview = async (req, res) => {
         student: studentId,
         rating,
         comment: comment || '',
-        isVerified: true
+        isVerified: Boolean(enrollment) || (String(course.instructor) === String(req.user.id))
       });
     }
 

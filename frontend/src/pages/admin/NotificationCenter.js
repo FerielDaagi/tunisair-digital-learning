@@ -160,7 +160,7 @@ const NotificationCenter = () => {
 
   if (user?.role !== 'admin') {
     return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
+      <div className="container" style={{ padding: '1rem', textAlign: 'center' }}>
         <h2>Accès refusé</h2>
         <p>Vous devez être administrateur pour accéder à cette page.</p>
       </div>
@@ -168,7 +168,7 @@ const NotificationCenter = () => {
   }
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+    <div className="container" style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto' }}>
       <ConfirmModal
         open={confirmState.open}
         title="Supprimer la notification"

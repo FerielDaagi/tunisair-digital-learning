@@ -248,6 +248,7 @@ import {
   Tag,
   FileText,
   Circle
+  , MessageSquare
 } from 'lucide-react';
 
 // Icon theme configuration
@@ -259,6 +260,9 @@ export const IconTheme = {
   admin: Settings,
   profile: User,
   notifications: Bell,
+  comment: MessageSquare,
+  review: MessageSquare,
+  reviews: MessageSquare,
   sidebarToggle: ChevronLeft,
   sidebarToggleCollapsed: ChevronRight,
   menu: Menu,

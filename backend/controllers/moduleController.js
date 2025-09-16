@@ -18,8 +18,8 @@ const createModule = async (req, res) => {
       });
     }
     
-    // Vérifier que l'utilisateur est le propriétaire du cours
-    if (course.instructor.toString() !== req.user.id) {
+    // Vérifier que l'utilisateur est le propriétaire du cours (sauf admin)
+    if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Vous n\'êtes pas autorisé à modifier ce cours'
@@ -95,9 +95,9 @@ const updateModule = async (req, res) => {
       });
     }
     
-    // Vérifier que l'utilisateur est le propriétaire du cours
+    // Vérifier que l'utilisateur est le propriétaire du cours (sauf admin)
     const course = await Course.findById(module.course);
-    if (course.instructor.toString() !== req.user.id) {
+    if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Vous n\'êtes pas autorisé à modifier ce module'
@@ -138,9 +138,9 @@ const deleteModule = async (req, res) => {
       });
     }
     
-    // Vérifier que l'utilisateur est le propriétaire du cours
+    // Vérifier que l'utilisateur est le propriétaire du cours (sauf admin)
     const course = await Course.findById(module.course);
-    if (course.instructor.toString() !== req.user.id) {
+    if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Vous n\'êtes pas autorisé à supprimer ce module'
@@ -260,9 +260,9 @@ const togglePublish = async (req, res) => {
       });
     }
     
-    // Vérifier que l'utilisateur est le propriétaire du cours
+    // Vérifier que l'utilisateur est le propriétaire du cours (sauf admin)
     const course = await Course.findById(module.course);
-    if (course.instructor.toString() !== req.user.id) {
+    if (course.instructor.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Vous n\'êtes pas autorisé à modifier ce module'
